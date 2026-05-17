@@ -1,0 +1,68 @@
+#pragma once
+#include <vector>
+#include <unordered_map>
+#include <string>
+#include <fstream>
+#include "StaticForgeTypes.h"
+
+namespace StaticForge {
+
+	class StaticForgeBuilder {
+	public:
+		StaticForgeBuilder() = default;
+		StaticForgeBuilder(const std::string& archiveName, const std::vector<StaticForgePath>& sourcePaths = {}, const StaticForgePath& outputPath = StaticForgePath{});
+		~StaticForgeBuilder() = default;
+
+		bool Build();
+
+		bool IsValid() const;
+		const std::string& GetError() const;
+		
+		StaticForgeBuilder& SetArchiveName(const std::string& archiveName);
+		StaticForgeBuilder& SetSourcePath(const std::vector<StaticForgePath>& paths);
+		StaticForgeBuilder& AddSourcePath(const StaticForgePath& path);
+		StaticForgeBuilder& SetOutputPath(const StaticForgePath& path);
+		StaticForgeBuilder& SetCreateOutputDir(bool value);
+
+	private:
+		struct ArchiveGroup {
+			std::string name;
+			std::vector<Internal::StaticForgeFileEntry> files;
+			std::unordered_map<size_t, std::string> seenHashes;
+
+			uint64_t totalArchiveSize = 0;// gets set will building index
+		};
+
+		std::string m_error;
+
+		std::string m_archiveName;
+		std::vector<StaticForgePath> m_srcPaths;
+		StaticForgePath m_outputPath;
+		bool m_createOutputDir = false;
+
+		std::unordered_map<std::string, ArchiveGroup> m_archiveGroups;
+
+		uint64_t m_totalArchiveSize = 0;// gets set will building index
+
+		bool CheckFilepaths(std::string* errorOut);
+		bool ScanFiles(std::string* errorOut);
+		bool BuildGroups(std::string* errorOut);
+		static bool BuildIndex(ArchiveGroup& archive, std::string* errorOut);
+
+		bool WriteFile(ArchiveGroup& archive, std::string* errorOut);
+		static bool WriteHeader(const ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut);
+		static bool WriteIndex(ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut);
+		static bool WriteData(const ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut);
+
+
+		std::string StaticForgeBuilder::ResolveArchive(
+			const StaticForgePath& filePath,
+			const std::unordered_map<std::string, std::string>& dirToArchive
+		);
+		static bool IsEnoughSpaceAvailable(const StaticForgePath& path, uint64_t fileSize);
+		static uint32_t FNV1a(const void* data, size_t size, uint32_t hash = 2166136261u);
+
+		void AddError(const std::string& error);
+	};
+
+}
