@@ -302,8 +302,8 @@ namespace StaticForge {
 			totalOffset += f.alignedSize;
 
 			if (m_isDebugActive) {
-				std::cout << " path: " << f.filepath << std::endl;
-				std::cout << " blockOffset: " << f.blockOffset << std::endl;
+				std::cout << "  path: " << f.filepath << std::endl;
+				std::cout << "  blockOffset: " << f.blockOffset << std::endl;
 			}
 		}
 
