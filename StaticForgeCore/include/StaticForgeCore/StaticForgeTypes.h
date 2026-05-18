@@ -14,6 +14,8 @@ namespace StaticForge {
 
 	namespace Internal {
 
+		constexpr std::string_view CONSOLE_SEPERATOR = "===================================";
+
 		// Alignment has to be a power of two (2^n) 
 		constexpr uint64_t ALIGNMENT_HEADER = 32;
 		constexpr uint64_t ALIGNMENT_INDEX_ENTRY = 32;

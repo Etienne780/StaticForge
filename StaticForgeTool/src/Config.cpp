@@ -38,6 +38,10 @@ bool Config::GetCreateOutputDir() const {
 	return m_createOutputDir;
 }
 
+bool Config::GetDebug() const {
+	return m_debug;
+}
+
 const std::string& Config::GetError() const {
 	return m_error;
 }
@@ -119,6 +123,10 @@ void* Config::GetOuput(const ConsoleArgument* arg) {
 
 	if (arg->GetName() == ArgName::ARCHIVE_NAME) {
 		return static_cast<void*>(&m_archiveName);
+	}
+
+	if (arg->GetName() == ArgName::DEBUG_NAME) {
+		return static_cast<void*>(&m_debug);
 	}
 
 	return nullptr;

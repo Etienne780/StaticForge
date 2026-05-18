@@ -9,6 +9,7 @@
 | output | o          | output path for the packed file                     | filepath	| false		| -		  |	false          |
 | mkdir  | p          | create the output directory if it does not exist    | bool		| true		| false	  | false          |
 | name	 | n          | default archive name if no .sfpak.meta found		| string	| true		| "main"  | false          |
+| debug	 | d          | says if debug mode should be active					| bool		| true		| false	  | false          |
 																																
 */
 
@@ -26,5 +27,8 @@ namespace ArgName {
 
 	const std::string_view ARCHIVE_NAME = "name";
 	const std::string_view ARCHIVE_NAME_SHORTNAME = "n";
+
+	const std::string_view DEBUG_NAME = "debug";
+	const std::string_view DEBUG_NAME_SHORTNAME = "d";
 	
 }

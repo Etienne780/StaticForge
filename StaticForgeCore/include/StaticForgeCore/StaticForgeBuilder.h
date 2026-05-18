@@ -21,6 +21,7 @@ namespace StaticForge {
 		StaticForgeBuilder& AddSourcePath(const StaticForgePath& path);
 		StaticForgeBuilder& SetOutputPath(const StaticForgePath& path);
 		StaticForgeBuilder& SetCreateOutputDir(bool value);
+		StaticForgeBuilder& SetDebugMode(bool active);
 
 	private:
 		struct ArchiveGroup {
@@ -35,6 +36,7 @@ namespace StaticForge {
 		std::vector<StaticForgePath> m_srcPaths;
 		StaticForgePath m_outputPath;
 		bool m_createOutputDir = false;
+		bool m_isDebugActive = false;
 
 		std::unordered_map<std::string, ArchiveGroup> m_archiveGroups;
 
@@ -43,7 +45,7 @@ namespace StaticForge {
 		bool CheckFilepaths(std::string* errorOut);
 		bool ScanFiles(std::string* errorOut);
 		bool BuildGroups(std::string* errorOut);
-		static bool BuildIndex(ArchiveGroup& archive, std::string* errorOut);
+		bool BuildIndex(ArchiveGroup& archive, std::string* errorOut);
 
 		bool WriteFile(ArchiveGroup& archive, std::string* errorOut) const;
 		static bool WriteHeader(const ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut);

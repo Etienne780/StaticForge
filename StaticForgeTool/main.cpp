@@ -29,7 +29,8 @@ int main(int argc, char** argv) {
 	builder
 		.SetSourcePath(config.GetSourcePaths())
 		.SetOutputPath(config.GetOutputPath())
-		.SetCreateOutputDir(config.GetCreateOutputDir());
+		.SetCreateOutputDir(config.GetCreateOutputDir())
+		.SetDebugMode(config.GetDebug());
 
 	if (!builder.Build()) {
 		std::cout << builder.GetError() << std::endl;

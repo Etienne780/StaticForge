@@ -15,6 +15,7 @@ public:
 	std::filesystem::path GetOutputPath() const;
 	const std::string GetArchiveName() const;
 	bool GetCreateOutputDir() const;
+	bool GetDebug() const;
 
 	const std::string& GetError() const;
 
@@ -27,6 +28,7 @@ private:
 	
 	std::string m_archiveName = "main";
 	bool m_createOutputDir = false;
+	bool m_debug = false;
 
 	void ProcessArgument(int index, int count, char* argv[]);
 	void EvaluateArgument(const std::string& name, const std::string& value);

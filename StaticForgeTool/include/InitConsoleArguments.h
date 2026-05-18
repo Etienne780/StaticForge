@@ -32,4 +32,7 @@ inline void InitConsoleArguments() {
 	auto& archiveNameArg = CAM::RegisterConsoleArgument(ArgName::ARCHIVE_NAME, ArgName::ARCHIVE_NAME_SHORTNAME, ConsoleArgType::String);
 	archiveNameArg.SetEvaluationFunction(stringParser);
 
+	auto& debugArg = CAM::RegisterConsoleArgument(ArgName::DEBUG_NAME, ArgName::DEBUG_NAME_SHORTNAME, ConsoleArgType::Bool);
+	debugArg.SetEvaluationFunction(boolParser);
+
 }
