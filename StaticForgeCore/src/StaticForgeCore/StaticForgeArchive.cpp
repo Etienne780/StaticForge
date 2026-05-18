@@ -2,15 +2,19 @@
 
 namespace StaticForge {
 
-	StaticForgeArchive::StaticForgeArchive(const StaticForgePath& path) {
-		
+	StaticForgeArchive::StaticForgeArchive() 
+		: ErrorSupport(Internal::HAS_HEADER) {
+	}
+
+	bool StaticForgeArchive::LoadAsset(uint64_t hash, std::vector<std::byte>& outData) {
+		return false;
 	}
 
 	void StaticForgeArchive::SetStaticForgeHeader(Internal::StaticForgeHeader&& header) {
 
 	}
 
-	void StaticForgeArchive::PushStaticForgeHeader(Internal::StaticForgeIndexEntry&& entry) {
+	void StaticForgeArchive::PushStaticForgeEntry(Internal::StaticForgeIndexEntry&& entry) {
 
 	}
 

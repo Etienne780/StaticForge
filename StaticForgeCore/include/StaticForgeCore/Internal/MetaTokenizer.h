@@ -2,6 +2,7 @@
 #include <string_view>
 #include <fstream>
 #include "StaticForgeTypes.h"
+#include "Internal/ErrorSupport.h"
 
 namespace StaticForge::Internal {
 
@@ -35,21 +36,16 @@ namespace StaticForge::Internal {
 		}
 	};
 
-	class MetaTokenizer {
+	class MetaTokenizer : public ErrorSupport {
 	public:
 		MetaTokenizer(const StaticForgePath& path);
-
-		bool IsValid() const;
-		const std::string& GetError() const;
 
 		const std::vector<MetaToken>& GetTokens() const;
 
 	private:
-		std::string m_error;
-
 		std::string m_fileContent;
-		const char* m_cur;
-		const char* m_end;
+		const char* m_cur = nullptr;
+		const char* m_end = nullptr;
 		uint32_t m_line = 1, m_column = 1;
 
 		std::vector<MetaToken> m_tokens;
@@ -67,8 +63,6 @@ namespace StaticForge::Internal {
 
 		void AddToken(MetaTokenType type);
 		void AddToken(MetaTokenType type, const char* contentStart, const char* contentEnd, uint32_t line, uint32_t column);
-
-		void AddError(const std::string& error);
 	};
 
 }

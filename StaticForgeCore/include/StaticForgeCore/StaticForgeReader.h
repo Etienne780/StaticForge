@@ -10,7 +10,11 @@ namespace StaticForge {
 		StaticForgeReader() = default;
 		~StaticForgeReader() = default;
 
-		StaticForgeArchive Load(const StaticForgePath& path);
+		bool Load(
+			const StaticForgePath& path,
+			StaticForgeArchive* archiveOut,
+			std::string* errorOut
+		);
 
 	private:
 

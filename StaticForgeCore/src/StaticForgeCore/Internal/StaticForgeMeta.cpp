@@ -4,6 +4,10 @@
 
 namespace StaticForge::Internal {
 
+	StaticForgeMeta::StaticForgeMeta() 
+		: ErrorSupport(!HAS_HEADER) {
+	}
+
 	bool StaticForgeMeta::Load(const StaticForgePath& path) {
 		Reset();
 
@@ -28,14 +32,6 @@ namespace StaticForge::Internal {
 		}
 
 		return true;
-	}
-
-	bool StaticForgeMeta::IsValid() const {
-		return m_error.empty();
-	}
-
-	const std::string& StaticForgeMeta::GetError() const {
-		return m_error;
 	}
 
 	const StaticForgePath& StaticForgeMeta::GetPath() const {
@@ -263,11 +259,6 @@ namespace StaticForge::Internal {
 
 		m_path.clear();
 		m_archiveName.clear();
-	}
-
-	void StaticForgeMeta::AddError(const std::string& error) {
-		m_error.append(error);
-		m_error.push_back('\n');
 	}
 
 }

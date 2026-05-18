@@ -6,8 +6,12 @@
 
 namespace StaticForge {
 
+	StaticForgeBuilder::StaticForgeBuilder()
+		: ErrorSupport(Internal::HAS_HEADER) {
+	}
+
 	StaticForgeBuilder::StaticForgeBuilder(const std::string& archiveName, const std::vector<StaticForgePath>& sourcePaths, const StaticForgePath& outputPath)
-		: m_archiveName(archiveName), m_srcPaths(sourcePaths), m_outputPath(outputPath) {
+		: ErrorSupport(Internal::HAS_HEADER), m_archiveName(archiveName), m_srcPaths(sourcePaths), m_outputPath(outputPath) {
 	}
 
 	bool StaticForgeBuilder::Build() {
@@ -28,14 +32,6 @@ namespace StaticForge {
 		}
 
 		return true;
-	}
-
-	bool StaticForgeBuilder::IsValid() const {
-		return m_error.empty();
-	}
-
-	const std::string& StaticForgeBuilder::GetError() const {
-		return m_error;
 	}
 
 	StaticForgeBuilder& StaticForgeBuilder::SetArchiveName(const std::string& archiveName) {
@@ -422,13 +418,6 @@ namespace StaticForge {
 		}
 
 		return hash;
-	}
-
-
-	void StaticForgeBuilder::AddError(const std::string& error) {
-		m_error.append("[Error]: ");
-		m_error.append(error);
-		m_error.push_back('\n');
 	}
 
 }

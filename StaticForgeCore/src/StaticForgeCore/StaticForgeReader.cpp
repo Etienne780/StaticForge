@@ -3,11 +3,16 @@
 
 namespace StaticForge {
 
-	StaticForgeArchive StaticForgeReader::Load(const StaticForgePath& path) {
-		StaticForgeArchive archive{ path };
-		
+	bool StaticForgeReader::Load(
+		const StaticForgePath& path,
+		StaticForgeArchive* archiveOut,
+		std::string* errorOut
+	) {
+		if (!archiveOut) {
+			return false;
+		}
 
-		return archive;
+		return true;
 	}
 
 }

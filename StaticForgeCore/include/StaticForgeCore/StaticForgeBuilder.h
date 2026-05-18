@@ -4,19 +4,17 @@
 #include <string>
 #include <fstream>
 #include "StaticForgeTypes.h"
+#include "Internal/ErrorSupport.h"
 
 namespace StaticForge {
 
-	class StaticForgeBuilder {
+	class StaticForgeBuilder : public Internal::ErrorSupport {
 	public:
-		StaticForgeBuilder() = default;
+		StaticForgeBuilder();
 		StaticForgeBuilder(const std::string& archiveName, const std::vector<StaticForgePath>& sourcePaths = {}, const StaticForgePath& outputPath = StaticForgePath{});
 		~StaticForgeBuilder() = default;
 
 		bool Build();
-
-		bool IsValid() const;
-		const std::string& GetError() const;
 		
 		StaticForgeBuilder& SetArchiveName(const std::string& archiveName);
 		StaticForgeBuilder& SetSourcePath(const std::vector<StaticForgePath>& paths);
@@ -32,8 +30,6 @@ namespace StaticForge {
 
 			uint64_t totalArchiveSize = 0;// gets set will building index
 		};
-
-		std::string m_error;
 
 		std::string m_archiveName;
 		std::vector<StaticForgePath> m_srcPaths;
@@ -61,8 +57,6 @@ namespace StaticForge {
 		);
 		static bool IsEnoughSpaceAvailable(const StaticForgePath& path, uint64_t fileSize);
 		static uint32_t FNV1a(const void* data, size_t size, uint32_t hash = 2166136261u);
-
-		void AddError(const std::string& error);
 	};
 
 }

@@ -2,7 +2,8 @@
 
 namespace StaticForge::Internal {
 
-	MetaTokenizer::MetaTokenizer(const StaticForgePath& path) {
+	MetaTokenizer::MetaTokenizer(const StaticForgePath& path) 
+		: ErrorSupport(!HAS_HEADER){
 		std::ifstream fileStream(path, std::ios::binary | std::ios::ate);
 		if (!fileStream.is_open()) {
 			AddError("Failed to open file: " + path.u8string());
@@ -18,14 +19,6 @@ namespace StaticForge::Internal {
 		m_end = m_fileContent.data() + m_fileContent.size();
 
 		ProcessContent();
-	}
-
-	bool MetaTokenizer::IsValid() const {
-		return m_error.empty();
-	}
-
-	const std::string& MetaTokenizer::GetError() const {
-		return m_error;
 	}
 
 	const std::vector<MetaToken>& MetaTokenizer::GetTokens() const {
@@ -137,11 +130,6 @@ namespace StaticForge::Internal {
 			line,
 			column
 		);
-	}
-
-	void MetaTokenizer::AddError(const std::string& error) {
-		m_error.append(error);
-		m_error.push_back('\n');
 	}
 
 }

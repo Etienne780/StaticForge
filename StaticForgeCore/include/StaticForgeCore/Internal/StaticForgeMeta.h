@@ -1,21 +1,19 @@
 #pragma once
 #include <string>
 #include "StaticForgeTypes.h"
+#include "Internal/ErrorSupport.h"
 
 namespace StaticForge::Internal {
 
 	struct MetaToken;
 	enum class MetaTokenType;
 
-	class StaticForgeMeta {
+	class StaticForgeMeta : public ErrorSupport {
 	public:
-		StaticForgeMeta() = default;
+		StaticForgeMeta();
 		~StaticForgeMeta() = default;
 
 		bool Load(const StaticForgePath& path);
-
-		bool IsValid() const;
-		const std::string& GetError() const;
 
 		const StaticForgePath& GetPath() const;
 		const std::string& GetArchiveName() const;
@@ -52,7 +50,6 @@ namespace StaticForge::Internal {
 		void* GetOuput(const std::string& name);
 		bool TryGetIdentifierSuggestions(const std::string& name, std::string* outSuggestion);
 		void Reset();
-		void AddError(const std::string& error);
 	};
 
 }
