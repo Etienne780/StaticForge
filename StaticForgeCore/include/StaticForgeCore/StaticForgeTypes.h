@@ -29,6 +29,7 @@ namespace StaticForge {
 			uint64_t indexOffset;
 		};
 
+		// Order of the elements is important for the reading
 		#pragma pack(push, 1)
 		struct StaticForgeHeader {
 			char magic[4] = { 'S', 'F', 'P', 'K' };

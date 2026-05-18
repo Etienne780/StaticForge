@@ -221,7 +221,7 @@ namespace StaticForge {
 		return true;
 	}
 
-	bool StaticForgeBuilder::WriteFile(ArchiveGroup& archive, std::string* errorOut) {
+	bool StaticForgeBuilder::WriteFile(ArchiveGroup& archive, std::string* errorOut) const {
 		StaticForgePath outputPath = m_outputPath / archive.name;
 		outputPath.replace_extension(PACK_FILE_EXTENSION);
 
@@ -283,10 +283,24 @@ namespace StaticForge {
 			return false;
 		}
 
+		// add padding
+		uint64_t padding = headerSize - sizeof(Internal::StaticForgeHeader);
+		if (padding > 0) {
+			std::vector<char> pad(padding, 0);
+			stream.write(pad.data(), padding);
+
+			if (stream.fail()) {
+				*errorOut = "Failed to write data padding";
+				return false;
+			}
+		}
+
 		return true;
 	}
 
 	bool StaticForgeBuilder::WriteIndex(ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) {
+		const uint64_t indexEntrySize = Internal::GetIndexEntrySize();
+
 		for (size_t i = 0; i < archive.files.size(); i++) {
 			auto& fe = archive.files[i];
 
@@ -306,6 +320,18 @@ namespace StaticForge {
 			if (stream.fail()) {
 				*errorOut = "Failed to write index!";
 				return false;
+			}
+
+			// add padding
+			uint64_t padding = indexEntrySize - sizeof(Internal::StaticForgeIndexEntry);
+			if (padding > 0) {
+				std::vector<char> pad(padding, 0);
+				stream.write(pad.data(), padding);
+
+				if (stream.fail()) {
+					*errorOut = "Failed to write data padding";
+					return false;
+				}
 			}
 		}
 

@@ -37,6 +37,14 @@ int main(int argc, char** argv) {
 		return -1;
 	}
 
+	StaticForge::StaticForgeArchive archive;
+	StaticForge::StaticForgeReader reader;
+	if (!reader.Load(config.GetOutputPath() / "main.sfpak", &archive)) {
+		std::cout << reader.GetError() << std::endl;
+		std::cin;
+		return -1;
+	}
+
 	std::cout << "Build was successful" << std::endl;
 
 	return 0;

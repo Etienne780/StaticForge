@@ -30,9 +30,6 @@ namespace StaticForge {
 		Internal::StaticForgeHeader m_header;
 		std::vector<Internal::StaticForgeIndexEntry> m_indexEntries;
 		std::unordered_map<uint64_t, size_t> m_hashNameToEntry;
-
-		void SetStaticForgeHeader(Internal::StaticForgeHeader&& header);
-		void PushStaticForgeEntry(Internal::StaticForgeIndexEntry&& entry);
 		
 	};
 

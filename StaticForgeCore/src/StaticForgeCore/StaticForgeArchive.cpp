@@ -10,12 +10,4 @@ namespace StaticForge {
 		return false;
 	}
 
-	void StaticForgeArchive::SetStaticForgeHeader(Internal::StaticForgeHeader&& header) {
-
-	}
-
-	void StaticForgeArchive::PushStaticForgeEntry(Internal::StaticForgeIndexEntry&& entry) {
-
-	}
-
 }
