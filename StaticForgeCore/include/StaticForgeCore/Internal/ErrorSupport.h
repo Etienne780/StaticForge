@@ -9,7 +9,7 @@ namespace StaticForge::Internal {
     class ErrorSupport {
     public:
         ErrorSupport(bool hasHeader);
-        ~ErrorSupport() = default;
+        virtual ~ErrorSupport() = default;
 
         bool IsValid() const;
         std::string GetError() const;
