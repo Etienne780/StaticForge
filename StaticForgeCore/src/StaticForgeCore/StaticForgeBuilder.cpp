@@ -72,7 +72,7 @@ namespace StaticForge {
 			}
 		}
 
-		if (m_outputPath.has_filename()) {
+		if (m_outputPath.has_extension()) {
 			*errorOut = "Output path must be a directory path: '" + m_outputPath.u8string() + "'";
 			return false;
 		}
@@ -84,7 +84,7 @@ namespace StaticForge {
 				return false;
 			}
 			else {
-				if (!create_directories(m_outputPath.parent_path())) {
+				if (!create_directories((m_outputPath.has_filename() ? m_outputPath : m_outputPath.parent_path()))) {
 					*errorOut = "Failed to create output directory '" + m_outputPath.u8string() + "'!";
 					return false;
 				}
@@ -204,6 +204,7 @@ namespace StaticForge {
 			}
 		}
 
+		return true;
 	}
 
 	bool StaticForgeBuilder::BuildIndex(ArchiveGroup& archive, std::string* errorOut) {
