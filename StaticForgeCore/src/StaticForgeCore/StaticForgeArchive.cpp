@@ -42,6 +42,34 @@ namespace StaticForge {
 		return m_stream.is_open();
 	}
 
+	const StaticForgePath& StaticForgeArchive::GetPath() const {
+		return m_path;
+	}
+
+	uint64_t StaticForgeArchive::GetVersion() const {
+		return m_header.version;
+	}
+
+	size_t StaticForgeArchive::GetFileCount() const {
+		return m_indexEntries.size();
+	}
+
+	uint64_t StaticForgeArchive::GetHashName(size_t index) const {
+		return m_indexEntries[index].hashName;
+	}
+
+	uint64_t StaticForgeArchive::GetFileOffset(size_t index) const {
+		return m_indexEntries[index].fileOffset;
+	}
+
+	uint64_t StaticForgeArchive::GetFileSize(size_t index) const {
+		return m_indexEntries[index].fileSize;
+	}
+
+	uint64_t StaticForgeArchive::GetFilePadding(size_t index) const {
+		return m_indexEntries[index].filePadding;
+	}
+
 	bool StaticForgeArchive::LoadEntry(
 		Internal::StaticForgeIndexEntry* entry, 
 		std::vector<std::byte>& outData,
@@ -71,6 +99,12 @@ namespace StaticForge {
 
 		if (!m_stream) {
 			*errorOut = "Failed to read " + std::to_string(size) + " bytes at offset " + std::to_string(start);
+			return false;
+		}
+
+		uint32_t computedChecksum = Internal::FNV1a(outData.data(), outData.size(), 2166136261u);
+		if (computedChecksum != entry->checksum) {
+			*errorOut = "Checksum mismatch for entry (expected " + std::to_string(entry->checksum) + ", got " + std::to_string(computedChecksum) + ")";
 			return false;
 		}
 

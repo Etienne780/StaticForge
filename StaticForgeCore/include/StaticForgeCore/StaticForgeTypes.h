@@ -46,8 +46,8 @@ namespace StaticForge {
 			uint64_t hashName;		/*< relative path gehashed e.g. "textures/background.png" -> hash */
 			uint64_t fileOffset;	/*< location of the start of the file */
 			uint64_t fileSize;		/*< original size of the file */
-			uint32_t checksum;		/*< hash created with the file data to validate its content on load */
 			uint32_t filePadding;	/*< padding needed to align to ALIGNMENT_FILE */
+			uint32_t checksum;		/*< hash created with the file data to validate its content on load */
 		};
 	#pragma pack(pop)
 

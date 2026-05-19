@@ -46,13 +46,6 @@ int main(int argc, char** argv) {
 		return -1;
 	}
 
-	std::vector<std::byte> data;
-	if (!archive.LoadAsset("Player_Skibidi_Bibub.png", data)) {
-		std::cout << archive.GetError() << std::endl;
-		std::cin;
-		return -1;
-	}
-
 	std::cout << "Build was successful" << std::endl;
 
 	return 0;

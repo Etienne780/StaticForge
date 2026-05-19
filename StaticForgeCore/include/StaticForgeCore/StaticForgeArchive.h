@@ -27,6 +27,15 @@ namespace StaticForge {
 		void CloseFileStream();
 		bool IsFileStreamOpen();
 
+		const StaticForgePath& GetPath() const;
+		uint64_t GetVersion() const;
+		size_t GetFileCount() const;
+
+		uint64_t GetHashName(size_t index) const;
+		uint64_t GetFileOffset(size_t index) const;
+		uint64_t GetFileSize(size_t index) const;
+		uint64_t GetFilePadding(size_t index) const;
+
 	private:
 		StaticForgePath m_path;
 		std::ifstream m_stream;

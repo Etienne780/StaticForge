@@ -105,7 +105,7 @@ namespace StaticForge {
 				return false;
 			}
 			else {
-				if (!create_directories((m_outputPath.has_filename() ? m_outputPath : m_outputPath.parent_path()))) {
+				if (!std::filesystem::create_directories((m_outputPath.has_filename() ? m_outputPath : m_outputPath.parent_path()))) {
 					*errorOut = "Failed to create output directory '" + m_outputPath.u8string() + "'!";
 					return false;
 				}
@@ -380,10 +380,26 @@ namespace StaticForge {
 		h.indexSize = indexSize;
 		h.dataOffset = archive.dataStart;
 
-		stream.write(
-			reinterpret_cast<const char*>(&h),
-			sizeof(Internal::StaticForgeHeader)
-		);
+
+		if (Internal::IsLittleEndian()) {
+			stream.write(
+				reinterpret_cast<const char*>(&h),
+				sizeof(Internal::StaticForgeHeader)
+			);
+		}
+		else {
+			auto writeLE = [&stream](auto value) {
+				auto le = Internal::SwapEndian(value);
+				stream.write(reinterpret_cast<const char*>(&le), sizeof(le));
+			};
+
+			stream.write(h.magic, sizeof(h.magic));
+			writeLE(h.version);
+			writeLE(h.fileCount);
+			writeLE(h.indexOffset);
+			writeLE(h.indexSize);
+			writeLE(h.dataOffset);
+		}
 
 		if (stream.fail()) {
 			*errorOut = "Failed to write header!";
@@ -431,10 +447,25 @@ namespace StaticForge {
 
 			fe.indexOffset = stream.tellp();
 
-			stream.write(
-				reinterpret_cast<const char*>(&e),
-				sizeof(Internal::StaticForgeIndexEntry)
-			);
+
+			if (Internal::IsLittleEndian()) {
+				stream.write(
+					reinterpret_cast<const char*>(&e),
+					sizeof(Internal::StaticForgeIndexEntry)
+				);
+			}
+			else {
+				auto writeLE = [&stream](auto value) {
+					auto le = Internal::SwapEndian(value);
+					stream.write(reinterpret_cast<const char*>(&le), sizeof(le));
+				};
+
+				writeLE(e.hashName);
+				writeLE(e.fileOffset);
+				writeLE(e.fileSize);
+				writeLE(e.filePadding);
+				writeLE(e.checksum);
+			}
 
 			if (stream.fail()) {
 				*errorOut = "Failed to write index!";
@@ -498,7 +529,7 @@ namespace StaticForge {
 				if (bytesRead <= 0)
 					break;
 
-				checksum = FNV1a(buffer.data(), bytesRead, checksum);
+				checksum = Internal::FNV1a(buffer.data(), bytesRead, checksum);
 
 				stream.write(buffer.data(), bytesRead);
 
@@ -535,10 +566,20 @@ namespace StaticForge {
 			stream.flush();
 			stream.seekp(checksumPos);
 
-			stream.write(
-				reinterpret_cast<const char*>(&checksum),
-				sizeof(checksum)
-			);
+			if (Internal::IsLittleEndian()) {
+				stream.write(
+					reinterpret_cast<const char*>(&checksum),
+					sizeof(checksum)
+				);
+			}
+			else {
+				auto writeLE = [&stream](auto value) {
+					auto le = Internal::SwapEndian(value);
+					stream.write(reinterpret_cast<const char*>(&le), sizeof(le));
+				};
+
+				writeLE(checksum);
+			}
 
 			stream.seekp(0, std::ios::end);
 
@@ -589,17 +630,6 @@ namespace StaticForge {
 			return false;
 
 		return space.available >= static_cast<std::uintmax_t>(fileSize);
-	}
-
-	uint32_t StaticForgeBuilder::FNV1a(const void* data, size_t size, uint32_t hash) {
-		const uint8_t* bytes = static_cast<const uint8_t*>(data);
-
-		for (size_t i = 0; i < size; i++) {
-			hash ^= bytes[i];
-			hash *= 16777619u;
-		}
-
-		return hash;
 	}
 
 }

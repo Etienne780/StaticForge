@@ -59,7 +59,6 @@ namespace StaticForge {
 			const std::unordered_map<std::string, std::string>& dirToArchive
 		);
 		static bool IsEnoughSpaceAvailable(const StaticForgePath& path, uint64_t fileSize);
-		static uint32_t FNV1a(const void* data, size_t size, uint32_t hash = 2166136261u);
 	};
 
 }
