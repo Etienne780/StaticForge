@@ -16,7 +16,6 @@ int main(int argc, char** argv) {
 
 	if (!config.IsValid()) {
 		std::cout << config.GetError() << std::endl;
-		std::cin.get();
 		return -1;
 	}
 
@@ -37,7 +36,6 @@ int main(int argc, char** argv) {
 	case ConfigMode::UNKNOWN:
 	default:
 		std::cout << "Invalid config" << std::endl;
-		std::cin.get();
 		return -1;
 	}
 
