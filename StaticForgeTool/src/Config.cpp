@@ -118,7 +118,7 @@ void Config::EvaluateArgument(const std::string& name, const std::string& value)
 		}
 
 		for (auto& v : values) {
-			void* output = GetOuput(arg);
+			void* output = GetOutput(arg);
 			if (!output) {
 				AddError("No fitting output found for argument '" + name + "'!");
 				return;
@@ -139,7 +139,7 @@ void Config::EvaluateFlagArgument(const ConsoleArgument* arg) {
 	}
 }
 
-void* Config::GetOuput(const ConsoleArgument* arg) {
+void* Config::GetOutput(const ConsoleArgument* arg) {
 	if (!arg)
 		return nullptr;
 

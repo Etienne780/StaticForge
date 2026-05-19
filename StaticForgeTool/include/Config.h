@@ -49,7 +49,7 @@ private:
 	void EvaluateArgument(const std::string& name, const std::string& value);
 
 	void EvaluateFlagArgument(const ConsoleArgument* argument);
-	void* GetOuput(const ConsoleArgument* argument);
+	void* GetOutput(const ConsoleArgument* argument);
 	bool TryGetValueList(const std::string& value, std::vector<std::string>* outList);
 	void CalculateCurrentMode();
 
