@@ -153,13 +153,6 @@ Your Game / Application
 
 - C++17 compiler
 - Standard library with `<filesystem>` support
-- CMake (for building)
-
----
-
-## License
-
-[Specify your license here - e.g., MIT, Apache 2.0, etc.]
 
 ---
 
