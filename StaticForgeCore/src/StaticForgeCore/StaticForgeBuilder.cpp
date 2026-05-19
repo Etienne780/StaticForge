@@ -203,8 +203,10 @@ namespace StaticForge {
 
 				auto& archive = m_archiveGroups[archiveName];
 
-				if (archive.name.empty())
+				if (archive.name.empty()) {
 					archive.name = archiveName;
+					archive.files.reserve(50);
+				}
 
 				std::string relpathStr = relativePath.u8string();
 				uint64_t h = Internal::HashFilename(relpathStr);
