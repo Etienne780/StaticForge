@@ -30,6 +30,7 @@ namespace StaticForge {
 			std::unordered_map<size_t, std::string> seenHashes;
 
 			uint64_t totalArchiveSize = 0;// gets set will building index
+			uint64_t dataStart = 0;
 		};
 
 		std::string m_archiveName;

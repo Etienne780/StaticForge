@@ -1,3 +1,4 @@
+#include "Internal/InternalHelpers.h"
 #include "StaticForgeReader.h"
 #include "StaticForgeArchive.h"
 
@@ -101,6 +102,9 @@ namespace StaticForge {
 		archive->m_indexEntries.reserve(header.fileCount);
 		archive->m_hashNameToEntry.reserve(header.fileCount);
 
+		const uint64_t indexEntrySize = Internal::GetIndexEntrySize();
+		const uint64_t indexEntryPadding = indexEntrySize - sizeof(Internal::StaticForgeIndexEntry);
+
 		const uint64_t start = header.indexOffset;
 		const uint64_t end = header.indexOffset + header.indexSize;
 
@@ -116,6 +120,15 @@ namespace StaticForge {
 			if (!stream) {
 				*errorOut = "Failed to read index entry " + std::to_string(i);
 				return false;
+			}
+
+			if (indexEntryPadding > 0) {
+				stream.seekg(indexEntryPadding, std::ios::cur);
+
+				if (!stream) {
+					*errorOut = "Failed to skip index padding at entry " + std::to_string(i);
+					return false;
+				}
 			}
 
 			archive->m_indexEntries.push_back(entry);

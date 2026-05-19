@@ -1,4 +1,5 @@
 #include <iostream>
+#include <variant>
 
 #include "StaticForgeBuilder.h"
 #include "Internal/InternalHelpers.h"
@@ -212,10 +213,6 @@ namespace StaticForge {
 				}
 				archive.seenHashes[h] = relativePath.u8string();
 
-				if (m_isDebugActive) {
-					
-				}
-
 				Internal::StaticForgeFileEntry f{};
 				f.filepath = fullPath;
 				f.fileSize = fileSize;
@@ -286,7 +283,13 @@ namespace StaticForge {
 		uint64_t sizeIndexEntry = Internal::GetIndexEntrySize();
 
 		size_t fileEntryCount = archive.files.size();
-		uint64_t totalOffset = sizeHeader + (static_cast<uint64_t>(fileEntryCount) * sizeIndexEntry);
+		uint64_t totalOffset =
+			Internal::AlignSize(
+				sizeHeader + (static_cast<uint64_t>(fileEntryCount) * sizeIndexEntry),
+				Internal::ALIGNMENT_FILE
+			);
+
+		archive.dataStart = totalOffset;
 
 		if (m_isDebugActive) {
 			std::cout << Internal::CONSOLE_SEPERATOR << std::endl;
@@ -375,7 +378,7 @@ namespace StaticForge {
 		h.fileCount = entrySize;
 		h.indexOffset = headerSize;
 		h.indexSize = indexSize;
-		h.dataOffset = headerSize + indexSize;
+		h.dataOffset = archive.dataStart;
 
 		stream.write(
 			reinterpret_cast<const char*>(&h),
@@ -470,6 +473,20 @@ namespace StaticForge {
 			std::cout << "data (" + std::to_string(archive.files.size()) + "):" << std::endl;
 		}
 
+		uint64_t current = static_cast<uint64_t>(stream.tellp());
+
+		if (archive.dataStart > current) {
+			uint64_t padding = archive.dataStart - current;
+
+			std::vector<char> pad(padding, 0);
+			stream.write(pad.data(), padding);
+
+			if (stream.fail()) {
+				*errorOut = "Failed to write data0 padding";
+				return false;
+			}
+		}
+
 		for (size_t i = 0; i < archive.files.size(); i++) {
 			auto& f = archive.files[i];
 
@@ -482,7 +499,7 @@ namespace StaticForge {
 
 			std::vector<char> buffer(blockSize);
 
-			uint32_t checksum = 0;
+			uint32_t checksum = 2166136261u;
 			uint64_t written = 0;
 
 			while (fileStream) {
@@ -497,11 +514,16 @@ namespace StaticForge {
 				stream.write(buffer.data(), bytesRead);
 
 				if (stream.fail()) {
-					*errorOut = "Failed to write data block";
+					*errorOut = "Failed to write data block '" + f.filepath.u8string() + "'";
 					return false;
 				}
 
 				written += bytesRead;
+			}
+
+			if (written != f.fileSize) {
+				*errorOut = "Failed to write data block '" + f.filepath.u8string() + "'";
+				return false;
 			}
 
 			// add padding
