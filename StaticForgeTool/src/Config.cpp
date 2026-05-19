@@ -226,7 +226,7 @@ void Config::ValidateConfig() {
 	bool hasPartialPack = (!m_srcAbsolPath.empty() || !m_outputAbsolPath.empty());
 
 	if (m_activeModeCount > 1) {
-		AddError("Multiple modes selected. Choose exactly one: pack (--source + --output), --info, --extract, or --help");
+		AddError("Multiple modes selected. Choose exactly one: pack (--source + --output), --info, or --help");
 		return;
 	}
 	if (m_activeModeCount == 0 && !hasPartialPack) {
