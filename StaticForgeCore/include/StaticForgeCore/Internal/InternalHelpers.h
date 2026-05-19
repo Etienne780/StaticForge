@@ -10,5 +10,5 @@ namespace StaticForge::Internal {
 	uint64_t GetIndexEntrySize();
 
 	std::string GetFullExtension(const StaticForgePath& path);
-
+	std::string GetFormatedSizeStr(uint64_t bytes);
 }

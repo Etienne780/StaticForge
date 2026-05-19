@@ -218,8 +218,8 @@ namespace StaticForge {
 
 				Internal::StaticForgeFileEntry f{};
 				f.filepath = fullPath;
-				f.size = fileSize;
-				f.alignedSize = Internal::AlignSize(fileSize, Internal::ALIGNMENT_FILE);
+				f.fileSize = fileSize;
+				f.alignedFileSize = Internal::AlignSize(fileSize, Internal::ALIGNMENT_FILE);
 				f.hashName = h;
 				f.blockOffset = 0;
 
@@ -249,8 +249,8 @@ namespace StaticForge {
 					std::cout
 						<< "  - file: " << file.filepath.u8string() << std::endl
 						<< "      hash: " << file.hashName << std::endl
-						<< "      size: " << file.size << " bytes" << std::endl
-						<< "      aligned size: " << file.alignedSize << " bytes" << std::endl;
+						<< "      file size: " << file.fileSize << " bytes" << std::endl
+						<< "      aligned file size: " << file.alignedFileSize << " bytes" << std::endl;
 				}
 
 				std::cout << std::endl;
@@ -299,7 +299,7 @@ namespace StaticForge {
 			auto& f = archive.files[i];
 
 			f.blockOffset = totalOffset;
-			totalOffset += f.alignedSize;
+			totalOffset += f.alignedFileSize;
 
 			if (m_isDebugActive) {
 				std::cout << "  path: " << f.filepath << std::endl;
@@ -322,7 +322,9 @@ namespace StaticForge {
 		outputPath.replace_extension(PACK_FILE_EXTENSION);
 
 		if (!IsEnoughSpaceAvailable(outputPath.parent_path(), archive.totalArchiveSize)) {
-			*errorOut = "Not enough space available size needed '" + std::to_string(archive.totalArchiveSize / 1024) + "MB'";
+			*errorOut = "Not enough space available size needed '" + 
+				Internal::GetFormatedSizeStr(archive.totalArchiveSize) + 
+				"'";
 			return false;
 		}
 
@@ -333,6 +335,12 @@ namespace StaticForge {
 		if (!stream.is_open()) {
 			*errorOut = "Failed to create file with path '" + outputPath.u8string() + "'";
 			return false;
+		}
+
+		if (m_isDebugActive) {
+			std::cout << Internal::CONSOLE_SEPERATOR << std::endl;
+			std::cout << "Writer for archive'" << archive.name << "(" << archive.files.size() << ")'" << std::endl;
+			std::cout << Internal::CONSOLE_SEPERATOR << std::endl;
 		}
 
 		if (!WriteHeader(archive, stream, &error)) {
@@ -357,7 +365,7 @@ namespace StaticForge {
 		return true;
 	}
 
-	bool StaticForgeBuilder::WriteHeader(const ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) {
+	bool StaticForgeBuilder::WriteHeader(const ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) const {
 		const uint64_t entrySize = static_cast<uint64_t>(archive.files.size());
 		const uint64_t headerSize = Internal::GetHeaderSize();
 		const uint64_t indexSize = Internal::GetIndexEntrySize() * entrySize;
@@ -391,19 +399,30 @@ namespace StaticForge {
 			}
 		}
 
+		if (m_isDebugActive) {
+			std::cout << "header:" << std::endl;
+			std::cout << "  offset: " << 0 << std::endl;
+			std::cout << "  size: " << headerSize << std::endl;
+			std::cout << std::endl;
+		}
+
 		return true;
 	}
 
-	bool StaticForgeBuilder::WriteIndex(ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) {
+	bool StaticForgeBuilder::WriteIndex(ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) const {
 		const uint64_t indexEntrySize = Internal::GetIndexEntrySize();
+
+		if (m_isDebugActive) {
+			std::cout << "index (" + std::to_string(archive.files.size()) + "):" << std::endl;
+		}
 
 		for (size_t i = 0; i < archive.files.size(); i++) {
 			auto& fe = archive.files[i];
 
 			Internal::StaticForgeIndexEntry e{};
 			e.hashName = fe.hashName;
-			e.offset = fe.blockOffset;
-			e.size = fe.alignedSize;
+			e.fileOffset = fe.blockOffset;
+			e.fileSize = fe.alignedFileSize;
 			e.checksum = 0;
 
 			fe.indexOffset = stream.tellp();
@@ -429,15 +448,31 @@ namespace StaticForge {
 					return false;
 				}
 			}
+
+			if (m_isDebugActive) {
+				std::cout << "  entry " << i << ":" << std::endl;
+				std::cout << "  - offset: " << fe.indexOffset << std::endl;
+				std::cout << "  - size: " << indexEntrySize << std::endl;
+			}
+		}
+
+		if (m_isDebugActive) {
+			std::cout << std::endl;
 		}
 
 		return true;
 	}
 
-	bool StaticForgeBuilder::WriteData(const ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) {
+	bool StaticForgeBuilder::WriteData(const ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) const {
 		constexpr uint64_t blockSize = Internal::ALIGNMENT_FILE;// 4096
 
-		for (auto& f : archive.files) {
+		if (m_isDebugActive) {
+			std::cout << "data (" + std::to_string(archive.files.size()) + "):" << std::endl;
+		}
+
+		for (size_t i = 0; i < archive.files.size(); i++) {
+			auto& f = archive.files[i];
+
 			// load file
 			std::ifstream fileStream(f.filepath, std::ios::binary);
 			if (!fileStream.is_open()) {
@@ -470,7 +505,7 @@ namespace StaticForge {
 			}
 
 			// add padding
-			uint64_t padding = f.alignedSize - f.size;
+			uint64_t padding = f.alignedFileSize - f.fileSize;
 			if (padding > 0) {
 				std::vector<char> pad(padding, 0);
 				stream.write(pad.data(), padding);
@@ -495,7 +530,19 @@ namespace StaticForge {
 			);
 
 			stream.seekp(0, std::ios::end);
+
+			if (m_isDebugActive) {
+				std::cout << "  data " << i << ":" << std::endl;
+				std::cout << "  - offset: " << f.blockOffset<< std::endl;
+				std::cout << "  - size: " << f.alignedFileSize << std::endl;
+				std::cout << "  - checksum: " << checksum << std::endl;
+			}
 		}
+
+		if (m_isDebugActive) {
+			std::cout << std::endl;
+		}
+
 		return true;
 	}
 

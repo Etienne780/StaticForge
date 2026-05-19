@@ -18,7 +18,7 @@ namespace StaticForge {
 		INDEX
 		- hash/name		uint64_t
 		- offset		uint64_t
-		- size			uint64_t
+		- fileSize		uint64_t
 		- checksum		uint32_t
 
 		DATA BLOCKS
