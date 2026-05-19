@@ -1,6 +1,5 @@
 #include <iostream>
 #include <algorithm> 
-#include <functional>
 #include "Config.h"
 #include "ConsoleArgument.h"
 #include "ArgumentNames.h"
@@ -62,20 +61,24 @@ const std::string& Config::GetError() const {
 void Config::ProcessArgument(int* index, int count, char* argv[]) {
 	char* argName = argv[*index];
 
-	if (!(argName[0] == '-' && argName[1] == '-')) {
+	if (!IsArgumentFlag(argName)) {
 		AddError("Invalid argument at index " + std::to_string(*index) + ": '" + std::string(argName) + "'. Expected format '--name'!");
 		return;
 	}
 
 	std::string name = std::string(argName + 2);
-	std::string value = (*index + 1 >= count) 
-		? std::string(argv[*index]) 
-		: std::string(argv[*index + 1]);
+	std::string value;
 
-	EvaluateArgument(index, name, value);
+	if (*index + 1 < count && !IsArgumentFlag(argv[*index + 1])) {
+		value = std::string(argv[*index + 1]);
+		// increment index to skip value argument in outer for
+		*index += 1;
+	}
+
+	EvaluateArgument(name, value);
 }
 
-void Config::EvaluateArgument(int* index, const std::string& name, const std::string& value) {
+void Config::EvaluateArgument(const std::string& name, const std::string& value) {
 	using CAM = ConsoleArgumentManager;
 	
 	const ConsoleArgument* arg = CAM::FindArgument(name);
@@ -103,8 +106,10 @@ void Config::EvaluateArgument(int* index, const std::string& name, const std::st
 	}
 
 	if (arg->CanEvaluateValue()) {
-		// increment index to skip value argument in outer for
-		*index += 1;
+		if (value.empty()) {
+			AddError("Argument '" + name + "' requires a value");
+			return;
+		}
 
 		std::vector<std::string> values;
 		if (!TryGetValueList(value, &values)) {
@@ -279,6 +284,10 @@ void Config::ValidateConfig() {
 		if (m_outputAbsolPath.empty())
 			AddError("--output is missing for packing (--source is set)");
 	}
+}
+
+bool Config::IsArgumentFlag(const char* arg) {
+	return arg && arg[0] == '-' && (arg[1] == '-' || arg[1] != '\0');
 }
 
 std::string Config::TrimStr(const std::string& str) {

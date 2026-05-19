@@ -166,6 +166,8 @@ namespace StaticForge {
 		if (m_isDebugActive && dirToArchive.empty())
 			std::cout << "- none" << std::endl << std::endl;
 
+		m_archiveGroups.reserve(dirToArchive.size());
+
 		for (const auto& src : m_srcPaths) {
 			for (const auto& entry : fs::recursive_directory_iterator(src, fs::directory_options::skip_permission_denied)) {
 				std::error_code ec;
@@ -558,6 +560,8 @@ namespace StaticForge {
 				}
 			}
 
+			auto currentPos = stream.tellp();
+
 			// update checksum value
 			auto pos = f.indexOffset;
 			auto checksumPos =
@@ -581,7 +585,7 @@ namespace StaticForge {
 				writeLE(checksum);
 			}
 
-			stream.seekp(0, std::ios::end);
+			stream.seekp(currentPos);
 
 			if (m_isDebugActive) {
 				std::cout << "  data " << i << ":" << std::endl;

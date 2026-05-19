@@ -46,7 +46,7 @@ private:
 	bool m_verbosePrint = false;
 
 	void ProcessArgument(int* index, int count, char* argv[]);
-	void EvaluateArgument(int* index, const std::string& name, const std::string& value);
+	void EvaluateArgument(const std::string& name, const std::string& value);
 
 	void EvaluateFlagArgument(const ConsoleArgument* argument);
 	void* GetOuput(const ConsoleArgument* argument);
@@ -55,6 +55,7 @@ private:
 
 	void ValidateConfig();
 
+	static bool IsArgumentFlag(const char* arg);
 	static std::string TrimStr(const std::string& str);
 	void AddError(const std::string& error);
 };

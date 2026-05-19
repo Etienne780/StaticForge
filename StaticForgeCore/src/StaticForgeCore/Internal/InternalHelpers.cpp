@@ -1,4 +1,5 @@
 #include <sstream>
+#include <iomanip>
 #include "Internal/InternalHelpers.h"
 
 #if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__

@@ -16,6 +16,10 @@ namespace Actions {
         const auto& infoPath = config.GetInfoPath();
         if (infoPath.empty()) {
             std::cout << "No info path specified." << std::endl;
+            std::cout << std::endl;
+            std::cout << "Press any key to close" << std::endl;
+
+            std::cin.get();
             return false;
         }
 
@@ -23,6 +27,10 @@ namespace Actions {
         StaticForge::StaticForgeReader reader;
         if (!reader.Load(infoPath, &archive)) {
             std::cout << "Failed to load archive: " << reader.GetError() << std::endl;
+            std::cout << std::endl;
+            std::cout << "Press any key to close" << std::endl;
+
+            std::cin.get();
             return false;
         }
 
@@ -58,6 +66,10 @@ namespace Actions {
 
         if (!builder.Build()) {
             std::cout << "Build failed: " << builder.GetError() << std::endl;
+            std::cout << std::endl;
+            std::cout << "Press any key to close" << std::endl;
+
+            std::cin.get();
             return false;
         }
 
