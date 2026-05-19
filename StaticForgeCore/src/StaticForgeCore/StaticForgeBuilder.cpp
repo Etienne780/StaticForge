@@ -258,6 +258,11 @@ namespace StaticForge {
 			std::cout << std::endl;
 		}
 
+		if (m_archiveGroups.empty()) {
+			m_archiveGroups[m_archiveName] = {};
+			m_archiveGroups[m_archiveName].name = m_archiveName;
+		}
+
 		return true;
 	}
 
