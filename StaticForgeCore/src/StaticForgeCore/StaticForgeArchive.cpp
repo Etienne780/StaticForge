@@ -105,7 +105,7 @@ namespace StaticForge {
 		);
 
 		if (!m_stream) {
-			*errorOut = "Failed to read " + std::to_string(size) + " bytes at offset " + std::to_string(start);
+			*errorOut = "Failed to seek at offset " + std::to_string(start);
 			return false;
 		}
 
