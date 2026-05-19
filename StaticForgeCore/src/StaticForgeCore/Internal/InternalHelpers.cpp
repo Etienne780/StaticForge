@@ -21,6 +21,28 @@ namespace StaticForge::Internal {
 		return hash;
 	}
 
+	std::string NormalizeFilepathSlashes(const std::string& path) {
+		std::string result;
+		result.reserve(path.size());
+
+		char prev = '\0';
+
+		for (char c : path) {
+			if (c == '\\') {
+				c = '/';
+			}
+
+			if (c == '/' && prev == '/') {
+				continue;
+			}
+
+			result.push_back(c);
+			prev = c;
+		}
+
+		return result;
+	}
+
 	uint64_t AlignSize(uint64_t fileSize, uint64_t targetAligment) {
 		return (fileSize + targetAligment - 1) & ~(targetAligment - 1);
 	}

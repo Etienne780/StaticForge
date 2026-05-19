@@ -6,6 +6,8 @@ namespace StaticForge::Internal {
 
     uint32_t FNV1a(const void* data, size_t size, uint32_t hash = 2166136261u);
 
+	std::string NormalizeFilepathSlashes(const std::string path);
+
 	uint64_t AlignSize(uint64_t fileSize, uint64_t targetAligment);
 
 	uint64_t GetHeaderSize();

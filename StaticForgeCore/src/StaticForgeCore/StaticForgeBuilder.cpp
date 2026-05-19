@@ -208,7 +208,7 @@ namespace StaticForge {
 					archive.files.reserve(50);
 				}
 
-				std::string relpathStr = relativePath.u8string();
+				std::string relpathStr = Internal::NormalizeFilepathSlashes(relativePath.u8string());
 				uint64_t h = Internal::HashFilename(relpathStr);
 				if (archive.seenHashes.count(h)) {
 					*errorOut = "Hash collision: '" + relpathStr +

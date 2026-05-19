@@ -13,7 +13,7 @@ namespace StaticForge {
 	}
 
 	bool StaticForgeArchive::LoadAsset(const std::string& key, std::vector<std::byte>& outData) {
-		uint64_t h = Internal::HashFilename(key);
+		uint64_t h = Internal::HashFilename(Internal::NormalizeFilepathSlashes(key));
 		auto* entry = GetIndexEntry(h);
 		if (!entry) {
 			AddError("Failed to load asset, entry with key '" + key + "' not found");
