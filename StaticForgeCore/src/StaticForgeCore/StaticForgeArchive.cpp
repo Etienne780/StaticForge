@@ -104,6 +104,11 @@ namespace StaticForge {
 			std::ios::beg
 		);
 
+		if (!m_stream) {
+			*errorOut = "Failed to read " + std::to_string(size) + " bytes at offset " + std::to_string(start);
+			return false;
+		}
+
 		m_stream.read(
 			reinterpret_cast<char*>(outData.data()),
 			size
