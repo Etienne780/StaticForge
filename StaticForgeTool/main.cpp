@@ -1,16 +1,12 @@
 #include <iostream>
+#include <functional>
 #include <StaticForgeCore/StaticForge.h>
-#include "Config.h"
 #include "InitConsoleArguments.h"
+#include "ConsoleActions.h"
+#include "Config.h"
 
 int main(int argc, char** argv) {
 	std::cout << "======== StaticForgeTool v" << StaticForge::VERSION << " ========" << std::endl << std::endl;
-
-	std::cout << "arg count: " << argc << std::endl;
-	std::cout << "args: " << argc << std::endl;
-	for (int i = 0; i < argc; i++)
-		std::cout << "- " << argv[i] << std::endl;
-	std::cout << std::endl;
 
 	InitConsoleArguments();
 
@@ -24,29 +20,31 @@ int main(int argc, char** argv) {
 		return -1;
 	}
 
-	auto name = config.GetArchiveName();
-	StaticForge::StaticForgeBuilder builder{ (name.empty() ? "main" : name) };
-	builder
-		.SetSourcePath(config.GetSourcePaths())
-		.SetOutputPath(config.GetOutputPath())
-		.SetCreateOutputDir(config.GetCreateOutputDir())
-		.SetDebugMode(config.GetDebug());
+	ConfigMode mode = config.GetMode();
 
-	if (!builder.Build()) {
-		std::cout << builder.GetError() << std::endl;
+	// select action
+	std::function<bool(const Config&)> action = nullptr;
+	switch (mode) {
+	case ConfigMode::HELP:
+		action = Actions::Help;
+		break;
+	case ConfigMode::INFO:
+		action = Actions::Info;
+		break;
+	case ConfigMode::PACK:
+		action = Actions::Pack;
+		break;	
+	case ConfigMode::UNKNOWN:
+	default:
+		std::cout << "Invalid config" << std::endl;
 		std::cin;
 		return -1;
 	}
 
-	StaticForge::StaticForgeArchive archive;
-	StaticForge::StaticForgeReader reader;
-	if (!reader.Load(config.GetOutputPath() / "main.sfpak", &archive)) {
-		std::cout << reader.GetError() << std::endl;
-		std::cin;
+	// execute action
+	if (!action(config)) {
 		return -1;
 	}
-
-	std::cout << "Build was successful" << std::endl;
 
 	return 0;
 }

@@ -6,6 +6,10 @@ ConsoleArgument::ConsoleArgument(const std::string& name, const std::string& sho
 	: m_name(name), m_shortName(shortName), m_type(type) {
 }
 
+bool ConsoleArgument::CanEvaluateValue() const {
+	return m_evaluationFunc != nullptr;
+}
+
 void ConsoleArgument::EvaluateValue(const std::string& value, void* output) const {
 	m_evaluationFunc(value, output);
 }

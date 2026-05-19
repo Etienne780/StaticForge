@@ -8,7 +8,7 @@ enum class ConsoleArgType {
 	String,
 	Bool,
 	Int,
-	Float
+	None
 };
 
 class ConsoleArgument {
@@ -18,6 +18,8 @@ public:
 	ConsoleArgument() = default;
 	ConsoleArgument(const std::string& name, const std::string& shortName, ConsoleArgType type);
 	~ConsoleArgument() = default;
+
+	bool CanEvaluateValue() const;
 
 	void EvaluateValue(const std::string& value, void* output) const;
 
@@ -40,7 +42,7 @@ public:
 	ConsoleArgument& SetAllowMultiple(bool value);
 
 private:
-	EvalFunc m_evaluationFunc;
+	EvalFunc m_evaluationFunc = nullptr;
 	ConsoleArgType m_type;
 
 	std::string m_name;

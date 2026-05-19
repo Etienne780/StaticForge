@@ -30,11 +30,14 @@ namespace StaticForge {
 		const StaticForgePath& GetPath() const;
 		uint64_t GetVersion() const;
 		size_t GetFileCount() const;
+		uint64_t GetIndexOffset() const;
+		uint64_t GetIndexSize() const;
+		uint64_t GetDataOffset() const;
 
-		uint64_t GetHashName(size_t index) const;
-		uint64_t GetFileOffset(size_t index) const;
-		uint64_t GetFileSize(size_t index) const;
-		uint64_t GetFilePadding(size_t index) const;
+		uint64_t GetHashName(size_t fileIndex) const;
+		uint64_t GetFileOffset(size_t fileIndex) const;
+		uint64_t GetFileSize(size_t fileIndex) const;
+		uint64_t GetFilePadding(size_t fileIndex) const;
 
 	private:
 		StaticForgePath m_path;

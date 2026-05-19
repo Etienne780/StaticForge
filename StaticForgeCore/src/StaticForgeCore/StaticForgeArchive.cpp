@@ -54,6 +54,18 @@ namespace StaticForge {
 		return m_indexEntries.size();
 	}
 
+	uint64_t StaticForgeArchive::GetIndexOffset() const {
+		return m_header.indexOffset;
+	}
+
+	uint64_t StaticForgeArchive::GetIndexSize() const {
+		return m_header.indexSize;
+	}
+
+	uint64_t StaticForgeArchive::GetDataOffset() const {
+		return m_header.dataOffset;
+	}
+
 	uint64_t StaticForgeArchive::GetHashName(size_t index) const {
 		return m_indexEntries[index].hashName;
 	}

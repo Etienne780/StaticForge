@@ -46,7 +46,7 @@ namespace StaticForge {
 
 	bool StaticForgeReader::ValidatePackPath(const StaticForgePath& path, std::string* errorOut) {
 		if (!path.has_extension()) {
-			*errorOut = "path musst be a path to a file oder so";
+			*errorOut = "path musst be a path to a '" + std::string(PACK_FILE_EXTENSION) + "' file";
 			return false;
 		}
 

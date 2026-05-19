@@ -32,7 +32,18 @@ inline void InitConsoleArguments() {
 	auto& archiveNameArg = CAM::RegisterConsoleArgument(ArgName::ARCHIVE_NAME, ArgName::ARCHIVE_NAME_SHORTNAME, ConsoleArgType::String);
 	archiveNameArg.SetEvaluationFunction(stringParser);
 
-	auto& debugArg = CAM::RegisterConsoleArgument(ArgName::DEBUG_NAME, ArgName::DEBUG_NAME_SHORTNAME, ConsoleArgType::Bool);
-	debugArg.SetEvaluationFunction(boolParser);
+	auto& infoArg = CAM::RegisterConsoleArgument(ArgName::INFO, ArgName::INFO_SHORTNAME, ConsoleArgType::Filepath);
+	infoArg.SetEvaluationFunction(filepathParser);
 
+	auto& extractArg = CAM::RegisterConsoleArgument(ArgName::EXTRACT, ArgName::EXTRACT_SHORTNAME, ConsoleArgType::Filepath);
+	extractArg.SetEvaluationFunction(filepathParser);
+
+	auto& outdirArg = CAM::RegisterConsoleArgument(ArgName::OUTDIR, ArgName::OUTDIR_SHORTNAME, ConsoleArgType::Filepath);
+	outdirArg.SetEvaluationFunction(filepathParser);
+
+	auto& verboseArg = CAM::RegisterConsoleArgument(ArgName::VERBOSE, ArgName::VERBOSE_SHORTNAME, ConsoleArgType::Bool);
+	verboseArg.SetEvaluationFunction(boolParser);
+
+	auto& helpArg = CAM::RegisterConsoleArgument(ArgName::HELP, ArgName::HELP_SHORTNAME, ConsoleArgType::None);
+	
 }

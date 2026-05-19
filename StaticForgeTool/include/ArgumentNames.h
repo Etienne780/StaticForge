@@ -1,17 +1,17 @@
 #pragma once
 #include <string_view>
 
-/*
-
-| name   | short form | desc                                                | type		| optional	| default | allow multiple |
-|--------|------------|-----------------------------------------------------|-----------|-----------|---------|----------------|
-| source | src        | source path of the files that should be packed      | filepath	| false		| -		  | true           |
-| output | o          | output path for the packed file                     | filepath	| false		| -		  |	false          |
-| mkdir  | p          | create the output directory if it does not exist    | bool		| true		| false	  | false          |
-| name	 | n          | default archive name if no .sfpak.meta found		| string	| true		| "main"  | false          |
-| debug	 | d          | says if debug mode should be active					| bool		| true		| false	  | false          |
-																																
-*/
+const std::string_view HELP_MESSAGE = R"""(
+| name    | short | description                                                                | type     | default | allow multi |
+|---------|-------|----------------------------------------------------------------------------|----------|---------|-------------|
+| source  | src	  | Source path(s) of the files to be packed (can be specified multiple times) | filepath | -       | true        |
+| output  | o	  | Output path for the packed archive file                                    | filepath | -       | false       |
+| mkdir   | p	  | Create the output directory if it does not exist                           | bool     | false   | false       |
+| name    | n	  | Default archive name if no `.sfpak.meta` file is found                     | string   | "main"  | false       |
+| info    | i	  | Display header and index information of a `.sfpak` file (read-only mode)   | filepath | -       | false       |
+| verbose | v	  | Enable debug mode (verbose console output)                                 | bool     | false   | false       |
+| help    | h	  | Show this help message                                                     | -        | -       | false       |
+)""";
 
 
 namespace ArgName {
@@ -28,7 +28,19 @@ namespace ArgName {
 	const std::string_view ARCHIVE_NAME = "name";
 	const std::string_view ARCHIVE_NAME_SHORTNAME = "n";
 
-	const std::string_view DEBUG_NAME = "debug";
-	const std::string_view DEBUG_NAME_SHORTNAME = "d";
+	const std::string_view INFO = "info";
+	const std::string_view INFO_SHORTNAME = "i";
+
+	const std::string_view EXTRACT = "extract";
+	const std::string_view EXTRACT_SHORTNAME = "e";
+
+	const std::string_view OUTDIR = "outdir";
+	const std::string_view OUTDIR_SHORTNAME = "od";
+
+	const std::string_view VERBOSE = "verbose";
+	const std::string_view VERBOSE_SHORTNAME = "v";
+
+	const std::string_view HELP = "help";
+	const std::string_view HELP_SHORTNAME = "h";
 	
 }
