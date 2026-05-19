@@ -9,6 +9,8 @@ namespace StaticForge::Internal {
 	uint64_t GetHeaderSize();
 	uint64_t GetIndexEntrySize();
 
+	uint64_t HashFilename(const std::string& filename);
+
 	std::string GetFullExtension(const StaticForgePath& path);
 	std::string GetFormatedSizeStr(uint64_t bytes);
 }

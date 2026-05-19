@@ -18,7 +18,6 @@ namespace StaticForge {
 
 		// Alignment has to be a power of two (2^n) 
 		constexpr uint64_t ALIGNMENT_HEADER = 32;
-		constexpr uint64_t ALIGNMENT_INDEX_ENTRY = 32;
 		constexpr uint64_t ALIGNMENT_FILE = 4096;
 	
 		struct StaticForgeFileEntry {
@@ -26,9 +25,9 @@ namespace StaticForge {
 
 			uint64_t fileSize;
 			uint64_t blockOffset;
-			uint64_t alignedFileSize;
 			uint64_t hashName;
 			uint64_t indexOffset;
+			uint32_t filePadding;
 		};
 
 		// Order of the elements is important for the reading
@@ -46,8 +45,9 @@ namespace StaticForge {
 		struct StaticForgeIndexEntry {
 			uint64_t hashName;		/*< relative path gehashed e.g. "textures/background.png" -> hash */
 			uint64_t fileOffset;	/*< location of the start of the file */
-			uint64_t fileSize;		/*< size of the file aligend to ALIGNMENT_FILE */
+			uint64_t fileSize;		/*< original size of the file */
 			uint32_t checksum;		/*< hash created with the file data to validate its content on load */
+			uint32_t filePadding;	/*< padding needed to align to ALIGNMENT_FILE */
 		};
 	#pragma pack(pop)
 

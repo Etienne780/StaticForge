@@ -46,7 +46,7 @@ namespace StaticForge {
 		bool CheckFilepaths(std::string* errorOut);
 		bool ScanFiles(std::string* errorOut);
 		bool BuildGroups(std::string* errorOut);
-		bool BuildIndex(ArchiveGroup& archive, std::string* errorOut);
+		bool BuildIndex(ArchiveGroup& archive, std::string* errorOut) const;
 
 		bool WriteFile(ArchiveGroup& archive, std::string* errorOut) const;
 		bool WriteHeader(const ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) const;

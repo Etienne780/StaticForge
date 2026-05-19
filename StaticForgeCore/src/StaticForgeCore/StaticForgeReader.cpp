@@ -25,7 +25,7 @@ namespace StaticForge {
 
 		// open file
 		archiveOut->m_path = path;
-		archiveOut->m_stream.open(path, std::ios::binary);
+		archiveOut->OpenFileStream();
 		if (!archiveOut->m_stream.is_open()) {
 			AddError("Failed to open file");
 			return false;
@@ -64,7 +64,7 @@ namespace StaticForge {
 		return true;
 	}
 
-	bool StaticForgeReader::ReadHeader(StaticForgeArchive* archive, std::string* errorOut) {
+	bool StaticForgeReader::ReadHeader(StaticForgeArchive* archive, std::string* errorOut) const {
 		auto& stream = archive->m_stream;
 		auto& header = archive->m_header;
 		
@@ -95,15 +95,12 @@ namespace StaticForge {
 		return true;
 	}
 
-	bool StaticForgeReader::ReadIndex(StaticForgeArchive* archive, std::string* errorOut) {
+	bool StaticForgeReader::ReadIndex(StaticForgeArchive* archive, std::string* errorOut) const {
 		auto& stream = archive->m_stream;
 		auto& header = archive->m_header;
 
 		archive->m_indexEntries.reserve(header.fileCount);
 		archive->m_hashNameToEntry.reserve(header.fileCount);
-
-		const uint64_t indexEntrySize = Internal::GetIndexEntrySize();
-		const uint64_t indexEntryPadding = indexEntrySize - sizeof(Internal::StaticForgeIndexEntry);
 
 		const uint64_t start = header.indexOffset;
 		const uint64_t end = header.indexOffset + header.indexSize;
@@ -113,22 +110,13 @@ namespace StaticForge {
 		uint64_t fileCount = 0;
 
 		for (uint64_t i = 0; i < header.fileCount; i++) {
-			Internal::StaticForgeIndexEntry entry;
+			Internal::StaticForgeIndexEntry entry{};
 
 			stream.read(reinterpret_cast<char*>(&entry), sizeof(entry));
 
 			if (!stream) {
 				*errorOut = "Failed to read index entry " + std::to_string(i);
 				return false;
-			}
-
-			if (indexEntryPadding > 0) {
-				stream.seekg(indexEntryPadding, std::ios::cur);
-
-				if (!stream) {
-					*errorOut = "Failed to skip index padding at entry " + std::to_string(i);
-					return false;
-				}
 			}
 
 			archive->m_indexEntries.push_back(entry);

@@ -20,8 +20,8 @@ namespace StaticForge {
 		const uint64_t m_supportedVersion = 1;
 
 		bool ValidatePackPath(const StaticForgePath& path, std::string* errorOut);
-		bool ReadHeader(StaticForgeArchive* archive, std::string* errorOut);
-		bool ReadIndex(StaticForgeArchive* archive, std::string* errorOut);
+		bool ReadHeader(StaticForgeArchive* archive, std::string* errorOut) const;
+		bool ReadIndex(StaticForgeArchive* archive, std::string* errorOut) const;
 	};
 
 }

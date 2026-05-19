@@ -204,19 +204,19 @@ namespace StaticForge {
 				if (archive.name.empty())
 					archive.name = archiveName;
 
-				std::hash<std::string> strHash;
-				size_t h = strHash(relativePath.u8string());
+				std::string relpathStr = relativePath.u8string();
+				uint64_t h = Internal::HashFilename(relpathStr);
 				if (archive.seenHashes.count(h)) {
-					*errorOut = "Hash collision: '" + relativePath.u8string() +
+					*errorOut = "Hash collision: '" + relpathStr +
 						"' collides with '" + archive.seenHashes[h] + "'";
 					return false;
 				}
-				archive.seenHashes[h] = relativePath.u8string();
+				archive.seenHashes[h] = relpathStr;
 
 				Internal::StaticForgeFileEntry f{};
 				f.filepath = fullPath;
 				f.fileSize = fileSize;
-				f.alignedFileSize = Internal::AlignSize(fileSize, Internal::ALIGNMENT_FILE);
+				f.filePadding = static_cast<uint32_t>(Internal::AlignSize(fileSize, Internal::ALIGNMENT_FILE) - fileSize);
 				f.hashName = h;
 				f.blockOffset = 0;
 
@@ -247,7 +247,7 @@ namespace StaticForge {
 						<< "  - file: " << file.filepath.u8string() << std::endl
 						<< "      hash: " << file.hashName << std::endl
 						<< "      file size: " << file.fileSize << " bytes" << std::endl
-						<< "      aligned file size: " << file.alignedFileSize << " bytes" << std::endl;
+						<< "      aligned file size: " << file.fileSize + file.filePadding<< " bytes" << std::endl;
 				}
 
 				std::cout << std::endl;
@@ -278,7 +278,7 @@ namespace StaticForge {
 		return true;
 	}
 
-	bool StaticForgeBuilder::BuildIndex(ArchiveGroup& archive, std::string* errorOut) {
+	bool StaticForgeBuilder::BuildIndex(ArchiveGroup& archive, std::string* errorOut) const {
 		uint64_t sizeHeader = Internal::GetHeaderSize();
 		uint64_t sizeIndexEntry = Internal::GetIndexEntrySize();
 
@@ -302,7 +302,7 @@ namespace StaticForge {
 			auto& f = archive.files[i];
 
 			f.blockOffset = totalOffset;
-			totalOffset += f.alignedFileSize;
+			totalOffset += f.fileSize + f.filePadding;
 
 			if (m_isDebugActive) {
 				std::cout << "  path: " << f.filepath << std::endl;
@@ -425,7 +425,8 @@ namespace StaticForge {
 			Internal::StaticForgeIndexEntry e{};
 			e.hashName = fe.hashName;
 			e.fileOffset = fe.blockOffset;
-			e.fileSize = fe.alignedFileSize;
+			e.fileSize = fe.fileSize;
+			e.filePadding = fe.filePadding;
 			e.checksum = 0;
 
 			fe.indexOffset = stream.tellp();
@@ -438,18 +439,6 @@ namespace StaticForge {
 			if (stream.fail()) {
 				*errorOut = "Failed to write index!";
 				return false;
-			}
-
-			// add padding
-			uint64_t padding = indexEntrySize - sizeof(Internal::StaticForgeIndexEntry);
-			if (padding > 0) {
-				std::vector<char> pad(padding, 0);
-				stream.write(pad.data(), padding);
-
-				if (stream.fail()) {
-					*errorOut = "Failed to write data padding";
-					return false;
-				}
 			}
 
 			if (m_isDebugActive) {
@@ -527,7 +516,7 @@ namespace StaticForge {
 			}
 
 			// add padding
-			uint64_t padding = f.alignedFileSize - f.fileSize;
+			uint64_t padding = f.filePadding;
 			if (padding > 0) {
 				std::vector<char> pad(padding, 0);
 				stream.write(pad.data(), padding);
@@ -556,7 +545,9 @@ namespace StaticForge {
 			if (m_isDebugActive) {
 				std::cout << "  data " << i << ":" << std::endl;
 				std::cout << "  - offset: " << f.blockOffset<< std::endl;
-				std::cout << "  - size: " << f.alignedFileSize << std::endl;
+				std::cout << "  - file size: " << f.fileSize << std::endl;
+				std::cout << "  - file padding: " << f.filePadding << std::endl;
+				std::cout << "  - file aligned size: " << f.fileSize + f.filePadding << std::endl;
 				std::cout << "  - checksum: " << checksum << std::endl;
 			}
 		}

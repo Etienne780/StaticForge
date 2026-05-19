@@ -1,4 +1,5 @@
 #include <sstream>
+#include <xstring>
 #include "Internal/InternalHelpers.h"
 
 namespace StaticForge::Internal {
@@ -12,7 +13,12 @@ namespace StaticForge::Internal {
 	}
 
 	uint64_t GetIndexEntrySize() {
-		return AlignSize(static_cast<uint64_t>(sizeof(Internal::StaticForgeIndexEntry)), ALIGNMENT_INDEX_ENTRY);
+		return sizeof(StaticForgeIndexEntry);
+	}
+
+	uint64_t HashFilename(const std::string& filename) {
+		static std::hash<std::string> strHash;
+		return strHash(filename);
 	}
 
 	std::string GetFullExtension(const StaticForgePath& path) {

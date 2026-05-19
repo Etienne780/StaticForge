@@ -14,14 +14,18 @@ namespace StaticForge {
 	friend class StaticForgeReader;
 	public:
 		StaticForgeArchive();
-		~StaticForgeArchive() = default;
+		~StaticForgeArchive();
 
 		StaticForgeArchive(StaticForgeArchive&&) noexcept = default;
 		StaticForgeArchive& operator=(StaticForgeArchive&&) noexcept = default;
 		StaticForgeArchive(const StaticForgeArchive&) = delete;
 		StaticForgeArchive& operator=(const StaticForgeArchive&) = delete;
 
-		bool LoadAsset(uint64_t hash, std::vector<std::byte>& outData);
+		bool LoadAsset(const std::string& key, std::vector<std::byte>& outData);
+
+		bool OpenFileStream();
+		void CloseFileStream();
+		bool IsFileStreamOpen();
 
 	private:
 		StaticForgePath m_path;
@@ -31,6 +35,9 @@ namespace StaticForge {
 		std::vector<Internal::StaticForgeIndexEntry> m_indexEntries;
 		std::unordered_map<uint64_t, size_t> m_hashNameToEntry;
 		
+		bool LoadEntry(Internal::StaticForgeIndexEntry* entry, std::vector<std::byte>& outData, std::string* errorOut);
+		
+		Internal::StaticForgeIndexEntry* GetIndexEntry(uint64_t hash);
 	};
 
 }
