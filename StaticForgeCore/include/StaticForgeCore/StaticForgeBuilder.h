@@ -22,6 +22,7 @@ namespace StaticForge {
 		StaticForgeBuilder& SetOutputPath(const StaticForgePath& path);
 		StaticForgeBuilder& SetCreateOutputDir(bool value);
 		StaticForgeBuilder& SetDebugMode(bool active);
+		StaticForgeBuilder& SetStoreName(bool active);
 
 	private:
 		struct ArchiveGroup {
@@ -29,8 +30,11 @@ namespace StaticForge {
 			std::vector<Internal::StaticForgeFileEntry> files;
 			std::unordered_map<size_t, std::string> seenHashes;
 
-			uint64_t totalArchiveSize = 0;// gets set will building index
+			uint64_t totalArchiveSize = 0;// gets set will building index and optionally updated will building name table
 			uint64_t dataStart = 0;
+
+			uint64_t nameTableStart = 0;
+			uint64_t nameStringDataStart = 0;
 		};
 
 		std::string m_archiveName;
@@ -38,20 +42,21 @@ namespace StaticForge {
 		StaticForgePath m_outputPath;
 		bool m_createOutputDir = false;
 		bool m_isDebugActive = false;
+		bool m_storeName = false;
 
 		std::unordered_map<std::string, ArchiveGroup> m_archiveGroups;
-
-		uint64_t m_totalArchiveSize = 0;// gets set will building index
 
 		bool CheckFilepaths(std::string* errorOut);
 		bool ScanFiles(std::string* errorOut);
 		bool BuildGroups(std::string* errorOut);
-		bool BuildIndex(ArchiveGroup& archive, std::string* errorOut) const;
+		void BuildIndex(ArchiveGroup& archive) const;
+		void BuildNameTable(ArchiveGroup& archive) const;
 
 		bool WriteFile(ArchiveGroup& archive, std::string* errorOut) const;
 		bool WriteHeader(const ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) const;
 		bool WriteIndex(ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) const;
 		bool WriteData(const ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) const;
+		bool WriteNameTable(const ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) const;
 
 
 		std::string StaticForgeBuilder::ResolveArchive(

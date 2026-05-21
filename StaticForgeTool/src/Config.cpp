@@ -54,6 +54,10 @@ bool Config::GetVerbosePrint() const {
 	return m_verbosePrint;
 }
 
+bool Config::GetStoreName() const {
+	return m_storeName;
+}
+
 const std::string& Config::GetError() const {
 	return m_error;
 }
@@ -166,6 +170,10 @@ void* Config::GetOutput(const ConsoleArgument* arg) {
 
 	if (arg->GetName() == ArgName::VERBOSE) {
 		return static_cast<void*>(&m_verbosePrint);
+	}
+
+	if (arg->GetName() == ArgName::STORE_NAME) {
+		return static_cast<void*>(&m_storeName);
 	}
 
 	return nullptr;

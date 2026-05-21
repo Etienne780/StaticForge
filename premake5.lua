@@ -61,7 +61,6 @@ end
 
 include "StaticForgeCore"
 include "StaticForgeTool"
-include "StaticForgeRuntime"
 
 --------------------------------------------------------
 -- Custom clean action

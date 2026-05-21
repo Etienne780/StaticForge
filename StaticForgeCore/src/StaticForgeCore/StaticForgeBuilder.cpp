@@ -65,6 +65,11 @@ namespace StaticForge {
 		return *this;
 	}
 
+	StaticForgeBuilder& StaticForgeBuilder::SetStoreName(bool active) {
+		m_storeName = active;
+		return *this;
+	}
+
 	bool StaticForgeBuilder::CheckFilepaths(std::string* errorOut) {
 		if (m_isDebugActive) {
 			std::cout << Internal::CONSOLE_SEPERATOR << std::endl;
@@ -219,6 +224,7 @@ namespace StaticForge {
 
 				Internal::StaticForgeFileEntry f{};
 				f.filepath = fullPath;
+				f.relativeFilepath = relpathStr;
 				f.fileSize = fileSize;
 				f.filePadding = static_cast<uint32_t>(Internal::AlignSize(fileSize, Internal::ALIGNMENT_FILE) - fileSize);
 				f.hashName = h;
@@ -273,10 +279,10 @@ namespace StaticForge {
 		std::string error;
 
 		for (auto& [archiveName, archive] : m_archiveGroups) {
-			if (!BuildIndex(archive, &error)) {
-				*errorOut = "BuildIndex of group '" + archiveName + "': " + error;
-				return false;
-			}
+			BuildIndex(archive);
+
+			if (m_storeName)
+				BuildNameTable(archive);
 
 			if (!WriteFile(archive, &error)) {
 				*errorOut = "WriteFile of group '" + archiveName + "': " + error;
@@ -287,7 +293,7 @@ namespace StaticForge {
 		return true;
 	}
 
-	bool StaticForgeBuilder::BuildIndex(ArchiveGroup& archive, std::string* errorOut) const {
+	void StaticForgeBuilder::BuildIndex(ArchiveGroup& archive) const {
 		uint64_t sizeHeader = Internal::GetHeaderSize();
 		uint64_t sizeIndexEntry = Internal::GetIndexEntrySize();
 
@@ -302,7 +308,7 @@ namespace StaticForge {
 
 		if (m_isDebugActive) {
 			std::cout << Internal::CONSOLE_SEPERATOR << std::endl;
-			std::cout << "Building index tabel for archive '" << archive.name << "(" << archive.files.size() << ")'" << std::endl;
+			std::cout << "Building index table for archive '" << archive.name << "(" << archive.files.size() << ")'" << std::endl;
 			std::cout << Internal::CONSOLE_SEPERATOR << std::endl;
 			std::cout << "entrys:" << std::endl;
 		}
@@ -325,8 +331,19 @@ namespace StaticForge {
 			std::cout << "total size: " << totalOffset << " bytes" << std::endl;
 			std::cout << std::endl;
 		}
+	}
 
-		return true;
+	void StaticForgeBuilder::BuildNameTable(ArchiveGroup& archive) const {
+		archive.nameTableStart = archive.totalArchiveSize;
+
+		archive.totalArchiveSize +=
+			sizeof(Internal::StaticForgeNameTableHeader) +
+			sizeof(Internal::StaticForgeNameTableEntry) * archive.files.size();
+
+		archive.nameStringDataStart = archive.totalArchiveSize;
+		
+		for (auto& f : archive.files)
+			archive.totalArchiveSize += f.relativeFilepath.u8string().size();
 	}
 
 	bool StaticForgeBuilder::WriteFile(ArchiveGroup& archive, std::string* errorOut) const {
@@ -371,6 +388,14 @@ namespace StaticForge {
 			*errorOut = "WriteData: " + error;
 			stream.close();
 			return false;
+		}
+
+		if (archive.nameTableStart != 0) {
+			if (!WriteNameTable(archive, stream, &error)) {
+				*errorOut = "WriteNameTable: " + error;
+				stream.close();
+				return false;
+			}
 		}
 
 		stream.close();
@@ -609,6 +634,10 @@ namespace StaticForge {
 		}
 
 		return true;
+	}
+
+	bool StaticForgeBuilder::WriteNameTable(const ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) const {
+		
 	}
 
 	std::string StaticForgeBuilder::ResolveArchive(

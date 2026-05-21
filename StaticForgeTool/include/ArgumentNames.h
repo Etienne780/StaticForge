@@ -11,8 +11,10 @@ const std::string_view HELP_MESSAGE = R"""(
 | info    | i	  | Display header and index information of a `.sfpak` file (read-only mode)   | filepath | -       | false       |
 | verbose | v	  | Enable debug mode (verbose console output)                                 | bool     | false   | false       |
 | help    | h	  | Show this help message                                                     | -        | -       | false       |
+| store-  | sn	  | Stores the file names for better debuging                                  | bool     | false   | false       |
+| Names   | 	  |                                                                            |          |         |             | 
 )""";
-
+// --store-names
 
 namespace ArgName {
 	
@@ -42,5 +44,8 @@ namespace ArgName {
 
 	const std::string_view HELP = "help";
 	const std::string_view HELP_SHORTNAME = "h";
+
+	const std::string_view STORE_NAME = "storename";
+	const std::string_view STORE_NAME_SHORTNAME = "sn";
 	
 }
