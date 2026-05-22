@@ -11,7 +11,7 @@ namespace StaticForge::Internal {
 		inline constexpr char ASSIGN = '=';
 		inline constexpr char SEPERATOR = ',';
 		inline constexpr char DELIMITER = ';';
-		inline constexpr char COMMENT = ':';
+		inline constexpr char COMMENT = '#';
 
 	}
 
