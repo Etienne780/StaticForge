@@ -375,33 +375,12 @@ namespace StaticForge::Internal {
 	}
 
 	bool StaticForgeMeta::TryGetIdentifierSuggestions(const std::string& name, std::string* outSuggestion) {
-		constexpr size_t maxOffChars = 3;
 		const std::string suggestionPrefix = "Did you mean ";
 		
 		const auto& metaParams = GetAllMetaParams();
 
 		for (const auto& [other, _] : metaParams) {
-			size_t nameSize = name.size();
-			size_t otherSize = other.size();
-
-			size_t maxSize = std::max(nameSize, otherSize);
-			size_t minSize = std::min(nameSize, otherSize);
-
-			size_t lengthDiff = maxSize - minSize;
-
-			if (lengthDiff > maxOffChars)
-				continue;
-
-			size_t offChars = 0;
-			for (size_t i = 0; i < minSize; i++) {
-				if (name[i] != other[i])
-					offChars++;
-
-				if (offChars > maxOffChars)
-					break;
-			}
-
-			if (minSize == 0 || offChars >= minSize - 1)
+			if (!MatchesSuggestion(name, other))
 				continue;
 
 			*outSuggestion = suggestionPrefix + "'" + other + "'?";

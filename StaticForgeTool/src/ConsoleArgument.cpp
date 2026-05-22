@@ -22,9 +22,28 @@ bool ConsoleArgument::TryGetSuggestionMessage(const std::string& other, std::str
 	constexpr size_t maxOffChars = 3;
 	const std::string suggestionPrefix = "Did you mean ";
 
+	auto normalizeName = [](std::string str) -> std::string {
+		std::string out;
+		out.reserve(str.size());
+
+		for (char c : str) {
+			// Ignore separators
+			if (c == '-' || c == '_' || c == ' ')
+				continue;
+
+			// Case insensitive compare
+			out += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+		}
+
+		return out;
+	};
+
 	auto checkName = [&](const std::string& name, const std::string& other) -> bool {
-		size_t nameSize = name.size();
-		size_t otherSize = other.size();
+		std::string a = normalizeName(name);
+		std::string b = normalizeName(other);
+		
+		size_t nameSize = a.size();
+		size_t otherSize = b.size();
 		
 		size_t maxSize = std::max(nameSize, otherSize);
 		size_t minSize = std::min(nameSize, otherSize);
@@ -36,7 +55,7 @@ bool ConsoleArgument::TryGetSuggestionMessage(const std::string& other, std::str
 
 		size_t offChars = 0;
 		for (size_t i = 0; i < minSize; i++) {
-			if (name[i] != other[i])
+			if (a[i] != b[i])
 				offChars++;
 
 			if(offChars > maxOffChars)

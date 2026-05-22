@@ -8,6 +8,8 @@ namespace StaticForge::Internal {
 
 	std::string NormalizeFilepathSlashes(const std::string& path);
 
+	bool MatchesSuggestion(const std::string input, const std::string& suggestion);
+
 	bool IsPowerOfTwoU64(uint64_t value);
 
 	bool SafeAddU64(uint64_t a, uint64_t b, uint64_t* out);

@@ -37,6 +37,54 @@ namespace StaticForge::Internal {
 		return result;
 	}
 
+	bool MatchesSuggestion(const std::string input, const std::string& suggestion) {
+		constexpr size_t maxOffChars = 3;
+
+		auto normalizeName = [](std::string str) -> std::string {
+			std::string out;
+			out.reserve(str.size());
+
+			for (char c : str) {
+				// Ignore separators
+				if (c == '-' || c == '_' || c == ' ')
+					continue;
+
+				// Case insensitive compare
+				out += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+			}
+
+			return out;
+		};
+
+		std::string a = normalizeName(input);
+		std::string b = normalizeName(suggestion);
+
+		size_t nameSize = a.size();
+		size_t otherSize = b.size();
+
+		size_t maxSize = std::max(nameSize, otherSize);
+		size_t minSize = std::min(nameSize, otherSize);
+
+		size_t lengthDiff = maxSize - minSize;
+
+		if (lengthDiff > maxOffChars)
+			return false;
+
+		size_t offChars = 0;
+		for (size_t i = 0; i < minSize; i++) {
+			if (a[i] != b[i])
+				offChars++;
+
+			if (offChars > maxOffChars)
+				return false;
+		}
+
+		if (minSize == 0 || offChars >= minSize - 1)
+			return false;
+
+		return true;
+	}
+
 	bool IsPowerOfTwoU64(uint64_t value) {
 		return value != 0 && (value & (value - 1)) == 0;
 	}
