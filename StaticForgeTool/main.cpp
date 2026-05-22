@@ -16,10 +16,6 @@ int main(int argc, char** argv) {
 
 	if (!config.IsValid()) {
 		std::cout << config.GetError() << std::endl;
-#ifdef _WIN32
-		std::cout << "Press Enter to exit..." << std::endl;
-		std::cin.get();
-#endif
 		return -1;
 	}
 
@@ -45,10 +41,6 @@ int main(int argc, char** argv) {
 
 	// execute action
 	if (!action(config)) {
-#ifdef _WIN32
-		std::cout << "Press Enter to exit..." << std::endl;
-		std::cin.get();
-#endif
 		return -1;
 	}
 
