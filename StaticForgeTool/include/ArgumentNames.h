@@ -40,9 +40,6 @@ namespace ArgName {
 	const std::string_view INFO = "info";
 	const std::string_view INFO_SHORTNAME = "i";
 
-	const std::string_view EXTRACT = "extract";
-	const std::string_view EXTRACT_SHORTNAME = "e";
-
 	const std::string_view OUTDIR = "outdir";
 	const std::string_view OUTDIR_SHORTNAME = "od";
 
