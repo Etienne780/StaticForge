@@ -18,6 +18,7 @@ namespace StaticForge::Internal {
 		const StaticForgePath& GetPath() const;
 		const std::string& GetArchiveName() const;
 		std::vector<std::string> GetExcludedExtensions() const;
+		bool GetStoreNames() const;
 
 	private:
 		struct ParserContext {
@@ -34,6 +35,7 @@ namespace StaticForge::Internal {
 		StaticForgePath m_path;
 		// a list of bools needs to be from type uint8_t because microsoft is cool
 		std::string m_archiveName;
+		bool m_storeNames = false;
 		std::vector<std::string> m_excludedExtensions;
 
 		bool CheckFilepath(std::string* errorOut) const;

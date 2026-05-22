@@ -2,6 +2,11 @@
 #include <string_view>
 
 const std::string_view HELP_MESSAGE = R"""(
+Pattern:
+	--name value ... (value can be optional);
+
+Commands:
+|---------|-------|----------------------------------------------------------------------------|----------|---------|-------------|
 | name    | short | description                                                                | type     | default | allow multi |
 |---------|-------|----------------------------------------------------------------------------|----------|---------|-------------|
 | source  | src	  | Source path(s) of the files to be packed (can be specified multiple times) | filepath | -       | true        |
@@ -12,7 +17,9 @@ const std::string_view HELP_MESSAGE = R"""(
 | verbose | v	  | Enable debug mode (verbose console output)                                 | bool     | false   | false       |
 | help    | h	  | Show this help message                                                     | -        | -       | false       |
 | store-  | sn	  | Stores the file names for better debuging                                  | bool     | false   | false       |
-| Names   | 	  |                                                                            |          |         |             | 
+| names   | 	  |                                                                            |          |         |             | 
+|---------|-------|----------------------------------------------------------------------------|----------|---------|-------------|
+
 )""";
 // --store-names
 
@@ -45,7 +52,7 @@ namespace ArgName {
 	const std::string_view HELP = "help";
 	const std::string_view HELP_SHORTNAME = "h";
 
-	const std::string_view STORE_NAME = "storename";
-	const std::string_view STORE_NAME_SHORTNAME = "sn";
+	const std::string_view STORE_NAMES = "storenames";
+	const std::string_view STORE_NAMES_SHORTNAME = "sn";
 	
 }

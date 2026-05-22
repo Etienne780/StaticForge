@@ -6,7 +6,7 @@
 
 Config::Config(int count, char* argv[]) {
 	if (count == 0) {
-		AddError("Invalid number of arguments: number of arguments '" + std::to_string(count) + "'!");
+		AddError("Invalid number of arguments write --help for more information: number of arguments '" + std::to_string(count) + "'!");
 		return;
 	}
 
@@ -54,8 +54,8 @@ bool Config::GetVerbosePrint() const {
 	return m_verbosePrint;
 }
 
-bool Config::GetStoreName() const {
-	return m_storeName;
+bool Config::GetStoreNames() const {
+	return m_storeNames;
 }
 
 const std::string& Config::GetError() const {
@@ -172,8 +172,8 @@ void* Config::GetOutput(const ConsoleArgument* arg) {
 		return static_cast<void*>(&m_verbosePrint);
 	}
 
-	if (arg->GetName() == ArgName::STORE_NAME) {
-		return static_cast<void*>(&m_storeName);
+	if (arg->GetName() == ArgName::STORE_NAMES) {
+		return static_cast<void*>(&m_storeNames);
 	}
 
 	return nullptr;
@@ -256,7 +256,7 @@ void Config::ValidateConfig() {
 			AddError("Cannot set archive name while printing help");
 		if (m_verbosePrint)
 			AddError("Cannot set verbose while printing help");
-		if (m_storeName)
+		if (m_storeNames)
 			AddError("Cannot set store name while printing help");
 		break;
 
@@ -269,7 +269,7 @@ void Config::ValidateConfig() {
 			AddError("--mkdir cannot be used with --info");
 		if (m_archiveName != "main")
 			AddError("--name cannot be used with --info");
-		if (m_storeName)
+		if (m_storeNames)
 			AddError("--storename cannot be used with --info");
 		// --verbose
 		break;

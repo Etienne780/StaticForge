@@ -37,6 +37,7 @@ namespace StaticForge {
 		struct StaticForgeMetaData {
 			std::string archiveName;
 			std::vector<std::string> excludedExtensions;
+			bool storeNames = false;
 		};
 
 		// Order of the elements is important for the reading

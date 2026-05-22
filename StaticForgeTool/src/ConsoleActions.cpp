@@ -62,7 +62,7 @@ namespace Actions {
             .SetOutputPath(config.GetOutputPath())
             .SetCreateOutputDir(config.GetCreateOutputDir())
             .SetDebugMode(config.GetVerbosePrint())
-            .SetStoreName(config.GetStoreName());
+            .SetStoreNames(config.GetStoreNames());
 
         if (!builder.Build()) {
             std::cout << "Build failed: " << builder.GetError() << std::endl;

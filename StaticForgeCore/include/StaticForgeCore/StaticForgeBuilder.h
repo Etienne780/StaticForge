@@ -22,11 +22,12 @@ namespace StaticForge {
 		StaticForgeBuilder& SetOutputPath(const StaticForgePath& path);
 		StaticForgeBuilder& SetCreateOutputDir(bool value);
 		StaticForgeBuilder& SetDebugMode(bool active);
-		StaticForgeBuilder& SetStoreName(bool active);
+		StaticForgeBuilder& SetStoreNames(bool active);
 
 	private:
 		struct ArchiveGroup {
 			std::string name;
+			bool storeNames = false;
 			std::vector<Internal::StaticForgeFileEntry> files;
 			std::unordered_map<size_t, std::string> seenHashes;
 
@@ -43,7 +44,7 @@ namespace StaticForge {
 		StaticForgePath m_outputPath;
 		bool m_createOutputDir = false;
 		bool m_isDebugActive = false;
-		bool m_storeName = false;
+		bool m_storeNames = false;
 
 		std::unordered_map<std::string, ArchiveGroup> m_archiveGroups;
 

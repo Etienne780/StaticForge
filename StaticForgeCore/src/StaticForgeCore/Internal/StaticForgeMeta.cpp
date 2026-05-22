@@ -62,6 +62,10 @@ namespace StaticForge::Internal {
 		return result;
 	}
 
+	bool StaticForgeMeta::GetStoreNames() const {
+		return m_storeNames;
+	}
+
 	bool StaticForgeMeta::CheckFilepath(std::string* errorOut) const {
 		if (!std::filesystem::exists(m_path)) {
 			*errorOut =
@@ -346,6 +350,10 @@ namespace StaticForge::Internal {
 			return static_cast<void*>(&m_excludedExtensions);
 		}
 
+		if (name == MetaParams::STORE_NAME) {
+			return static_cast<void*>(&m_storeNames);
+		}
+
 		return nullptr;
 	}
 
@@ -409,6 +417,7 @@ namespace StaticForge::Internal {
 		m_path.clear();
 		m_archiveName.clear();
 		m_excludedExtensions.clear();
+		m_storeNames = false;
 	}
 
 }

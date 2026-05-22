@@ -27,7 +27,7 @@ public:
 	bool GetCreateOutputDir() const;
 	bool GetPrintHelp() const;
 	bool GetVerbosePrint() const;
-	bool GetStoreName() const;
+	bool GetStoreNames() const;
 
 	const std::string& GetError() const;
 
@@ -45,7 +45,7 @@ private:
 	bool m_createOutputDir = false;
 	bool m_printHelp = false;
 	bool m_verbosePrint = false;
-	bool m_storeName = false;
+	bool m_storeNames = false;
 
 	void ProcessArgument(int* index, int count, char* argv[]);
 	void EvaluateArgument(const std::string& name, const std::string& value);

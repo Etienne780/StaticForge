@@ -6,7 +6,7 @@
 #include "Config.h"
 
 int main(int argc, char** argv) {
-	std::cout << "======== StaticForgeTool v" << StaticForge::VERSION << " ========" << std::endl << std::endl;
+	std::cout << "======== StaticForgeTool v" << StaticForge::VERSION << " ========" << std::endl;
 
 	InitConsoleArguments();
 

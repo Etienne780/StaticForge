@@ -65,8 +65,8 @@ namespace StaticForge {
 		return *this;
 	}
 
-	StaticForgeBuilder& StaticForgeBuilder::SetStoreName(bool active) {
-		m_storeName = active;
+	StaticForgeBuilder& StaticForgeBuilder::SetStoreNames(bool active) {
+		m_storeNames = active;
 		return *this;
 	}
 
@@ -166,6 +166,7 @@ namespace StaticForge {
 				Internal::StaticForgeMetaData metaData{};
 				metaData.archiveName = archiveName;
 				metaData.excludedExtensions = metaBuilder.GetExcludedExtensions();
+				metaData.storeNames = metaBuilder.GetStoreNames();
 
 				dirToArchiveMeta[dir] = metaData;
 
@@ -225,6 +226,7 @@ namespace StaticForge {
 
 				if (archive.name.empty()) {
 					archive.name = archiveMeta.archiveName;
+					archive.storeNames = m_storeNames ? true : archiveMeta.storeNames;
 					archive.files.reserve(50);
 				}
 
@@ -306,7 +308,7 @@ namespace StaticForge {
 				return false;
 			}
 
-			if (m_storeName) {
+			if (archive.storeNames) {
 				if (!BuildNameTable(archive, &error)) {
 					*errorOut = "BuildNameTable of group '" + archiveName + "': " + error;
 					return false;
@@ -524,7 +526,7 @@ namespace StaticForge {
 			return false;
 		}
 
-		if (m_storeName) {
+		if (archive.storeNames) {
 			if (!WriteNameTable(archive, stream, &error)) {
 				*errorOut = "WriteNameTable: " + error;
 				stream.close();
@@ -557,7 +559,7 @@ namespace StaticForge {
 		h.indexOffset = headerSize;
 		h.indexSize = indexSize;
 		h.dataOffset = archive.dataStart;
-		h.nameTableHeaderOffset = m_storeName ? archive.nameTableStart : 0;
+		h.nameTableHeaderOffset = archive.storeNames ? archive.nameTableStart : 0;
 
 
 		if (Internal::IsLittleEndian()) {

@@ -19,6 +19,7 @@ namespace StaticForge::Internal {
 
 		AddParam(MetaParams::ARCHIVE, MType::String);
 		AddParam(MetaParams::EXCLUDE, MType::List, MType::String);
+		AddParam(MetaParams::STORE_NAME, MType::Bool);
 	}
 
 	const std::unordered_map<std::string, StaticForgeMetaParam>& GetAllMetaParams() {
