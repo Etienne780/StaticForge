@@ -20,7 +20,7 @@ namespace StaticForge {
 
 		INDEX
 		- hash/name		uint64_t
-		- fileOffset	uint64_t
+		- fileOffset	uint64_t -> HEADER.index offset + DATA BLOCKS
 		- fileSize		uint64_t
 		- filePadding	uint32_t
 		- checksum		uint32_t
@@ -32,15 +32,15 @@ namespace StaticForge {
 
 		[optional]
 		NAME TABLE HEADER
-		- entryOffset		uint64_t -> NAME TABLE ENTRYS
-		- stringDataOffset	uint64_t -> NAME TABLE STRING DATA
-		- stringDataSize	uint64_t 
+		- entry offset			uint64_t -> NAME TABLE ENTRYS
+		- string data offset	uint64_t -> NAME TABLE STRING DATA
+		- string data size		uint64_t 
 
 		[optional]
 		NAME TABLE ENTRYS
 		- hash			uint64_t
-		- nameLength	uint32_t
-		- nameOffset	uint64_t -> stringDataOffset + NAME TABLE STRING DATA
+		- name length	uint32_t
+		- name offset	uint64_t -> NAME TABLE HEADER.string dataoffset + NAME TABLE STRING DATA
 
 		[optional]
 		NAME TABLE STRING DATA

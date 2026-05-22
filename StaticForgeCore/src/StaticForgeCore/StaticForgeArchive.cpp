@@ -109,7 +109,7 @@ namespace StaticForge {
 			}
 		}
 
-		uint64_t start = entry->fileOffset;
+		uint64_t start = m_header.dataOffset + entry->fileOffset;
 		uint64_t size = entry->fileSize;
 
 		outData.resize(size);

@@ -298,13 +298,12 @@ namespace StaticForge {
 		uint64_t sizeIndexEntry = Internal::GetIndexEntrySize();
 
 		size_t fileEntryCount = archive.files.size();
-		uint64_t totalOffset =
+
+		archive.dataStart =
 			Internal::AlignSize(
 				sizeHeader + (static_cast<uint64_t>(fileEntryCount) * sizeIndexEntry),
 				Internal::ALIGNMENT_FILE
-			);
-
-		archive.dataStart = totalOffset;
+			);;
 
 		if (m_isDebugActive) {
 			std::cout << Internal::CONSOLE_SEPERATOR << std::endl;
@@ -313,6 +312,7 @@ namespace StaticForge {
 			std::cout << "entrys:" << std::endl;
 		}
 
+		uint64_t totalOffset = 0;
 		for (size_t i = 0; i < fileEntryCount; i++) {
 			auto& f = archive.files[i];
 
@@ -325,10 +325,10 @@ namespace StaticForge {
 			}
 		}
 
-		archive.totalArchiveSize = totalOffset;
+		archive.totalArchiveSize = archive.dataStart + totalOffset;
 
 		if (m_isDebugActive) {
-			std::cout << "total size: " << totalOffset << " bytes" << std::endl;
+			std::cout << "total size: " << archive.totalArchiveSize << " bytes" << std::endl;
 			std::cout << std::endl;
 		}
 	}
@@ -509,7 +509,6 @@ namespace StaticForge {
 				return false;
 			}
 			fe.indexOffset = static_cast<uint64_t>(pos);
-
 
 			if (Internal::IsLittleEndian()) {
 				stream.write(

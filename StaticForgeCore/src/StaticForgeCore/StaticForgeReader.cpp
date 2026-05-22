@@ -157,6 +157,9 @@ namespace StaticForge {
 		auto& stream = archive->m_stream;
 		auto& header = archive->m_header;
 
+		archive->m_indexToName.clear();
+		archive->m_indexToName.reserve(header.fileCount);
+
 		stream.seekg(header.nameTableHeaderOffset);
 		if (!stream) {
 			*errorOut = "Failed to seek to name table header offset";
