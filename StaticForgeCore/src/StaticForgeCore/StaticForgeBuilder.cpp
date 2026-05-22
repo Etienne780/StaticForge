@@ -123,7 +123,7 @@ namespace StaticForge {
 	bool StaticForgeBuilder::ScanFiles(std::string* errorOut) {
 		namespace fs = std::filesystem;
 		Internal::StaticForgeMeta metaBuilder;
-		std::unordered_map<StaticForgePath, std::string> dirToArchive;
+		std::unordered_map<std::string, std::string> dirToArchive;
 
 		if (m_isDebugActive) {
 			std::cout << Internal::CONSOLE_SEPERATOR << std::endl;
@@ -155,15 +155,21 @@ namespace StaticForge {
 					return false;
 				}
 
+				std::string dir = entry.path().parent_path().u8string();
+
+				auto it = dirToArchive.find(dir);
+				if (it != dirToArchive.end()) {
+					*errorOut = "Conflicting archive definitions in directory '" + dir + "'";
+					return false;
+				}
+				dirToArchive[dir] = archiveName;
+
 				if (m_isDebugActive) {
 					std::cout << "  meta file:" << std::endl;
 					std::cout << "  - path:" << fullPath << std::endl;
 					std::cout << "  - archiveName: " << archiveName << std::endl;
 					std::cout << std::endl;
 				}
-
-				StaticForgePath dir = entry.path().parent_path();
-				dirToArchive[dir] = metaBuilder.GetArchiveName();
 			}
 		}
 
@@ -487,7 +493,7 @@ namespace StaticForge {
 
 		if (m_isDebugActive) {
 			std::cout << Internal::CONSOLE_SEPERATOR << std::endl;
-			std::cout << "Writer for archive'" << archive.name << "(" << archive.files.size() << ")'" << std::endl;
+			std::cout << "Writer for archive '" << archive.name << "(" << archive.files.size() << ")'" << std::endl;
 			std::cout << Internal::CONSOLE_SEPERATOR << std::endl;
 		}
 
@@ -901,12 +907,12 @@ namespace StaticForge {
 
 	std::string StaticForgeBuilder::ResolveArchive(
 		const StaticForgePath& filePath,
-		const std::unordered_map<StaticForgePath, std::string>& dirToArchive
+		const std::unordered_map<std::string, std::string>& dirToArchive
 	) {
 		StaticForgePath dir = filePath.parent_path();
 
 		while (!dir.empty()) {
-			auto it = dirToArchive.find(dir);
+			auto it = dirToArchive.find(dir.u8string());
 			if (it != dirToArchive.end())
 				return it->second;
 

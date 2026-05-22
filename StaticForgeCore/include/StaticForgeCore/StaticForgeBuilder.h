@@ -66,7 +66,7 @@ namespace StaticForge {
 
 		std::string StaticForgeBuilder::ResolveArchive(
 			const StaticForgePath& filePath,
-			const std::unordered_map<StaticForgePath, std::string>& dirToArchive
+			const std::unordered_map<std::string, std::string>& dirToArchive
 		);
 		static bool IsEnoughSpaceAvailable(const StaticForgePath& path, uint64_t fileSize);
 
