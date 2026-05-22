@@ -22,13 +22,15 @@ namespace StaticForge {
 	
 		struct StaticForgeFileEntry {
 			StaticForgePath filepath;
-			StaticForgePath relativeFilepath; /*< normalized relative file name to the src dir */
+			std::string relativeUtf8;; /*< normalized relative file name to the src dir */
 
-			uint64_t fileSize;
-			uint64_t blockOffset;
-			uint64_t hashName;
-			uint64_t indexOffset;
-			uint32_t filePadding;
+			uint64_t fileSize = 0;
+			uint64_t blockOffset = 0;
+			uint64_t hashName = 0;
+			uint64_t indexOffset = 0;
+			uint32_t filePadding = 0;
+			uint32_t nameStrDataOffset = 0;
+			uint32_t nameStrDataLength = 0;
 		};
 
 		// Order of the elements is important for the reading

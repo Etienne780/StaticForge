@@ -256,6 +256,8 @@ void Config::ValidateConfig() {
 			AddError("Cannot set archive name while printing help");
 		if (m_verbosePrint)
 			AddError("Cannot set verbose while printing help");
+		if (m_storeName)
+			AddError("Cannot set store name while printing help");
 		break;
 
 	case ConfigMode::INFO:
@@ -267,6 +269,8 @@ void Config::ValidateConfig() {
 			AddError("--mkdir cannot be used with --info");
 		if (m_archiveName != "main")
 			AddError("--name cannot be used with --info");
+		if (m_storeName)
+			AddError("--storename cannot be used with --info");
 		// --verbose
 		break;
 

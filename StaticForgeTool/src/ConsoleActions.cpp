@@ -36,9 +36,16 @@ namespace Actions {
         if (config.GetVerbosePrint()) {
             std::cout << std::endl <<"Index entries:" << std::endl;
 
+            bool storeNames = archive.StoresNames();
+
             size_t count = archive.GetFileCount();
             for (size_t i = 0; i < count; ++i) {
-                std::cout << "  [" << i << "] hash: " << archive.GetHashName(i)
+                std::cout << "  [" << i << "] ";
+
+                if (storeNames)
+                    std::cout << "name: " << archive.GetName(i) << ", ";
+
+                std::cout << "hash: " << archive.GetHashName(i)
                     << ", offset: " << archive.GetFileOffset(i)
                     << ", size: " << archive.GetFileSize(i) 
                     << std::endl;

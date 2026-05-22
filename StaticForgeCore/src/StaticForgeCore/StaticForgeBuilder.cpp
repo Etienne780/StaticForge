@@ -224,7 +224,7 @@ namespace StaticForge {
 
 				Internal::StaticForgeFileEntry f{};
 				f.filepath = fullPath;
-				f.relativeFilepath = relpathStr;
+				f.relativeUtf8 = relpathStr;
 				f.fileSize = fileSize;
 				f.filePadding = static_cast<uint32_t>(Internal::AlignSize(fileSize, Internal::ALIGNMENT_FILE) - fileSize);
 				f.hashName = h;
@@ -334,6 +334,12 @@ namespace StaticForge {
 	}
 
 	void StaticForgeBuilder::BuildNameTable(ArchiveGroup& archive) const {
+		if (m_isDebugActive) {
+			std::cout << Internal::CONSOLE_SEPERATOR << std::endl;
+			std::cout << "Building name table offsets for archive '" << archive.name << "(" << archive.files.size() << ")'" << std::endl;
+			std::cout << Internal::CONSOLE_SEPERATOR << std::endl;
+		}
+
 		archive.nameTableStart = archive.totalArchiveSize;
 
 		archive.totalArchiveSize +=
@@ -342,8 +348,24 @@ namespace StaticForge {
 
 		archive.nameStringDataStart = archive.totalArchiveSize;
 		
-		for (auto& f : archive.files)
-			archive.totalArchiveSize += f.relativeFilepath.u8string().size();
+		uint32_t totalStrOffset = 0;
+		for (auto& f : archive.files) {
+			size_t strSize = f.relativeUtf8.size();
+			f.nameStrDataOffset = totalStrOffset;
+			f.nameStrDataLength = static_cast<uint32_t>(strSize);
+
+			totalStrOffset += static_cast<uint32_t>(strSize);
+			archive.totalArchiveSize += static_cast<uint64_t>(strSize);
+		}
+
+		archive.nameStringDataSize = archive.totalArchiveSize - archive.nameStringDataStart;
+
+		if (m_isDebugActive) {
+			std::cout << "total size: " << archive.totalArchiveSize << " bytes" << std::endl;
+			std::cout << "name table start: " << archive.nameTableStart << std::endl;
+			std::cout << "name data start: " << archive.nameStringDataStart << std::endl;
+			std::cout << std::endl;
+		}
 	}
 
 	bool StaticForgeBuilder::WriteFile(ArchiveGroup& archive, std::string* errorOut) const {
@@ -390,7 +412,7 @@ namespace StaticForge {
 			return false;
 		}
 
-		if (archive.nameTableStart != 0) {
+		if (m_storeName) {
 			if (!WriteNameTable(archive, stream, &error)) {
 				*errorOut = "WriteNameTable: " + error;
 				stream.close();
@@ -413,6 +435,7 @@ namespace StaticForge {
 		h.indexOffset = headerSize;
 		h.indexSize = indexSize;
 		h.dataOffset = archive.dataStart;
+		h.nameTableHeaderOffset = m_storeName ? archive.nameTableStart : 0;
 
 
 		if (Internal::IsLittleEndian()) {
@@ -433,6 +456,7 @@ namespace StaticForge {
 			writeLE(h.indexOffset);
 			writeLE(h.indexSize);
 			writeLE(h.dataOffset);
+			writeLE(h.nameTableHeaderOffset);
 		}
 
 		if (stream.fail()) {
@@ -463,7 +487,7 @@ namespace StaticForge {
 	}
 
 	bool StaticForgeBuilder::WriteIndex(ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) const {
-		const uint64_t indexEntrySize = Internal::GetIndexEntrySize();
+		const uint64_t indexEntrySize = sizeof(Internal::StaticForgeIndexEntry);
 
 		if (m_isDebugActive) {
 			std::cout << "index (" + std::to_string(archive.files.size()) + "):" << std::endl;
@@ -479,13 +503,18 @@ namespace StaticForge {
 			e.filePadding = fe.filePadding;
 			e.checksum = 0;
 
-			fe.indexOffset = stream.tellp();
+			auto pos = stream.tellp();
+			if (pos < 0) {
+				*errorOut = "tellp failed";
+				return false;
+			}
+			fe.indexOffset = static_cast<uint64_t>(pos);
 
 
 			if (Internal::IsLittleEndian()) {
 				stream.write(
 					reinterpret_cast<const char*>(&e),
-					sizeof(Internal::StaticForgeIndexEntry)
+					indexEntrySize
 				);
 			}
 			else {
@@ -502,7 +531,9 @@ namespace StaticForge {
 			}
 
 			if (stream.fail()) {
-				*errorOut = "Failed to write index!";
+				*errorOut = "Failed to write index at index'" 
+					+ std::to_string(i) + "' name='" 
+					+ fe.filepath.u8string() + "'";
 				return false;
 			}
 
@@ -637,7 +668,126 @@ namespace StaticForge {
 	}
 
 	bool StaticForgeBuilder::WriteNameTable(const ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) const {
+		std::string error;
+		if (!WriteNameTableHeader(archive, stream, &error)) {
+			*errorOut = "Header: " + error;
+			return false;
+		}
+
+		if (!WriteNameTableData(archive, stream, &error)) {
+			*errorOut = "Data: " + error;
+			return false;
+		}
+
+		if (!WriteNameTableStringData(archive, stream, &error)) {
+			*errorOut = "StringData: " + error;
+			return false;
+		}
+
+		return true;
+	}
+
+	bool StaticForgeBuilder::WriteNameTableHeader(const ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) const {
+		uint64_t headerSize = sizeof(Internal::StaticForgeNameTableHeader);
 		
+		Internal::StaticForgeNameTableHeader h{};
+		h.entryOffset = archive.nameTableStart + headerSize;
+		h.stringDataOffset = archive.nameStringDataStart;
+		h.stringDataSize = archive.nameStringDataSize;
+
+		if (Internal::IsLittleEndian()) {
+			stream.write(
+				reinterpret_cast<const char*>(&h),
+				headerSize
+			);
+		}
+		else {
+			auto writeLE = [&stream](auto value) {
+				auto le = Internal::SwapEndian(value);
+				stream.write(reinterpret_cast<const char*>(&le), sizeof(le));
+			};
+
+			writeLE(h.entryOffset);
+			writeLE(h.stringDataOffset);
+			writeLE(h.stringDataSize);
+		}
+
+		if (stream.fail()) {
+			*errorOut = "Failed to write header!";
+			return false;
+		}
+
+		if (m_isDebugActive) {
+			std::cout << "Name table header:" << std::endl;
+			std::cout << "  offset: " << archive.nameTableStart << std::endl;
+			std::cout << "  size: " << headerSize << std::endl;
+			std::cout << std::endl;
+		}
+
+		return true;
+	}
+
+	bool StaticForgeBuilder::WriteNameTableData(const ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) const {
+		if (m_isDebugActive) {
+			std::cout << "name table (" + std::to_string(archive.files.size()) + "):" << std::endl;
+		}
+		
+		for (size_t i = 0; i < archive.files.size(); i++) {
+			using Entry = Internal::StaticForgeNameTableEntry;
+			auto& f = archive.files[i];
+
+			Entry e{};
+			e.hash = f.hashName;
+			e.nameLength = f.nameStrDataLength;
+			e.nameOffset = f.nameStrDataOffset;
+
+			if (Internal::IsLittleEndian()) {
+				stream.write(
+					reinterpret_cast<const char*>(&e),
+					sizeof(Entry)
+				);
+			}
+			else {
+				auto writeLE = [&stream](auto value) {
+					auto le = Internal::SwapEndian(value);
+					stream.write(reinterpret_cast<const char*>(&le), sizeof(le));
+				};
+
+				writeLE(e.hash);
+				writeLE(e.nameLength);
+				writeLE(e.nameOffset);
+			}
+
+			if (stream.fail()) {
+				*errorOut = "Failed to write index at index'"
+					+ std::to_string(i) + "' name='"
+					+ f.filepath.u8string() + "'";
+				return false;
+			}
+		}
+		
+		return true;
+	}
+
+	bool StaticForgeBuilder::WriteNameTableStringData(const ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) const {
+		for (size_t i = 0; i < archive.files.size(); i++) {
+			auto& f = archive.files[i];
+			
+			std::string name = f.relativeUtf8;
+
+			stream.write(
+				name.data(),
+				name.size()
+			);
+
+			if (stream.fail()) {
+				*errorOut = "Failed to write string data at index'"
+					+ std::to_string(i) + "' name='"
+					+ f.filepath.u8string() + "'";
+				return false;
+			}
+		}
+		return true;
 	}
 
 	std::string StaticForgeBuilder::ResolveArchive(

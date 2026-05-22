@@ -22,6 +22,10 @@ namespace StaticForge {
 		bool ValidatePackPath(const StaticForgePath& path, std::string* errorOut);
 		bool ReadHeader(StaticForgeArchive* archive, std::string* errorOut) const;
 		bool ReadIndex(StaticForgeArchive* archive, std::string* errorOut) const;
+		bool ReadNameTable(StaticForgeArchive* archive, std::string* errorOut) const;
+
+		bool ReadLE64(std::ifstream& stream, uint64_t& out) const;
+		bool ReadLE32(std::ifstream& stream, uint32_t& out) const;
 	};
 
 }

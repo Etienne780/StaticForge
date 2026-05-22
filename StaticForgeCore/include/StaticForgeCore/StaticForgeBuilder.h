@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <string>
 #include <unordered_map>
 #include <string>
 #include <fstream>
@@ -35,6 +36,7 @@ namespace StaticForge {
 
 			uint64_t nameTableStart = 0;
 			uint64_t nameStringDataStart = 0;
+			uint64_t nameStringDataSize = 0;
 		};
 
 		std::string m_archiveName;
@@ -56,7 +58,11 @@ namespace StaticForge {
 		bool WriteHeader(const ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) const;
 		bool WriteIndex(ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) const;
 		bool WriteData(const ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) const;
+
 		bool WriteNameTable(const ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) const;
+		bool WriteNameTableHeader(const ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) const;
+		bool WriteNameTableData(const ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) const;
+		bool WriteNameTableStringData(const ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) const;
 
 
 		std::string StaticForgeBuilder::ResolveArchive(

@@ -38,8 +38,12 @@ namespace StaticForge {
 		m_stream.close();
 	}
 
-	bool StaticForgeArchive::IsFileStreamOpen() {
+	bool StaticForgeArchive::IsFileStreamOpen() const {
 		return m_stream.is_open();
+	}
+
+	bool StaticForgeArchive::StoresNames() const {
+		return m_header.nameTableHeaderOffset != 0;
 	}
 
 	const StaticForgePath& StaticForgeArchive::GetPath() const {
@@ -64,6 +68,17 @@ namespace StaticForge {
 
 	uint64_t StaticForgeArchive::GetDataOffset() const {
 		return m_header.dataOffset;
+	}
+
+	std::string StaticForgeArchive::GetName(size_t index) const {
+		if (!StoresNames())
+			return {};
+
+		auto it = m_indexToName.find(index);
+		if (it == m_indexToName.end())
+			return {};
+		
+		return it->second;
 	}
 
 	uint64_t StaticForgeArchive::GetHashName(size_t index) const {

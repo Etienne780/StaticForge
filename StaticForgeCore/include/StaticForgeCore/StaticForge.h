@@ -32,13 +32,15 @@ namespace StaticForge {
 
 		[optional]
 		NAME TABLE HEADER
-		- nameTableOffset	uint64_t -> NAME TABLE DATA		
+		- entryOffset		uint64_t -> NAME TABLE ENTRYS
+		- stringDataOffset	uint64_t -> NAME TABLE STRING DATA
+		- stringDataSize	uint64_t 
 
 		[optional]
-		NAME TABLE DATA
+		NAME TABLE ENTRYS
 		- hash			uint64_t
 		- nameLength	uint32_t
-		- nameOffset	uint64_t -> NAME TABLE STRING DATA
+		- nameOffset	uint64_t -> stringDataOffset + NAME TABLE STRING DATA
 
 		[optional]
 		NAME TABLE STRING DATA

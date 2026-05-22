@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <string>
 #include <unordered_map>
 #include <fstream>
 #include "StaticForgeTypes.h"
@@ -25,7 +26,8 @@ namespace StaticForge {
 
 		bool OpenFileStream();
 		void CloseFileStream();
-		bool IsFileStreamOpen();
+		bool IsFileStreamOpen() const;
+		bool StoresNames() const;
 
 		const StaticForgePath& GetPath() const;
 		uint64_t GetVersion() const;
@@ -34,6 +36,7 @@ namespace StaticForge {
 		uint64_t GetIndexSize() const;
 		uint64_t GetDataOffset() const;
 
+		std::string GetName(size_t fileIndex) const;
 		uint64_t GetHashName(size_t fileIndex) const;
 		uint64_t GetFileOffset(size_t fileIndex) const;
 		uint64_t GetFileSize(size_t fileIndex) const;
@@ -46,6 +49,7 @@ namespace StaticForge {
 		Internal::StaticForgeHeader m_header;
 		std::vector<Internal::StaticForgeIndexEntry> m_indexEntries;
 		std::unordered_map<uint64_t, size_t> m_hashNameToEntry;
+		std::unordered_map<size_t, std::string> m_indexToName;
 		
 		bool LoadEntry(Internal::StaticForgeIndexEntry* entry, std::vector<std::byte>& outData, std::string* errorOut);
 		

@@ -40,6 +40,13 @@ namespace StaticForge {
 			AddError("ReadIndex: " + error);
 			return false;
 		}
+
+		if (archiveOut->StoresNames()) {
+			if (!ReadNameTable(archiveOut, &error)) {
+				AddError("ReadNameTable: " + error);
+				return false;
+			}
+		}
 		
 		return true;
 	}
@@ -83,17 +90,7 @@ namespace StaticForge {
 			return false;
 		}
 
-		auto readLE64 = [&](uint64_t& out) {
-			uint64_t tmp = 0;
-			stream.read(reinterpret_cast<char*>(&tmp), sizeof(tmp));
-			if (stream.gcount() != sizeof(tmp)) 
-				return false;
-
-			out = Internal::IsLittleEndian() ? tmp : Internal::SwapEndian(tmp);
-			return true;
-		};
-
-		if (!readLE64(header.version)) {
+		if (!ReadLE64(stream, header.version)) {
 			*errorOut = "Failed to read header field 'version'";
 			return false;
 		}
@@ -104,10 +101,11 @@ namespace StaticForge {
 			return false;
 		}
 
-		if (!readLE64(header.fileCount) ||
-			!readLE64(header.indexOffset) ||
-			!readLE64(header.indexSize) ||
-			!readLE64(header.dataOffset)) {
+		if (!ReadLE64(stream, header.fileCount) ||
+			!ReadLE64(stream, header.indexOffset) ||
+			!ReadLE64(stream, header.indexSize) ||
+			!ReadLE64(stream, header.dataOffset) ||
+			!ReadLE64(stream, header.nameTableHeaderOffset)) {
 			*errorOut = "Failed to read header fields";
 			return false;
 		}
@@ -134,31 +132,11 @@ namespace StaticForge {
 		for (uint64_t i = 0; i < header.fileCount; i++) {
 			Internal::StaticForgeIndexEntry entry{};
 
-			auto readLE64 = [&](uint64_t& out) -> bool {
-				uint64_t tmp = 0;
-				stream.read(reinterpret_cast<char*>(&tmp), sizeof(tmp));
-				if (stream.gcount() != sizeof(tmp))
-					return false;
-
-				out = Internal::IsLittleEndian() ? tmp : Internal::SwapEndian(tmp);
-				return true;
-			};
-
-			auto readLE32 = [&](uint32_t& out) -> bool {
-				uint32_t tmp = 0;
-				stream.read(reinterpret_cast<char*>(&tmp), sizeof(tmp));
-				if (stream.gcount() != sizeof(tmp))
-					return false;
-
-				out = Internal::IsLittleEndian() ? tmp : Internal::SwapEndian(tmp);
-				return true;
-			};
-
-			if (!readLE64(entry.hashName) ||
-				!readLE64(entry.fileOffset) ||
-				!readLE64(entry.fileSize) ||
-				!readLE32(entry.filePadding) ||
-				!readLE32(entry.checksum)) {
+			if (!ReadLE64(stream, entry.hashName) ||
+				!ReadLE64(stream, entry.fileOffset) ||
+				!ReadLE64(stream, entry.fileSize) ||
+				!ReadLE32(stream, entry.filePadding) ||
+				!ReadLE32(stream, entry.checksum)) {
 				*errorOut = "Failed to read index entry " + std::to_string(i) + " (unexpected EOF)";
 				return false;
 			}
@@ -172,6 +150,98 @@ namespace StaticForge {
 			return false;
 		}
 
+		return true;
+	}
+
+	bool StaticForgeReader::ReadNameTable(StaticForgeArchive* archive, std::string* errorOut) const {
+		auto& stream = archive->m_stream;
+		auto& header = archive->m_header;
+
+		stream.seekg(header.nameTableHeaderOffset);
+		if (!stream) {
+			*errorOut = "Failed to seek to name table header offset";
+			return false;
+		}
+
+		Internal::StaticForgeNameTableHeader h{};
+
+		if (!ReadLE64(stream, h.entryOffset) ||
+			!ReadLE64(stream, h.stringDataOffset) ||
+			!ReadLE64(stream, h.stringDataSize)) {
+			*errorOut = "Failed to read name table header (unexpected EOF)";
+			return false;
+		}
+
+		stream.seekg(h.entryOffset);
+		if (!stream) {
+			*errorOut = "Failed to seek to name table entries";
+			return false;
+		}
+
+		for (uint64_t i = 0; i < header.fileCount; i++) {
+			Internal::StaticForgeNameTableEntry entry{};
+
+			if (!ReadLE64(stream, entry.hash) ||
+				!ReadLE32(stream, entry.nameLength) ||
+				!ReadLE32(stream, entry.nameOffset)) {
+				*errorOut = "Failed to read name table entry " + std::to_string(i) + " (unexpected EOF)";
+				return false;
+			}
+
+			auto returnPos = stream.tellg();
+			if (returnPos < 0) {
+				*errorOut = "Failed to get current stream position while reading name table";
+				return false;
+			}
+
+			stream.seekg(
+				static_cast<std::streamoff>(h.stringDataOffset + entry.nameOffset)
+			);
+
+			if (!stream) {
+				*errorOut = "Failed to seek to string data for name table entry " + std::to_string(i);
+				return false;
+			}
+
+			std::string name(entry.nameLength, '\0');
+
+			stream.read(name.data(), static_cast<std::streamsize>(entry.nameLength));
+
+			if (!stream) {
+				*errorOut = "Failed to read string data for name table entry " + std::to_string(i);
+				return false;
+			}
+
+			stream.seekg(returnPos);
+
+			if (!stream) {
+				*errorOut = "Failed to restore stream position after reading name table entry " + std::to_string(i);
+				return false;
+			}
+
+			archive->m_indexToName[i] = std::move(name);
+		}
+
+		return true;
+	}
+
+	bool StaticForgeReader::ReadLE64(std::ifstream& stream, uint64_t& out) const {
+		uint64_t tmp = 0;
+		stream.read(reinterpret_cast<char*>(&tmp), sizeof(tmp));
+		if (stream.gcount() != sizeof(tmp))
+			return false;
+
+		out = Internal::IsLittleEndian() ? tmp : Internal::SwapEndian(tmp);
+		return true;
+	}
+
+	bool StaticForgeReader::ReadLE32(std::ifstream& stream, uint32_t& out) const {
+		uint32_t tmp = 0;
+		stream.read(reinterpret_cast<char*>(&tmp), sizeof(tmp));
+		if (stream.gcount() != sizeof(tmp))
+			return false;
+
+		out = Internal::IsLittleEndian() ? tmp : Internal::SwapEndian(tmp);
 		return true;
 	}
 
