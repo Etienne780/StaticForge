@@ -350,7 +350,7 @@ namespace StaticForge::Internal {
 			return static_cast<void*>(&m_excludedExtensions);
 		}
 
-		if (name == MetaParams::STORE_NAME) {
+		if (name == MetaParams::STORE_NAMES) {
 			return static_cast<void*>(&m_storeNames);
 		}
 

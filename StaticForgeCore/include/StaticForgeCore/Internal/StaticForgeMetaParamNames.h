@@ -4,13 +4,13 @@
 /*
 	archive: sets archive name, type=string, musst be set
 	exclude: sets file extensions that should be ignored, type=string[], can be set
-	store_name: sets if the names of this archive should be stored, type=bool, can be set
+	store-names: sets if the names of this archive should be stored, type=bool, can be set
 */
 
 namespace StaticForge::Internal::MetaParams {
 	
 	const std::string_view ARCHIVE = "archive"; 
 	const std::string_view EXCLUDE = "exclude";
-	const std::string_view STORE_NAME = "storename";
+	const std::string_view STORE_NAMES = "store-names";
 
 }
