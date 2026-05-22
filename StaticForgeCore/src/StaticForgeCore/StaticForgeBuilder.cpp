@@ -123,11 +123,11 @@ namespace StaticForge {
 	bool StaticForgeBuilder::ScanFiles(std::string* errorOut) {
 		namespace fs = std::filesystem;
 		Internal::StaticForgeMeta metaBuilder;
-		std::unordered_map<std::string, std::string> dirToArchive;
+		std::unordered_map<std::string, Internal::StaticForgeMetaData> dirToArchiveMeta;
 
 		if (m_isDebugActive) {
 			std::cout << Internal::CONSOLE_SEPERATOR << std::endl;
-			std::cout << "Scaning files" << std::endl;
+			std::cout << "Scanning  files" << std::endl;
 			std::cout << Internal::CONSOLE_SEPERATOR << std::endl;
 
 			std::cout << "found meta files:" << std::endl;
@@ -157,12 +157,17 @@ namespace StaticForge {
 
 				std::string dir = entry.path().parent_path().u8string();
 
-				auto it = dirToArchive.find(dir);
-				if (it != dirToArchive.end()) {
+				auto it = dirToArchiveMeta.find(dir);
+				if (it != dirToArchiveMeta.end()) {
 					*errorOut = "Conflicting archive definitions in directory '" + dir + "'";
 					return false;
 				}
-				dirToArchive[dir] = archiveName;
+
+				Internal::StaticForgeMetaData metaData{};
+				metaData.archiveName = archiveName;
+				metaData.excludedExtensions = metaBuilder.GetExcludedExtensions();
+
+				dirToArchiveMeta[dir] = metaData;
 
 				if (m_isDebugActive) {
 					std::cout << "  meta file:" << std::endl;
@@ -173,11 +178,11 @@ namespace StaticForge {
 			}
 		}
 
-		// if no meta files where  found
-		if (m_isDebugActive && dirToArchive.empty())
+		// if no meta files were found
+		if (m_isDebugActive && dirToArchiveMeta.empty())
 			std::cout << "- none" << std::endl << std::endl;
 
-		m_archiveGroups.reserve(dirToArchive.size());
+		m_archiveGroups.reserve(dirToArchiveMeta.size());
 
 		for (const auto& src : m_srcPaths) {
 			for (const auto& entry : fs::recursive_directory_iterator(src, fs::directory_options::skip_permission_denied)) {
@@ -206,16 +211,20 @@ namespace StaticForge {
 					return false;
 				}
 
-				std::string archiveName = ResolveArchive(entry.path(), dirToArchive);
-				if (archiveName.empty()) {
+				auto archiveMeta = ResolveArchive(entry.path(), dirToArchiveMeta);
+				if (archiveMeta.archiveName.empty()) {
 					*errorOut = "Archive name was not set. The name must be provided either via the meta file or manually.";
 					return false;
 				}
 
-				auto& archive = m_archiveGroups[archiveName];
+				if (ExcludedFileExtension(relativePath.extension(), archiveMeta.excludedExtensions)) {
+					continue;
+				}
+
+				auto& archive = m_archiveGroups[archiveMeta.archiveName];
 
 				if (archive.name.empty()) {
-					archive.name = archiveName;
+					archive.name = archiveMeta.archiveName;
 					archive.files.reserve(50);
 				}
 
@@ -346,7 +355,7 @@ namespace StaticForge {
 			std::cout << Inter::CONSOLE_SEPERATOR << std::endl;
 			std::cout << "Building index table for archive '" << archive.name << "(" << archive.files.size() << ")'" << std::endl;
 			std::cout << Inter::CONSOLE_SEPERATOR << std::endl;
-			std::cout << "entrys:" << std::endl;
+			std::cout << "entries:" << std::endl;
 		}
 
 		uint64_t totalOffset = 0;
@@ -655,6 +664,7 @@ namespace StaticForge {
 
 	bool StaticForgeBuilder::WriteData(const ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) const {
 		constexpr uint64_t blockSize = Internal::ALIGNMENT_FILE;// 4096
+		std::vector<char> buffer(blockSize);
 
 		if (m_isDebugActive) {
 			std::cout << "data (" + std::to_string(archive.files.size()) + "):" << std::endl;
@@ -689,8 +699,6 @@ namespace StaticForge {
 				*errorOut = "Failed to open file: " + f.filepath.u8string();
 				return false;
 			}
-
-			std::vector<char> buffer(blockSize);
 
 			uint32_t checksum = 2166136261u;
 			uint64_t written = 0;
@@ -734,10 +742,10 @@ namespace StaticForge {
 			auto currentPos = stream.tellp();
 
 			// update checksum value
-			auto pos = f.indexOffset;
+			auto indexPos = f.indexOffset;
 			uint64_t checksumPos;
 			if (!Internal::SafeAddU64(
-				static_cast<uint64_t>(pos),
+				static_cast<uint64_t>(indexPos),
 				offsetof(Internal::StaticForgeIndexEntry, checksum),
 				&checksumPos))
 			{
@@ -905,15 +913,15 @@ namespace StaticForge {
 		return true;
 	}
 
-	std::string StaticForgeBuilder::ResolveArchive(
+	Internal::StaticForgeMetaData StaticForgeBuilder::ResolveArchive(
 		const StaticForgePath& filePath,
-		const std::unordered_map<std::string, std::string>& dirToArchive
+		const std::unordered_map<std::string, Internal::StaticForgeMetaData>& dirToArchiveMeta
 	) {
 		StaticForgePath dir = filePath.parent_path();
 
 		while (!dir.empty()) {
-			auto it = dirToArchive.find(dir.u8string());
-			if (it != dirToArchive.end())
+			auto it = dirToArchiveMeta.find(dir.u8string());
+			if (it != dirToArchiveMeta.end())
 				return it->second;
 
 			StaticForgePath parent = dir.parent_path();
@@ -922,7 +930,21 @@ namespace StaticForge {
 			dir = parent;
 		}
 
-		return m_archiveName;
+		Internal::StaticForgeMetaData dummy{};
+		dummy.archiveName = m_archiveName;
+
+		return dummy;
+	}
+
+	bool StaticForgeBuilder::ExcludedFileExtension(const StaticForgePath& extension, const std::vector<std::string>& extensions) {
+		if (extensions.empty())
+			return false;
+
+		std::string ext = extension.u8string();
+		std::transform(ext.begin(), ext.end(), ext.begin(),
+			[](unsigned char c) { return std::tolower(c); });
+		
+		return std::find(extensions.begin(), extensions.end(), ext) != extensions.end();
 	}
 
 	bool StaticForgeBuilder::IsEnoughSpaceAvailable(const StaticForgePath& path, uint64_t fileSize) {

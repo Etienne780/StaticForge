@@ -44,6 +44,9 @@ namespace StaticForge::Internal {
 		case Symbols::ASSIGN:
 			AddToken(MetaTokenType::Assign);
 			break;
+		case Symbols::SEPERATOR:
+			AddToken(MetaTokenType::Separator);
+			break;
 		case Symbols::DELIMITER:
 			AddToken(MetaTokenType::Delimiter);
 			break;
@@ -51,7 +54,10 @@ namespace StaticForge::Internal {
 			SkipComment();
 			break;
 		default:
-			if (std::isalpha(static_cast<unsigned char>(c)) || c == '_') {
+			if (std::isalpha(static_cast<unsigned char>(c)) || 
+				c == '_' ||
+				c == '.' ||
+				c == '-') {
 				Unget(); 
 				--m_column;
 				ReadIdentifier();
@@ -79,7 +85,10 @@ namespace StaticForge::Internal {
 		const char* textStart = m_cur;
 		while (!EndOfFile()) {
 			c = *m_cur;
-			if (!std::isalnum(static_cast<unsigned char>(c)) && c != '_') 
+			if (!std::isalnum(static_cast<unsigned char>(c)) && 
+				c != '_' &&
+				c != '.' &&
+				c != '-')
 				break;
 			m_cur++;
 			Advance(c); 

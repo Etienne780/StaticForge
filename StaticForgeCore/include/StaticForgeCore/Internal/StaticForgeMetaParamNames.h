@@ -2,11 +2,13 @@
 #include <string_view>
 
 /*
-	archive: archive name, type=string
+	archive: sets archive name, type=string, musst be set
+	exclude: sets file extensions that should be ignored, type=string[], can be set
 */
 
 namespace StaticForge::Internal::MetaParams {
 	
-	const std::string_view ARCHIVE = "archive";
+	const std::string_view ARCHIVE = "archive"; 
+	const std::string_view EXCLUDE = "exclude";
 
 }

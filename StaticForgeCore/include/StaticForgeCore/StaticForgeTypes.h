@@ -34,6 +34,11 @@ namespace StaticForge {
 			uint32_t nameStrDataLength = 0;
 		};
 
+		struct StaticForgeMetaData {
+			std::string archiveName;
+			std::vector<std::string> excludedExtensions;
+		};
+
 		// Order of the elements is important for the reading
 		#pragma pack(push, 1)
 		struct StaticForgeHeader {

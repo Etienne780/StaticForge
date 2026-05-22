@@ -5,9 +5,9 @@ namespace StaticForge::Internal {
 	static bool s_initMetaParams = false;
 	static std::unordered_map<std::string, StaticForgeMetaParam> s_metaParams;
 
-	static void AddParam(const std::string_view& name, MetaParamType type) {
+	static void AddParam(const std::string_view& name, MetaParamType type, MetaParamType subType = MetaParamType::None) {
 		std::string strName{ name };
-		s_metaParams[strName] = StaticForgeMetaParam{ strName, type };
+		s_metaParams[strName] = StaticForgeMetaParam{ strName, type, subType };
 	}
 
 	void InitMetaParams() {
@@ -15,7 +15,10 @@ namespace StaticForge::Internal {
 			return;
 		s_initMetaParams = true;
 
-		AddParam(MetaParams::ARCHIVE, MetaParamType::String);
+		using MType = MetaParamType;
+
+		AddParam(MetaParams::ARCHIVE, MType::String);
+		AddParam(MetaParams::EXCLUDE, MType::List, MType::String);
 	}
 
 	const std::unordered_map<std::string, StaticForgeMetaParam>& GetAllMetaParams() {
@@ -25,8 +28,8 @@ namespace StaticForge::Internal {
 		return s_metaParams;
 	}
 
-	StaticForgeMetaParam::StaticForgeMetaParam(const std::string& n, MetaParamType t) 
-		: name(n), type(t) {
+	StaticForgeMetaParam::StaticForgeMetaParam(const std::string& n, MetaParamType t, MetaParamType subT)
+		: name(n), type(t), subType(subT) {
 	}
 
 }

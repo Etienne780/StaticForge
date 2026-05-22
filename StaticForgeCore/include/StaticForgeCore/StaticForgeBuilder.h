@@ -64,10 +64,11 @@ namespace StaticForge {
 		bool WriteNameTableStringData(const ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) const;
 
 
-		std::string StaticForgeBuilder::ResolveArchive(
+		Internal::StaticForgeMetaData StaticForgeBuilder::ResolveArchive(
 			const StaticForgePath& filePath,
-			const std::unordered_map<std::string, std::string>& dirToArchive
+			const std::unordered_map<std::string, Internal::StaticForgeMetaData>& dirToArchiveMeta
 		);
+		bool ExcludedFileExtension(const StaticForgePath& extension, const std::vector<std::string>& extensions);
 		static bool IsEnoughSpaceAvailable(const StaticForgePath& path, uint64_t fileSize);
 
 		template<typename T>

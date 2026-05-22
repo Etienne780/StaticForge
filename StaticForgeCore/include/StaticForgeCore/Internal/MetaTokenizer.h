@@ -9,6 +9,7 @@ namespace StaticForge::Internal {
 	namespace Symbols {
 		
 		inline constexpr char ASSIGN = '=';
+		inline constexpr char SEPERATOR = ',';
 		inline constexpr char DELIMITER = ';';
 		inline constexpr char COMMENT = ':';
 
@@ -17,6 +18,7 @@ namespace StaticForge::Internal {
 	enum class MetaTokenType {
 		Identifier = 0,
 		Assign,		// =
+		Separator,	// ,
 		Delimiter,	// ;
 		EndOfFile,
 		UNKOWN,
