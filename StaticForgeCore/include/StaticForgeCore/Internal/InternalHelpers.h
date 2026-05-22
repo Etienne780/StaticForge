@@ -8,10 +8,13 @@ namespace StaticForge::Internal {
 
 	std::string NormalizeFilepathSlashes(const std::string& path);
 
-	uint64_t AlignSize(uint64_t fileSize, uint64_t targetAligment);
+	bool IsPowerOfTwoU64(uint64_t value);
 
-	uint64_t GetHeaderSize();
-	uint64_t GetIndexEntrySize();
+	bool SafeAddU64(uint64_t a, uint64_t b, uint64_t* out);
+	bool SafeMulU64(uint64_t a, uint64_t b, uint64_t* out);
+	bool SafeAlignSize(uint64_t fileSize, uint64_t targetAligment, uint64_t* out);
+
+	bool GetHeaderSize(uint64_t* out);
 
 	uint64_t HashFilename(const std::string& filename);
 

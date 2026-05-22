@@ -2,7 +2,6 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
-#include <string>
 #include <fstream>
 #include "StaticForgeTypes.h"
 #include "Internal/ErrorSupport.h"
@@ -51,8 +50,8 @@ namespace StaticForge {
 		bool CheckFilepaths(std::string* errorOut);
 		bool ScanFiles(std::string* errorOut);
 		bool BuildGroups(std::string* errorOut);
-		void BuildIndex(ArchiveGroup& archive) const;
-		void BuildNameTable(ArchiveGroup& archive) const;
+		bool BuildIndex(ArchiveGroup& archive, std::string* errorOut) const;
+		bool BuildNameTable(ArchiveGroup& archive, std::string* errorOut) const;
 
 		bool WriteFile(ArchiveGroup& archive, std::string* errorOut) const;
 		bool WriteHeader(const ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) const;
@@ -67,9 +66,15 @@ namespace StaticForge {
 
 		std::string StaticForgeBuilder::ResolveArchive(
 			const StaticForgePath& filePath,
-			const std::unordered_map<std::string, std::string>& dirToArchive
+			const std::unordered_map<StaticForgePath, std::string>& dirToArchive
 		);
 		static bool IsEnoughSpaceAvailable(const StaticForgePath& path, uint64_t fileSize);
+
+		template<typename T>
+		void WriteLE(std::ofstream& stream, T value) const {
+			auto le = Internal::SwapEndian(value);
+			stream.write(reinterpret_cast<const char*>(&le), sizeof(le));
+		};
 	};
 
 }

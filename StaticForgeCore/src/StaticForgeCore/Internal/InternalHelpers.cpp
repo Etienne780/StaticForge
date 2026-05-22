@@ -2,12 +2,6 @@
 #include <iomanip>
 #include "Internal/InternalHelpers.h"
 
-#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-#define IS_BIG_ENDIAN 1
-#else
-#define IS_BIG_ENDIAN 0
-#endif
-
 namespace StaticForge::Internal {
 
 	uint32_t FNV1a(const void* data, size_t size, uint32_t hash) {
@@ -43,16 +37,48 @@ namespace StaticForge::Internal {
 		return result;
 	}
 
-	uint64_t AlignSize(uint64_t fileSize, uint64_t targetAligment) {
-		return (fileSize + targetAligment - 1) & ~(targetAligment - 1);
+	bool IsPowerOfTwoU64(uint64_t value) {
+		return value != 0 && (value & (value - 1)) == 0;
 	}
 
-	uint64_t GetHeaderSize() {
-		return AlignSize(static_cast<uint64_t>(sizeof(Internal::StaticForgeHeader)), ALIGNMENT_HEADER);
+	bool SafeAddU64(uint64_t a, uint64_t b, uint64_t* out) {
+		if (a > UINT64_MAX - b)
+			return false;
+
+		*out = a + b;
+		return true;
 	}
 
-	uint64_t GetIndexEntrySize() {
-		return sizeof(StaticForgeIndexEntry);
+	bool SafeMulU64(uint64_t a, uint64_t b, uint64_t* out) {
+		if (a == 0 || b == 0) {
+			*out = 0;
+			return true;
+		}
+
+		if (a > UINT64_MAX / b)
+			return false;
+
+		*out = a * b;
+		return true;
+	}
+
+	bool SafeAlignSize(uint64_t size, uint64_t alignment, uint64_t* out) {
+		if (alignment == 0)
+			return false;
+
+		if (!IsPowerOfTwoU64(alignment))
+			return false;
+
+		uint64_t tmp;
+		if (!SafeAddU64(size, alignment - 1, &tmp))
+			return false;
+
+		*out = tmp & ~(alignment - 1);
+		return true;
+	}
+
+	bool GetHeaderSize(uint64_t* out) {
+		return SafeAlignSize(static_cast<uint64_t>(sizeof(Internal::StaticForgeHeader)), ALIGNMENT_HEADER, out);
 	}
 
 	uint64_t HashFilename(const std::string& filename) {

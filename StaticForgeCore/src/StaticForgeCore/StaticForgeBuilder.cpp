@@ -123,7 +123,7 @@ namespace StaticForge {
 	bool StaticForgeBuilder::ScanFiles(std::string* errorOut) {
 		namespace fs = std::filesystem;
 		Internal::StaticForgeMeta metaBuilder;
-		std::unordered_map<std::string, std::string> dirToArchive;
+		std::unordered_map<StaticForgePath, std::string> dirToArchive;
 
 		if (m_isDebugActive) {
 			std::cout << Internal::CONSOLE_SEPERATOR << std::endl;
@@ -162,7 +162,7 @@ namespace StaticForge {
 					std::cout << std::endl;
 				}
 
-				std::string dir = entry.path().parent_path().u8string();
+				StaticForgePath dir = entry.path().parent_path();
 				dirToArchive[dir] = metaBuilder.GetArchiveName();
 			}
 		}
@@ -222,11 +222,18 @@ namespace StaticForge {
 				}
 				archive.seenHashes[h] = relpathStr;
 
+				uint64_t fileAligned64;
+				if (!Internal::SafeAlignSize(fileSize, Internal::ALIGNMENT_FILE, &fileAligned64)) {
+					*errorOut = "File alignment overflow file size: '" + std::to_string(fileSize) + 
+						"' bytes; aligment size: '" + std::to_string(Internal::ALIGNMENT_FILE) + " bytes'";
+					return false;
+				}
+
 				Internal::StaticForgeFileEntry f{};
 				f.filepath = fullPath;
 				f.relativeUtf8 = relpathStr;
 				f.fileSize = fileSize;
-				f.filePadding = static_cast<uint32_t>(Internal::AlignSize(fileSize, Internal::ALIGNMENT_FILE) - fileSize);
+				f.filePadding = static_cast<uint32_t>(fileAligned64 - fileSize);
 				f.hashName = h;
 				f.blockOffset = 0;
 
@@ -279,10 +286,17 @@ namespace StaticForge {
 		std::string error;
 
 		for (auto& [archiveName, archive] : m_archiveGroups) {
-			BuildIndex(archive);
+			if (!BuildIndex(archive, &error)) {
+				*errorOut = "BuildIndex of group '" + archiveName + "': " + error;
+				return false;
+			}
 
-			if (m_storeName)
-				BuildNameTable(archive);
+			if (m_storeName) {
+				if (!BuildNameTable(archive, &error)) {
+					*errorOut = "BuildNameTable of group '" + archiveName + "': " + error;
+					return false;
+				}
+			}
 
 			if (!WriteFile(archive, &error)) {
 				*errorOut = "WriteFile of group '" + archiveName + "': " + error;
@@ -293,22 +307,39 @@ namespace StaticForge {
 		return true;
 	}
 
-	void StaticForgeBuilder::BuildIndex(ArchiveGroup& archive) const {
-		uint64_t sizeHeader = Internal::GetHeaderSize();
-		uint64_t sizeIndexEntry = Internal::GetIndexEntrySize();
+	bool StaticForgeBuilder::BuildIndex(ArchiveGroup& archive, std::string* errorOut) const {
+		namespace Inter = Internal;
+
+		const uint64_t sizeIndexEntry = sizeof(Inter::StaticForgeIndexEntry);
+		uint64_t sizeHeader;
+		if (!Inter::GetHeaderSize(&sizeHeader)) {
+			*errorOut = "File header alignment overflow file";
+			return false;
+		}
 
 		size_t fileEntryCount = archive.files.size();
+		
+		uint64_t indexTableSize;
+		if (!Inter::SafeMulU64(static_cast<uint64_t>(fileEntryCount), sizeIndexEntry, &indexTableSize)) {
+			*errorOut = "Index table size overflow";
+			return false;
+		}
 
-		archive.dataStart =
-			Internal::AlignSize(
-				sizeHeader + (static_cast<uint64_t>(fileEntryCount) * sizeIndexEntry),
-				Internal::ALIGNMENT_FILE
-			);;
+		uint64_t totalHeaderSize;
+		if (!Inter::SafeAddU64(sizeHeader, indexTableSize, &totalHeaderSize)) {
+			*errorOut = "Archive header + index table size overflow";
+			return false;
+		}
+
+		if (!Inter::SafeAlignSize(totalHeaderSize, Internal::ALIGNMENT_FILE, &archive.dataStart)) {
+			*errorOut = "Archive data alignment overflow";
+			return false;
+		}
 
 		if (m_isDebugActive) {
-			std::cout << Internal::CONSOLE_SEPERATOR << std::endl;
+			std::cout << Inter::CONSOLE_SEPERATOR << std::endl;
 			std::cout << "Building index table for archive '" << archive.name << "(" << archive.files.size() << ")'" << std::endl;
-			std::cout << Internal::CONSOLE_SEPERATOR << std::endl;
+			std::cout << Inter::CONSOLE_SEPERATOR << std::endl;
 			std::cout << "entrys:" << std::endl;
 		}
 
@@ -317,7 +348,26 @@ namespace StaticForge {
 			auto& f = archive.files[i];
 
 			f.blockOffset = totalOffset;
-			totalOffset += f.fileSize + f.filePadding;
+
+			if (f.filePadding > Internal::ALIGNMENT_FILE) {
+				*errorOut = "Invalid padding computed";
+				return false;
+			}
+
+			uint64_t alignedFileSize;
+			if (!Inter::SafeAddU64(f.fileSize, static_cast<uint64_t>(f.filePadding), &alignedFileSize)) {
+				*errorOut =
+					"Aligned file size overflow for file '" +
+					f.relativeUtf8 + "'";
+				return false;
+			}
+
+			if (!Inter::SafeAddU64(totalOffset, alignedFileSize, &totalOffset)) {
+				*errorOut =
+					"Archive data offset overflow while processing file '" +
+					f.relativeUtf8 + "'";
+				return false;
+			}
 
 			if (m_isDebugActive) {
 				std::cout << "  path: " << f.filepath << std::endl;
@@ -325,15 +375,30 @@ namespace StaticForge {
 			}
 		}
 
-		archive.totalArchiveSize = archive.dataStart + totalOffset;
+		if (!Inter::SafeAddU64(archive.dataStart, totalOffset, &archive.totalArchiveSize)) {
+			*errorOut = "Total archive size overflow";
+			return false;
+		}
+
+		if (archive.totalArchiveSize > MAX_ARCHIVE_SIZE) {
+			*errorOut = "Archive too large";
+			return false;
+		}
 
 		if (m_isDebugActive) {
 			std::cout << "total size: " << archive.totalArchiveSize << " bytes" << std::endl;
 			std::cout << std::endl;
 		}
+
+		return true;
 	}
 
-	void StaticForgeBuilder::BuildNameTable(ArchiveGroup& archive) const {
+	bool StaticForgeBuilder::BuildNameTable(ArchiveGroup& archive, std::string* errorOut) const {
+		namespace Inter = Internal;
+
+		const uint64_t sizeNameTableHeader = sizeof(Internal::StaticForgeNameTableHeader);
+		const uint64_t sizeNameTableEntry = sizeof(Internal::StaticForgeNameTableEntry);
+		
 		if (m_isDebugActive) {
 			std::cout << Internal::CONSOLE_SEPERATOR << std::endl;
 			std::cout << "Building name table offsets for archive '" << archive.name << "(" << archive.files.size() << ")'" << std::endl;
@@ -342,20 +407,50 @@ namespace StaticForge {
 
 		archive.nameTableStart = archive.totalArchiveSize;
 
-		archive.totalArchiveSize +=
-			sizeof(Internal::StaticForgeNameTableHeader) +
-			sizeof(Internal::StaticForgeNameTableEntry) * archive.files.size();
+		if (archive.files.size() > UINT64_MAX) {
+			*errorOut = "Too many files";
+			return false;
+		}
 
+		uint64_t nameTableSize;
+		if (!Inter::SafeMulU64(static_cast<uint64_t>(archive.files.size()), sizeNameTableEntry, &nameTableSize)) {
+			*errorOut = "Name table size overflow";
+			return false;
+		}
+
+		uint64_t totalNameHeaderSize;
+		if (!Inter::SafeAddU64(sizeNameTableHeader, nameTableSize, &totalNameHeaderSize)) {
+			*errorOut = "Archive name header + name data table size overflow";
+			return false;
+		}
+
+		if (!Inter::SafeAddU64(archive.totalArchiveSize, totalNameHeaderSize, &archive.totalArchiveSize)) {
+			*errorOut = "Total archive size overflow";
+			return false;
+		}
+		
 		archive.nameStringDataStart = archive.totalArchiveSize;
 		
 		uint32_t totalStrOffset = 0;
 		for (auto& f : archive.files) {
 			size_t strSize = f.relativeUtf8.size();
-			f.nameStrDataOffset = totalStrOffset;
-			f.nameStrDataLength = static_cast<uint32_t>(strSize);
 
-			totalStrOffset += static_cast<uint32_t>(strSize);
-			archive.totalArchiveSize += static_cast<uint64_t>(strSize);
+			if (strSize > UINT32_MAX) {
+				*errorOut = "Filename too large for uint32_t storage";
+				return false;
+			}
+
+			uint32_t strSize32 = static_cast<uint32_t>(strSize);
+
+			if (totalStrOffset > UINT32_MAX - strSize32) {
+				*errorOut = "Name table string offset overflow";
+				return false;
+			}
+
+			f.nameStrDataOffset = totalStrOffset;
+			f.nameStrDataLength = strSize32;
+
+			totalStrOffset += strSize32;
 		}
 
 		archive.nameStringDataSize = archive.totalArchiveSize - archive.nameStringDataStart;
@@ -366,6 +461,8 @@ namespace StaticForge {
 			std::cout << "name data start: " << archive.nameStringDataStart << std::endl;
 			std::cout << std::endl;
 		}
+
+		return true;
 	}
 
 	bool StaticForgeBuilder::WriteFile(ArchiveGroup& archive, std::string* errorOut) const {
@@ -426,8 +523,18 @@ namespace StaticForge {
 
 	bool StaticForgeBuilder::WriteHeader(const ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) const {
 		const uint64_t entrySize = static_cast<uint64_t>(archive.files.size());
-		const uint64_t headerSize = Internal::GetHeaderSize();
-		const uint64_t indexSize = Internal::GetIndexEntrySize() * entrySize;
+		
+		uint64_t headerSize;
+		if (!Internal::GetHeaderSize(&headerSize)) {
+			*errorOut = "mach besser error auf egnlisch";
+			return false;
+		}
+		
+		uint64_t indexSize;
+		if (!Internal::SafeMulU64(sizeof(Internal::StaticForgeIndexEntry), entrySize, &indexSize)) {
+			*errorOut = "mach besser error auf egnlisch";
+			return false;
+		}
 
 		Internal::StaticForgeHeader h{};
 		h.version = VERSION;
@@ -445,18 +552,13 @@ namespace StaticForge {
 			);
 		}
 		else {
-			auto writeLE = [&stream](auto value) {
-				auto le = Internal::SwapEndian(value);
-				stream.write(reinterpret_cast<const char*>(&le), sizeof(le));
-			};
-
 			stream.write(h.magic, sizeof(h.magic));
-			writeLE(h.version);
-			writeLE(h.fileCount);
-			writeLE(h.indexOffset);
-			writeLE(h.indexSize);
-			writeLE(h.dataOffset);
-			writeLE(h.nameTableHeaderOffset);
+			WriteLE(stream, h.version);
+			WriteLE(stream, h.fileCount);
+			WriteLE(stream, h.indexOffset);
+			WriteLE(stream, h.indexSize);
+			WriteLE(stream, h.dataOffset);
+			WriteLE(stream, h.nameTableHeaderOffset);
 		}
 
 		if (stream.fail()) {
@@ -517,16 +619,11 @@ namespace StaticForge {
 				);
 			}
 			else {
-				auto writeLE = [&stream](auto value) {
-					auto le = Internal::SwapEndian(value);
-					stream.write(reinterpret_cast<const char*>(&le), sizeof(le));
-				};
-
-				writeLE(e.hashName);
-				writeLE(e.fileOffset);
-				writeLE(e.fileSize);
-				writeLE(e.filePadding);
-				writeLE(e.checksum);
+				WriteLE(stream, e.hashName);
+				WriteLE(stream, e.fileOffset);
+				WriteLE(stream, e.fileSize);
+				WriteLE(stream, e.filePadding);
+				WriteLE(stream, e.checksum);
 			}
 
 			if (stream.fail()) {
@@ -557,7 +654,13 @@ namespace StaticForge {
 			std::cout << "data (" + std::to_string(archive.files.size()) + "):" << std::endl;
 		}
 
-		uint64_t current = static_cast<uint64_t>(stream.tellp());
+		std::streampos pos = stream.tellp();
+		if (pos < 0) {
+			*errorOut = "tellp failed";
+			return false;
+		}
+
+		uint64_t current = static_cast<uint64_t>(static_cast<std::streamoff>(pos));
 
 		if (archive.dataStart > current) {
 			uint64_t padding = archive.dataStart - current;
@@ -626,11 +729,23 @@ namespace StaticForge {
 
 			// update checksum value
 			auto pos = f.indexOffset;
-			auto checksumPos =
-				pos + offsetof(Internal::StaticForgeIndexEntry, checksum);
+			uint64_t checksumPos;
+			if (!Internal::SafeAddU64(
+				static_cast<uint64_t>(pos),
+				offsetof(Internal::StaticForgeIndexEntry, checksum),
+				&checksumPos))
+			{
+				*errorOut = "Checksum position overflow";
+				return false;
+			}
 
 			stream.flush();
 			stream.seekp(checksumPos);
+
+			if (stream.fail()) {
+				*errorOut = "seekp failed";
+				return false;
+			}
 
 			if (Internal::IsLittleEndian()) {
 				stream.write(
@@ -639,15 +754,15 @@ namespace StaticForge {
 				);
 			}
 			else {
-				auto writeLE = [&stream](auto value) {
-					auto le = Internal::SwapEndian(value);
-					stream.write(reinterpret_cast<const char*>(&le), sizeof(le));
-				};
-
-				writeLE(checksum);
+				WriteLE(stream, checksum);
 			}
 
 			stream.seekp(currentPos);
+
+			if (stream.fail()) {
+				*errorOut = "seekp failed";
+				return false;
+			}
 
 			if (m_isDebugActive) {
 				std::cout << "  data " << i << ":" << std::endl;
@@ -701,14 +816,9 @@ namespace StaticForge {
 			);
 		}
 		else {
-			auto writeLE = [&stream](auto value) {
-				auto le = Internal::SwapEndian(value);
-				stream.write(reinterpret_cast<const char*>(&le), sizeof(le));
-			};
-
-			writeLE(h.entryOffset);
-			writeLE(h.stringDataOffset);
-			writeLE(h.stringDataSize);
+			WriteLE(stream, h.entryOffset);
+			WriteLE(stream, h.stringDataOffset);
+			WriteLE(stream, h.stringDataSize);
 		}
 
 		if (stream.fail()) {
@@ -791,12 +901,12 @@ namespace StaticForge {
 
 	std::string StaticForgeBuilder::ResolveArchive(
 		const StaticForgePath& filePath,
-		const std::unordered_map<std::string, std::string>& dirToArchive
+		const std::unordered_map<StaticForgePath, std::string>& dirToArchive
 	) {
 		StaticForgePath dir = filePath.parent_path();
 
 		while (!dir.empty()) {
-			auto it = dirToArchive.find(dir.u8string());
+			auto it = dirToArchive.find(dir);
 			if (it != dirToArchive.end())
 				return it->second;
 
