@@ -21,7 +21,7 @@ public:
 
 	const std::vector<std::filesystem::path>& GetSourcePaths() const;
 	std::filesystem::path GetOutputPath() const;
-	std::filesystem::path GetInfoPath() const;
+	const std::vector<std::filesystem::path>& GetInfoPaths() const;
 
 	const std::string GetArchiveName() const;
 	bool GetCreateOutputDir() const;
@@ -37,9 +37,9 @@ private:
 	ConfigMode m_mode = ConfigMode::UNKNOWN;
 	int m_activeModeCount = 0;
 
-	std::vector<std::filesystem::path> m_srcAbsolPath;
+	std::vector<std::filesystem::path> m_srcAbsolPaths;
 	std::filesystem::path m_outputAbsolPath;
-	std::filesystem::path m_infoPath;
+	std::vector<std::filesystem::path> m_infoPaths;
 
 	std::string m_archiveName = "main";
 	bool m_createOutputDir = false;

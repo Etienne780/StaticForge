@@ -13,44 +13,55 @@ namespace Actions {
     }
 
     bool Info(const Config& config) {
-        const auto& infoPath = config.GetInfoPath();
-        if (infoPath.empty()) {
+        const auto& infoPaths = config.GetInfoPaths();
+        if (infoPaths.empty()) {
             std::cout << "No info path specified." << std::endl;
             return false;
         }
 
-        StaticForge::StaticForgeArchive archive;
-        StaticForge::StaticForgeReader reader;
-        if (!reader.Load(infoPath, &archive)) {
-            std::cout << "Failed to load archive: " << reader.GetError() << std::endl;
-            return false;
-        }
-
-        std::cout << "Archive: " << infoPath.filename().string() << std::endl;
-        std::cout << "Version: " << archive.GetVersion() << std::endl;
-        std::cout << "File count: " << archive.GetFileCount() << std::endl;
-        std::cout << "Index offset: " << archive.GetIndexOffset() << std::endl;
-        std::cout << "Index size: " << archive.GetIndexSize() << std::endl;
-        std::cout << "Data offset: " << archive.GetDataOffset() << std::endl;
-
-        if (config.GetVerbosePrint()) {
-            std::cout << std::endl <<"Index entries:" << std::endl;
-
-            bool storeNames = archive.StoresNames();
-
-            size_t count = archive.GetFileCount();
-            for (size_t i = 0; i < count; ++i) {
-                std::cout << "  [" << i << "] ";
-
-                if (storeNames)
-                    std::cout << "name: " << archive.GetName(i) << ", ";
-
-                std::cout << "hash: " << archive.GetHashName(i)
-                    << ", offset: " << archive.GetFileOffset(i)
-                    << ", size: " << archive.GetFileSize(i) 
-                    << std::endl;
+        for (const auto& p : infoPaths) {
+            StaticForge::StaticForgeArchive archive;
+            StaticForge::StaticForgeReader reader;
+            if (!reader.Load(p, &archive)) {
+                std::cout << "Failed to load archive: " << reader.GetError() << std::endl;
+                return false;
             }
+
+            if (infoPaths.size() > 1) {
+                std::cout << "Archive: " << p.u8string() << std::endl;
+            }
+            else {
+                std::cout << "Archive: " << p.filename().u8string() << std::endl;
+            }
+
+            std::cout << "Version: " << archive.GetVersion() << std::endl;
+            std::cout << "File count: " << archive.GetFileCount() << std::endl;
+            std::cout << "Index offset: " << archive.GetIndexOffset() << std::endl;
+            std::cout << "Index size: " << archive.GetIndexSize() << std::endl;
+            std::cout << "Data offset: " << archive.GetDataOffset() << std::endl;
+
+            if (config.GetVerbosePrint()) {
+                std::cout << std::endl << "Index entries:" << std::endl;
+
+                bool storeNames = archive.StoresNames();
+
+                size_t count = archive.GetFileCount();
+                for (size_t i = 0; i < count; ++i) {
+                    std::cout << "  [" << i << "] ";
+
+                    if (storeNames)
+                        std::cout << "name: " << archive.GetName(i) << ", ";
+
+                    std::cout << "hash: " << archive.GetHashName(i)
+                        << ", offset: " << archive.GetFileOffset(i)
+                        << ", size: " << archive.GetFileSize(i)
+                        << std::endl;
+                }
+            }
+
+            std::cout << std::endl;
         }
+
         return true;
     }
 

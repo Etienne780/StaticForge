@@ -27,15 +27,15 @@ ConfigMode Config::GetMode() const {
 }
 
 const std::vector<std::filesystem::path>& Config::GetSourcePaths() const {
-	return m_srcAbsolPath;
+	return m_srcAbsolPaths;
 }
 
 std::filesystem::path Config::GetOutputPath() const {
 	return m_outputAbsolPath;
 }
 
-std::filesystem::path Config::GetInfoPath() const {
-	return m_infoPath;
+const std::vector<std::filesystem::path>& Config::GetInfoPaths() const {
+	return m_infoPaths;
 }
 
 const std::string Config::GetArchiveName() const {
@@ -148,8 +148,8 @@ void* Config::GetOutput(const ConsoleArgument* arg) {
 		return nullptr;
 
 	if (arg->GetName() == ArgName::SOURCE) {
-		m_srcAbsolPath.emplace_back("");
-		return static_cast<void*>(&m_srcAbsolPath.back());
+		m_srcAbsolPaths.emplace_back("");
+		return static_cast<void*>(&m_srcAbsolPaths.back());
 	}
 
 	if (arg->GetName() == ArgName::OUTPUT) {
@@ -165,7 +165,8 @@ void* Config::GetOutput(const ConsoleArgument* arg) {
 	}
 
 	if (arg->GetName() == ArgName::INFO) {
-		return static_cast<void*>(&m_infoPath);
+		m_infoPaths.emplace_back("");
+		return static_cast<void*>(&m_infoPaths.back());
 	}
 
 	if (arg->GetName() == ArgName::VERBOSE) {
@@ -211,8 +212,8 @@ bool Config::TryGetValueList(const std::string& value, std::vector<std::string>*
 
 void Config::CalculateCurrentMode() {
 	bool hasHelp = m_printHelp;
-	bool hasInfo = !m_infoPath.empty();
-	bool hasPack = (!m_srcAbsolPath.empty() && !m_outputAbsolPath.empty());
+	bool hasInfo = !m_infoPaths.empty();
+	bool hasPack = (!m_srcAbsolPaths.empty() && !m_outputAbsolPath.empty());
 
 	m_activeModeCount = (hasHelp ? 1 : 0) + (hasInfo ? 1 : 0) + (hasPack ? 1 : 0);
 
@@ -231,7 +232,7 @@ void Config::CalculateCurrentMode() {
 	}
 }
 void Config::ValidateConfig() {
-	bool hasPartialPack = (!m_srcAbsolPath.empty() || !m_outputAbsolPath.empty());
+	bool hasPartialPack = (!m_srcAbsolPaths.empty() || !m_outputAbsolPath.empty());
 
 	if (m_activeModeCount > 1) {
 		AddError("Multiple modes selected. Choose exactly one: pack (--source + --output), --info, or --help");
@@ -244,11 +245,11 @@ void Config::ValidateConfig() {
 
 	switch (m_mode) {
 	case ConfigMode::HELP:
-		if (!m_srcAbsolPath.empty())
+		if (!m_srcAbsolPaths.empty())
 			AddError("Cannot set source paths while printing help");
 		if (!m_outputAbsolPath.empty())
 			AddError("Cannot set output path while printing help");
-		if (!m_infoPath.empty())
+		if (!m_infoPaths.empty())
 			AddError("Cannot set info path while printing help");
 		if (m_createOutputDir)
 			AddError("Cannot set mkdir while printing help");
@@ -261,7 +262,7 @@ void Config::ValidateConfig() {
 		break;
 
 	case ConfigMode::INFO:
-		if (!m_srcAbsolPath.empty())
+		if (!m_srcAbsolPaths.empty())
 			AddError("--source cannot be used with --info");
 		if (!m_outputAbsolPath.empty())
 			AddError("--output cannot be used with --info");
@@ -275,11 +276,11 @@ void Config::ValidateConfig() {
 		break;
 
 	case ConfigMode::PACK:
-		if (m_srcAbsolPath.empty())
+		if (m_srcAbsolPaths.empty())
 			AddError("--source is required for packing");
 		if (m_outputAbsolPath.empty())
 			AddError("--output is required for packing");
-		if (!m_infoPath.empty())
+		if (!m_infoPaths.empty())
 			AddError("--info cannot be used with packing");
 		// --name, --mkdir, --verbose
 		break;
@@ -291,7 +292,7 @@ void Config::ValidateConfig() {
 	}
 
 	if (hasPartialPack && m_mode != ConfigMode::PACK) {
-		if (m_srcAbsolPath.empty())
+		if (m_srcAbsolPaths.empty())
 			AddError("--source is missing for packing (--output is set)");
 		if (m_outputAbsolPath.empty())
 			AddError("--output is missing for packing (--source is set)");

@@ -34,6 +34,7 @@ inline void InitConsoleArguments() {
 
 	auto& infoArg = CAM::RegisterConsoleArgument(ArgName::INFO, ArgName::INFO_SHORTNAME, ConsoleArgType::Filepath);
 	infoArg.SetEvaluationFunction(filepathParser);
+	infoArg.SetAllowMultiple(true);
 
 	auto& extractArg = CAM::RegisterConsoleArgument(ArgName::EXTRACT, ArgName::EXTRACT_SHORTNAME, ConsoleArgType::Filepath);
 	extractArg.SetEvaluationFunction(filepathParser);

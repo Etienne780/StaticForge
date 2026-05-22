@@ -3,7 +3,7 @@
 
 const std::string_view HELP_MESSAGE = R"""(
 Pattern:
-	--name value ... (value can be optional);
+	--Command value ... (value can be optional);
 
 Commands:
 |---------|-------|----------------------------------------------------------------------------|----------|---------|-------------|
@@ -13,11 +13,11 @@ Commands:
 | output  | o	  | Output path for the packed archive file                                    | filepath | -       | false       |
 | mkdir   | p	  | Create the output directory if it does not exist                           | bool     | false   | false       |
 | name    | n	  | Default archive name if no `.sfpak.meta` file is found                     | string   | "main"  | false       |
-| info    | i	  | Display header and index information of a `.sfpak` file (read-only mode)   | filepath | -       | false       |
+| info    | i	  | Display header and index information of a `.sfpak` file (read-only mode)   | filepath | -       | true        |
 | verbose | v	  | Enable debug mode (verbose console output)                                 | bool     | false   | false       |
 | help    | h	  | Show this help message                                                     | -        | -       | false       |
-| store-  | sn	  | Stores the file names for better debuging                                  | bool     | false   | false       |
-| names   | 	  |                                                                            |          |         |             | 
+| store   | sn    | Stores the file names for better debuging                                  | bool     | false   | false       |
+| names   | 	  |                                                                            |          |         |             |
 |---------|-------|----------------------------------------------------------------------------|----------|---------|-------------|
 
 )""";
