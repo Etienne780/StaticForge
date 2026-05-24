@@ -6,10 +6,16 @@
 #include "StaticForgeTypes.h"
 #include "StaticForgeReader.h"
 #include "Internal/ErrorSupport.h"
+#include "Internal/MmapFile.h"
 
 namespace StaticForge {
 
 	class StaticForgeReader;
+
+	struct AssetView {
+		const std::byte* data = nullptr;
+		size_t size = 0;	
+	};
 
 	class StaticForgeArchive : public Internal::ErrorSupport {
 	friend class StaticForgeReader;
@@ -17,16 +23,26 @@ namespace StaticForge {
 		StaticForgeArchive();
 		~StaticForgeArchive();
 
-		StaticForgeArchive(StaticForgeArchive&&) noexcept = default;
-		StaticForgeArchive& operator=(StaticForgeArchive&&) noexcept = default;
 		StaticForgeArchive(const StaticForgeArchive&) = delete;
 		StaticForgeArchive& operator=(const StaticForgeArchive&) = delete;
 
-		bool LoadAsset(const std::string& key, std::vector<std::byte>& outData);
+		StaticForgeArchive(StaticForgeArchive&&) noexcept = default;
+		StaticForgeArchive& operator=(StaticForgeArchive&&) noexcept = default;
+
 
 		bool OpenFileStream();
 		void CloseFileStream();
 		bool IsFileStreamOpen() const;
+
+		bool LoadAsset(const std::string& key, std::vector<std::byte>& outData);
+		
+		bool OpenMapped();
+		void CloseMapped();
+		bool IsMapped() const;
+		
+		AssetView GetAssetMapped(const std::string& key);
+		bool LoadAssetMapped(const std::string& key, std::vector<std::byte>& outData);
+
 		bool StoresNames() const;
 
 		const StaticForgePath& GetPath() const;
@@ -45,6 +61,7 @@ namespace StaticForge {
 	private:
 		StaticForgePath m_path;
 		std::ifstream m_stream;
+		Internal::MmapFile m_mmap;
 
 		Internal::StaticForgeHeader m_header;
 		std::vector<Internal::StaticForgeIndexEntry> m_indexEntries;
@@ -52,8 +69,12 @@ namespace StaticForge {
 		std::unordered_map<size_t, std::string> m_indexToName;
 		
 		bool LoadEntry(Internal::StaticForgeIndexEntry* entry, std::vector<std::byte>& outData, std::string* errorOut);
+		bool LoadEntryMapped(Internal::StaticForgeIndexEntry* entry, std::vector<std::byte>& outData, std::string* errorOut);
 		
 		Internal::StaticForgeIndexEntry* GetIndexEntry(uint64_t hash);
+
+		bool VerifyChecksum(const std::byte* data, uint64_t size,
+			uint32_t expected, std::string* errorOut) const;
 	};
 
 }

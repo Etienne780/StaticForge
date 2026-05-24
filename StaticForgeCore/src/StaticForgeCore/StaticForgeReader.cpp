@@ -64,7 +64,7 @@ namespace StaticForge {
 		}
 
 		if (!std::filesystem::exists(path)) {
-			*errorOut = "Stop hallucinating paths";
+			*errorOut = "Output path '" + path.u8string() + "' does not exist!";
 			return false;
 		}
 
@@ -95,9 +95,9 @@ namespace StaticForge {
 			return false;
 		}
 
-		if (header.version != m_supportedVersion) {
+		if (header.version != VERSION) {
 			*errorOut = "Invalid file version '" + std::to_string(header.version) +
-				"', reader only supports version '" + std::to_string(m_supportedVersion) + "'";
+				"', reader only supports version '" + std::to_string(VERSION) + "'";
 			return false;
 		}
 

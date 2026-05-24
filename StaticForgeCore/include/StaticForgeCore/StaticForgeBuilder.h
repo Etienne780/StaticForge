@@ -39,7 +39,7 @@ namespace StaticForge {
 			uint64_t nameStringDataSize = 0;
 		};
 
-		std::string m_archiveName;
+		std::string m_archiveName = "main";
 		std::vector<StaticForgePath> m_srcPaths;
 		StaticForgePath m_outputPath;
 		bool m_createOutputDir = false;
