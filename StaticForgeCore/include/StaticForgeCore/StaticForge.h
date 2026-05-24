@@ -19,11 +19,12 @@ namespace StaticForge {
 		------------ 64 byte aligment ------------
 
 		INDEX
-		- hash/name		uint64_t
-		- fileOffset	uint64_t -> HEADER.index offset + DATA BLOCKS
-		- fileSize		uint64_t
-		- filePadding	uint32_t
-		- checksum		uint32_t
+		- hash/name			uint64_t
+		- fileOffset		uint64_t -> HEADER.index offset + DATA BLOCKS
+		- compressedSize	uint64_t
+		- fileSize			uint64_t
+		- filePadding		uint32_t
+		- checksum			uint32_t
 
 		------------ 4096 byte aligment ------------
 

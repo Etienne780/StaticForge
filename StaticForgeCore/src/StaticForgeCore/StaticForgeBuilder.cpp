@@ -618,6 +618,7 @@ namespace StaticForge {
 			Internal::StaticForgeIndexEntry e{};
 			e.hashName = fe.hashName;
 			e.fileOffset = fe.blockOffset;
+			e.compressedSize = 0;
 			e.fileSize = fe.fileSize;
 			e.filePadding = fe.filePadding;
 			e.checksum = 0;
@@ -638,6 +639,7 @@ namespace StaticForge {
 			else {
 				WriteLE(stream, e.hashName);
 				WriteLE(stream, e.fileOffset);
+				WriteLE(stream, e.compressedSize);
 				WriteLE(stream, e.fileSize);
 				WriteLE(stream, e.filePadding);
 				WriteLE(stream, e.checksum);

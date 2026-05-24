@@ -134,6 +134,7 @@ namespace StaticForge {
 
 			if (!ReadLE64(stream, entry.hashName) ||
 				!ReadLE64(stream, entry.fileOffset) ||
+				!ReadLE64(stream, entry.compressedSize) ||
 				!ReadLE64(stream, entry.fileSize) ||
 				!ReadLE32(stream, entry.filePadding) ||
 				!ReadLE32(stream, entry.checksum)) {
