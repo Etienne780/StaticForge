@@ -16,7 +16,7 @@ Commands:
 | info    | i	  | Display header and index information of a `.sfpak` file (read-only mode)   | filepath | -       | true        |
 | verbose | v	  | Enable debug mode (verbose console output)                                 | bool     | false   | false       |
 | help    | h	  | Show this help message                                                     | -        | -       | false       |
-| store-   | sn    | Stores the file names for better debuging                                  | bool     | false   | false       |
+| store-  | sn    | Stores the file names for better debuging                                  | bool     | false   | false       |
 | names   | 	  |                                                                            |          |         |             |
 |---------|-------|----------------------------------------------------------------------------|----------|---------|-------------|
 
