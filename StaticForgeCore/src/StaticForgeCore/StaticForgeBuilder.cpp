@@ -470,8 +470,6 @@ namespace StaticForge {
 			totalStrOffset += strSize32;
 		}
 
-		archive.nameStringDataSize = archive.totalArchiveSize - archive.nameStringDataStart;
-
 		if (m_isDebugActive) {
 			std::cout << "total size: " << archive.totalArchiveSize << " bytes" << std::endl;
 			std::cout << "name table start: " << archive.nameTableStart << std::endl;
@@ -618,7 +616,6 @@ namespace StaticForge {
 			Internal::StaticForgeIndexEntry e{};
 			e.hashName = fe.hashName;
 			e.fileOffset = fe.blockOffset;
-			e.compressedSize = 0;
 			e.fileSize = fe.fileSize;
 			e.filePadding = fe.filePadding;
 			e.checksum = 0;
@@ -639,7 +636,6 @@ namespace StaticForge {
 			else {
 				WriteLE(stream, e.hashName);
 				WriteLE(stream, e.fileOffset);
-				WriteLE(stream, e.compressedSize);
 				WriteLE(stream, e.fileSize);
 				WriteLE(stream, e.filePadding);
 				WriteLE(stream, e.checksum);
@@ -825,7 +821,6 @@ namespace StaticForge {
 		Internal::StaticForgeNameTableHeader h{};
 		h.entryOffset = archive.nameTableStart + headerSize;
 		h.stringDataOffset = archive.nameStringDataStart;
-		h.stringDataSize = archive.nameStringDataSize;
 
 		if (Internal::IsLittleEndian()) {
 			stream.write(
@@ -836,7 +831,6 @@ namespace StaticForge {
 		else {
 			WriteLE(stream, h.entryOffset);
 			WriteLE(stream, h.stringDataOffset);
-			WriteLE(stream, h.stringDataSize);
 		}
 
 		if (stream.fail()) {

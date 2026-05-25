@@ -36,7 +36,6 @@ namespace StaticForge {
 
 			uint64_t nameTableStart = 0;
 			uint64_t nameStringDataStart = 0;
-			uint64_t nameStringDataSize = 0;
 		};
 
 		std::string m_archiveName = "main";

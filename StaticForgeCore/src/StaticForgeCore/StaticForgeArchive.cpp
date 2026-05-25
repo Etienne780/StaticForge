@@ -72,11 +72,6 @@ namespace StaticForge {
 			return {};
 		}
 
-		if (entry->compressedSize != 0) {
-			AddError("Failed to get asset mapped, entry with key '" + key + "' is compressed");
-			return {};
-		}
-
 		const uint64_t absOffset = m_header.dataOffset + entry->fileOffset;
 
 		if (!m_mmap.InRange(absOffset, entry->fileSize)) {
@@ -183,10 +178,7 @@ namespace StaticForge {
 			}
 		}
 
-		const uint64_t storedSize = (entry->compressedSize != 0)
-			? entry->compressedSize
-			: entry->fileSize;
-
+		const uint64_t storedSize = entry->fileSize;
 		const uint64_t start = m_header.dataOffset + entry->fileOffset;
 
 		std::vector<std::byte> raw(storedSize);
@@ -214,14 +206,7 @@ namespace StaticForge {
 		if (!VerifyChecksum(raw.data(), storedSize, entry->checksum, errorOut))
 			return false;
 
-		if (entry->compressedSize != 0) {
-			// if (!Decompress(raw.data(), storedSize, outData, entry->fileSize, errorOut))
-			// 	return false;
-		}
-		else {
-			outData = std::move(raw);
-		}
-
+		outData = std::move(raw);
 		return true;
 	}
 
@@ -230,10 +215,7 @@ namespace StaticForge {
 		std::vector<std::byte>& outData, 
 		std::string* errorOut
 	) {
-		const uint64_t storedSize = (entry->compressedSize != 0)
-			? entry->compressedSize
-			: entry->fileSize;
-
+		const uint64_t storedSize = entry->fileSize;
 		const uint64_t absOffset = m_header.dataOffset + entry->fileOffset;
 
 		if (!m_mmap.InRange(absOffset, storedSize)) {
@@ -248,13 +230,8 @@ namespace StaticForge {
 		if (!VerifyChecksum(src, storedSize, entry->checksum, errorOut))
 			return false;
 
-		if (entry->compressedSize == 0) {
-			outData.assign(src, src + storedSize);
-			return true;
-		}
-
-		// return Decompress(src, storedSize, outData, entry->fileSize, errorOut);
-		return false;
+		outData.assign(src, src + storedSize);
+		return true;
 	}
 
 	Internal::StaticForgeIndexEntry* StaticForgeArchive::GetIndexEntry(uint64_t hash) {

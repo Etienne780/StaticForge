@@ -134,7 +134,6 @@ namespace StaticForge {
 
 			if (!ReadLE64(stream, entry.hashName) ||
 				!ReadLE64(stream, entry.fileOffset) ||
-				!ReadLE64(stream, entry.compressedSize) ||
 				!ReadLE64(stream, entry.fileSize) ||
 				!ReadLE32(stream, entry.filePadding) ||
 				!ReadLE32(stream, entry.checksum)) {
@@ -170,8 +169,7 @@ namespace StaticForge {
 		Internal::StaticForgeNameTableHeader h{};
 
 		if (!ReadLE64(stream, h.entryOffset) ||
-			!ReadLE64(stream, h.stringDataOffset) ||
-			!ReadLE64(stream, h.stringDataSize)) {
+			!ReadLE64(stream, h.stringDataOffset)) {
 			*errorOut = "Failed to read name table header (unexpected EOF)";
 			return false;
 		}

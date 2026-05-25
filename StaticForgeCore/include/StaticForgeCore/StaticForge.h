@@ -35,7 +35,6 @@ namespace StaticForge {
 		NAME TABLE HEADER
 		- entry offset			uint64_t -> NAME TABLE ENTRYS
 		- string data offset	uint64_t -> NAME TABLE STRING DATA
-		- string data size		uint64_t 
 
 		[optional]
 		NAME TABLE ENTRYS
