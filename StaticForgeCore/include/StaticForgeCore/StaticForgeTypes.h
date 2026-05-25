@@ -7,7 +7,7 @@ namespace StaticForge {
 
 	using StaticForgePath = std::filesystem::path;
 
-	constexpr uint64_t VERSION = 2;
+	constexpr uint64_t VERSION = 1;
 	constexpr uint64_t MAX_ARCHIVE_SIZE = 8ull * 1024 * 1024 * 1024;
 
 	constexpr std::string_view PACK_FILE_EXTENSION = ".sfpak";
