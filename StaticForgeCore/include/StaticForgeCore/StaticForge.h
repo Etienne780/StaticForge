@@ -7,6 +7,8 @@
 namespace StaticForge {
 
 	/*
+		File Layout: 
+	
 		HEADER
 		- magic number				char[4]
 		- version					uint64_t
