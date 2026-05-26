@@ -7,6 +7,13 @@ The system is split into three main components:
 
 ---
 
+## Requirements
+
+- C++17 or later
+- Windows (tested); other platforms may work but are untested
+
+---
+
 ## StaticForgeTool (Executable)
 
 The `StaticForgeTool` is a command-line application used to create and manage archive files.
@@ -149,10 +156,38 @@ Your Game / Application
 
 ---
 
-## Requirements
+## Installation
 
-- C++17 compiler
-- Standard library with `<filesystem>` support
+Download the latest release and add the include directory to your include paths.
+Link against the prebuilt x64 library provided in the release package.
+
+Note: The release currently only includes prebuilt x64 libraries. Other architectures are not provided precompiled.
+
+## Building & Tests
+
+The build system uses [Premake5](https://premake.github.io/) via a `build.bat` script on Windows.
+
+### Generating project files
+
+```bat
+build.bat vs2022       # Visual Studio 2022
+build.bat vs2019       # Visual Studio 2019
+build.bat gmake        # GNU Makefiles (MinGW / Cygwin)
+```
+
+Run `build.bat help` to see all available targets.
+
+### Compiling directly (Windows)
+
+```bat
+build.bat compile
+```
+
+This generates a Visual Studio 2022 solution and immediately builds it in Debug/x64 using `msbuild`. It requires either an active Visual Studio developer environment or Visual Studio 2022 Community installed at the default path.
+
+### Other platforms
+
+Premake5 supports other targets (`gmake`, `xcode4`, etc.), but the project has only been tested on Windows. You may need to adjust include paths or compiler flags for other platforms.
 
 ---
 
