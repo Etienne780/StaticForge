@@ -28,6 +28,7 @@ public:
 	bool GetPrintHelp() const;
 	bool GetVerbosePrint() const;
 	bool GetStoreNames() const;
+	bool GetCompress() const;
 
 	const std::string& GetError() const;
 
@@ -46,6 +47,7 @@ private:
 	bool m_printHelp = false;
 	bool m_verbosePrint = false;
 	bool m_storeNames = false;
+	bool m_compress = false;
 
 	void ProcessArgument(int* index, int count, char* argv[]);
 	void EvaluateArgument(const std::string& name, const std::string& value);

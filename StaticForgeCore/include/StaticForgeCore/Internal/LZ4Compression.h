@@ -59,11 +59,6 @@ namespace StaticForge::Internal {
         std::vector<std::byte> Decompress(const std::byte* data, size_t size, size_t originalSize = 0);
 
         /**
-         * @brief Resets internal state and error log.
-         */
-        void Reset();
-
-        /**
          * @brief Checks whether no errors occurred.
          */
         bool IsValid() const;
@@ -107,6 +102,11 @@ namespace StaticForge::Internal {
 
         std::array<Entry, TABLE_SIZE> m_table{};
         mutable std::vector<std::string> m_errors;
+
+        /**
+        * @brief Resets internal state and error log.
+        */
+        void Reset();
 
         void AddError(const std::string& message) const;
 

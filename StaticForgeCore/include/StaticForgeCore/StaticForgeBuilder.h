@@ -9,6 +9,12 @@
 
 namespace StaticForge {
 
+	namespace Internal {
+	
+		class LZ4Compression;
+
+	}
+
 	/**
 	 * @brief Builds StaticForge archive files from directories and files.
 	 *
@@ -35,10 +41,7 @@ namespace StaticForge {
 			const StaticForgePath& outputPath = StaticForgePath{}
 		);
 
-		/**
-		 * @brief Default destructor.
-		 */
-		~StaticForgeBuilder() = default;
+		~StaticForgeBuilder();
 
 		/**
 		 * @brief Builds all configured archives.
@@ -103,6 +106,14 @@ namespace StaticForge {
 		 */
 		StaticForgeBuilder& SetStoreNames(bool active);
 
+		/**
+		 * @brief Enables or disables file compression.
+		 *
+		 * @param active True to compress files.
+		 * @return Reference to the builder instance.
+		 */
+		StaticForgeBuilder& SetCompress(bool active);
+
 	private:
 		/**
 		 * @brief Internal archive build data container.
@@ -127,8 +138,10 @@ namespace StaticForge {
 		bool m_createOutputDir = false;
 		bool m_isDebugActive = false;
 		bool m_storeNames = false;
+		bool m_compress = false;
 
 		std::unordered_map<std::string, ArchiveGroup> m_archiveGroups;
+		std::unique_ptr<Internal::LZ4Compression> m_compressor;
 
 		/**
 		 * @brief Validates all configured file paths.
@@ -143,22 +156,14 @@ namespace StaticForge {
 		/**
 		 * @brief Builds all archive groups and writes them to disk.
 		 */
-		bool BuildGroups(std::string* errorOut);
+		bool CreateGroups(std::string* errorOut);
 
-		/**
-		 * @brief Builds the archive index table.
-		 */
-		bool BuildIndex(ArchiveGroup& archive, std::string* errorOut) const;
+		bool CalculateDataStart(ArchiveGroup& archive, std::string* errorOut) const;
 
 		/**
 		 * @brief Builds the optional filename table.
 		 */
 		bool BuildNameTable(ArchiveGroup& archive, std::string* errorOut) const;
-
-		/**
-		 * @brief Writes a complete archive file.
-		 */
-		bool WriteFile(ArchiveGroup& archive, std::string* errorOut) const;
 
 		/**
 		 * @brief Writes the archive header.
@@ -173,7 +178,7 @@ namespace StaticForge {
 		/**
 		 * @brief Writes all file data blocks.
 		 */
-		bool WriteData(const ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) const;
+		bool WriteData(ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) const;
 
 		/**
 		 * @brief Writes the complete filename table.
@@ -205,7 +210,7 @@ namespace StaticForge {
 		Internal::StaticForgeMetaData ResolveArchive(
 			const StaticForgePath& filePath,
 			const std::unordered_map<std::string, Internal::StaticForgeMetaData>& dirToArchiveMeta
-		);
+		) const;
 
 		/**
 		 * @brief Checks whether a file extension is excluded.
@@ -218,15 +223,6 @@ namespace StaticForge {
 			const StaticForgePath& extension,
 			const std::vector<std::string>& extensions
 		);
-
-		/**
-		 * @brief Checks whether enough disk space is available.
-		 *
-		 * @param path Target directory path.
-		 * @param fileSize Required file size in bytes.
-		 * @return true if enough free space is available.
-		 */
-		static bool IsEnoughSpaceAvailable(const StaticForgePath& path, uint64_t fileSize);
 
 		/**
 		 * @brief Writes a value in little-endian byte order.

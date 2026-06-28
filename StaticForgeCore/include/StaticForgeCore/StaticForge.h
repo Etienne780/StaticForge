@@ -22,7 +22,7 @@ namespace StaticForge {
 
 		INDEX
 		- hash/name			uint64_t
-		- fileOffset		uint64_t -> HEADER.index offset + DATA BLOCKS
+		- fileOffset		uint64_t -> HEADER.data offset + DATA BLOCKS
 		- compressedSize	uint64_t
 		- fileSize			uint64_t
 		- filePadding		uint32_t

@@ -90,7 +90,7 @@ namespace StaticForge::Internal {
 	}
 
 	bool SafeAddU64(uint64_t a, uint64_t b, uint64_t* out) {
-		if (a > UINT64_MAX - b)
+		if (a > std::numeric_limits<uint64_t>::max() - b)
 			return false;
 
 		*out = a + b;
@@ -103,7 +103,7 @@ namespace StaticForge::Internal {
 			return true;
 		}
 
-		if (a > UINT64_MAX / b)
+		if (a > std::numeric_limits<uint64_t>::max() / b)
 			return false;
 
 		*out = a * b;

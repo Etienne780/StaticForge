@@ -135,6 +135,7 @@ namespace StaticForge {
 			if (!ReadLE64(stream, entry.hashName) ||
 				!ReadLE64(stream, entry.fileOffset) ||
 				!ReadLE64(stream, entry.fileSize) ||
+				!ReadLE64(stream, entry.compressedFileSize) ||
 				!ReadLE32(stream, entry.filePadding) ||
 				!ReadLE32(stream, entry.checksum)) {
 				*errorOut = "Failed to read index entry " + std::to_string(i) + " (unexpected EOF)";

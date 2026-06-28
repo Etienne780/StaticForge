@@ -12,6 +12,9 @@ Config::Config(int count, char* argv[]) {
 
 	for (int i = 0; i < count; i++) {
 		ProcessArgument(&i, count, argv);
+
+		if (!IsValid())
+			return;
 	}
 
 	CalculateCurrentMode();
@@ -56,6 +59,10 @@ bool Config::GetVerbosePrint() const {
 
 bool Config::GetStoreNames() const {
 	return m_storeNames;
+}
+
+bool Config::GetCompress() const {
+	return m_compress;
 }
 
 const std::string& Config::GetError() const {
@@ -147,34 +154,40 @@ void* Config::GetOutput(const ConsoleArgument* arg) {
 	if (!arg)
 		return nullptr;
 
-	if (arg->GetName() == ArgName::SOURCE) {
+	const auto& argName = arg->GetName();
+
+	if (argName == ArgName::SOURCE) {
 		m_srcAbsolPaths.emplace_back("");
 		return static_cast<void*>(&m_srcAbsolPaths.back());
 	}
 
-	if (arg->GetName() == ArgName::OUTPUT) {
+	if (argName == ArgName::OUTPUT) {
 		return static_cast<void*>(&m_outputAbsolPath);
 	}
 
-	if (arg->GetName() == ArgName::MAKE_DIR) {
+	if (argName == ArgName::MAKE_DIR) {
 		return static_cast<void*>(&m_createOutputDir);
 	}
 
-	if (arg->GetName() == ArgName::ARCHIVE_NAME) {
+	if (argName == ArgName::ARCHIVE_NAME) {
 		return static_cast<void*>(&m_archiveName);
 	}
 
-	if (arg->GetName() == ArgName::INFO) {
+	if (argName == ArgName::INFO) {
 		m_infoPaths.emplace_back("");
 		return static_cast<void*>(&m_infoPaths.back());
 	}
 
-	if (arg->GetName() == ArgName::VERBOSE) {
+	if (argName == ArgName::VERBOSE) {
 		return static_cast<void*>(&m_verbosePrint);
 	}
 
-	if (arg->GetName() == ArgName::STORE_NAMES) {
+	if (argName == ArgName::STORE_NAMES) {
 		return static_cast<void*>(&m_storeNames);
+	}
+
+	if (argName == ArgName::COMPRESS_NAMES) {
+		return static_cast<void*>(&m_compress);
 	}
 
 	return nullptr;
@@ -259,6 +272,8 @@ void Config::ValidateConfig() {
 			AddError("Cannot set verbose while printing help");
 		if (m_storeNames)
 			AddError("Cannot set store name while printing help");
+		if (m_compress)
+			AddError("Cannot set compress while printing help");
 		break;
 
 	case ConfigMode::INFO:
@@ -271,7 +286,9 @@ void Config::ValidateConfig() {
 		if (m_archiveName != "main")
 			AddError("--name cannot be used with --info");
 		if (m_storeNames)
-			AddError("--storename cannot be used with --info");
+			AddError("--store-name cannot be used with --info");
+		if (m_compress)
+			AddError("--compress cannot be used with --info");
 		// --verbose
 		break;
 
@@ -300,7 +317,7 @@ void Config::ValidateConfig() {
 }
 
 bool Config::IsArgumentFlag(const char* arg) {
-	return arg && arg[0] == '-' && (arg[1] == '-' || arg[1] != '\0');
+	return arg && arg[0] == '-' && arg[1] == '-';
 }
 
 std::string Config::TrimStr(const std::string& str) {

@@ -9,6 +9,8 @@ namespace StaticForge::Internal {
     }
 
     std::vector<std::byte> LZ4Compression::Compress(const char* data, size_t size) {
+        Reset();
+
         if (data == nullptr && size > 0) {
             AddError("Compress: data pointer is null with non-zero size");
             return {};
@@ -22,14 +24,10 @@ namespace StaticForge::Internal {
             WriteU64(result, static_cast<uint64_t>(size));
 
         if (ctx.size <= MIN_MATCH) {
+            if (ctx.size > 0)
+                EmitLiterals(result, ctx.data, ctx.size);
+
             result.push_back(std::byte(BLOCK_END));
-
-            if (ctx.size > 0) {
-                result.insert(result.end(),
-                    reinterpret_cast<const std::byte*>(ctx.data),
-                    reinterpret_cast<const std::byte*>(ctx.data + ctx.size));
-            }
-
             return result;
         }
 
@@ -88,6 +86,8 @@ namespace StaticForge::Internal {
     }
 
     std::vector<std::byte> LZ4Compression::Decompress(const std::byte* data, size_t size, size_t oriSize) {
+        Reset();
+
         if (data == nullptr && size > 0) {
             AddError("Decompress: data pointer is null with non-zero size");
             return {};
@@ -187,11 +187,6 @@ namespace StaticForge::Internal {
         return result;
     }
 
-    void LZ4Compression::Reset() {
-        m_table.fill({ 0xFFFFFFFFu, 0 });
-        m_errors.clear();
-    }
-
     bool LZ4Compression::IsValid() const {
         return m_errors.empty();
     }
@@ -204,6 +199,11 @@ namespace StaticForge::Internal {
                 result += '\n';
         }
         return result;
+    }
+
+    void LZ4Compression::Reset() {
+        m_table.fill({ 0xFFFFFFFFu, 0 });
+        m_errors.clear();
     }
 
     void LZ4Compression::AddError(const std::string& message) const {

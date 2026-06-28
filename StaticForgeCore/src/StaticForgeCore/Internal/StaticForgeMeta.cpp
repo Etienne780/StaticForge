@@ -334,6 +334,10 @@ namespace StaticForge::Internal {
 			return static_cast<void*>(&m_metaData.storeNames);
 		}
 
+		if (name == MetaParams::COMPRESS) {
+			return static_cast<void*>(&m_metaData.compress);
+		}
+
 		return nullptr;
 	}
 

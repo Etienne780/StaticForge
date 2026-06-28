@@ -14,6 +14,7 @@ namespace StaticForge {
 	namespace Internal {
 
 		class MmapFile;
+		class LZ4Compression;
 
 	}
 
@@ -77,7 +78,7 @@ namespace StaticForge {
 		 * @param outData Output buffer receiving the asset data.
 		 * @return true if loading succeeded.
 		 */
-		bool LoadAsset(const std::string& key, std::vector<std::byte>& outData);
+		bool LoadAsset(const std::string& key, std::vector<std::byte>* outData);
 
 		/**
 		 * @brief Opens the archive using memory mapping.
@@ -113,7 +114,7 @@ namespace StaticForge {
 		 * @param outData Output buffer.
 		 * @return true if loading succeeded.
 		 */
-		bool LoadAssetMapped(const std::string& key, std::vector<std::byte>& outData);
+		bool LoadAssetMapped(const std::string& key, std::vector<std::byte>* outData);
 
 		/**
 		 * @brief Checks whether this archive contains a filename table.
@@ -184,14 +185,15 @@ namespace StaticForge {
 		StaticForgePath m_path;
 		std::ifstream m_stream;
 		std::unique_ptr<Internal::MmapFile> m_mmap;
+		std::unique_ptr<Internal::LZ4Compression> m_compressor;
 
 		Internal::StaticForgeHeader m_header;
 		std::vector<Internal::StaticForgeIndexEntry> m_indexEntries;
 		std::unordered_map<uint64_t, size_t> m_hashNameToEntry;
 		std::unordered_map<size_t, std::string> m_indexToName;
 
-		bool LoadEntry(Internal::StaticForgeIndexEntry* entry, std::vector<std::byte>& outData, std::string* errorOut);
-		bool LoadEntryMapped(Internal::StaticForgeIndexEntry* entry, std::vector<std::byte>& outData, std::string* errorOut);
+		bool LoadEntry(Internal::StaticForgeIndexEntry* entry, std::vector<std::byte>* outData, std::string* errorOut);
+		bool LoadEntryMapped(Internal::StaticForgeIndexEntry* entry, std::vector<std::byte>* outData, std::string* errorOut);
 
 		Internal::StaticForgeIndexEntry* GetIndexEntry(uint64_t hash);
 

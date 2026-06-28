@@ -46,5 +46,8 @@ inline void InitConsoleArguments() {
 
 	auto& storeNameArg = CAM::RegisterConsoleArgument(ArgName::STORE_NAMES, ArgName::STORE_NAMES_SHORTNAME, ConsoleArgType::Bool);
 	storeNameArg.SetEvaluationFunction(boolParser);
+
+	auto& compressArg = CAM::RegisterConsoleArgument(ArgName::COMPRESS_NAMES, ArgName::COMPRESS_NAMES_SHORTNAME, ConsoleArgType::Bool);
+	compressArg.SetEvaluationFunction(boolParser);
 	
 }

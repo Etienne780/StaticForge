@@ -3,7 +3,7 @@
 
 const std::string_view HELP_MESSAGE = R"""(
 Pattern:
-	--Command value ... (value can be optional);
+	--CommandName value ... (value can be optional);
 
 Commands:
 |---------|-------|----------------------------------------------------------------------------|----------|---------|-------------|
@@ -18,10 +18,10 @@ Commands:
 | help    | h	  | Show this help message                                                     | -        | -       | false       |
 | store-  | sn    | Stores the file names for better debuging                                  | bool     | false   | false       |
 | names   | 	  |                                                                            |          |         |             |
+| compress| c     | Compresses files if they are larger than 4096 bytes                        | bool     | false   | false       |
 |---------|-------|----------------------------------------------------------------------------|----------|---------|-------------|
 
 )""";
-// --store-names
 
 namespace ArgName {
 	
@@ -51,5 +51,8 @@ namespace ArgName {
 
 	const std::string_view STORE_NAMES = "store-names";
 	const std::string_view STORE_NAMES_SHORTNAME = "sn";
+
+	const std::string_view COMPRESS_NAMES = "compress";
+	const std::string_view COMPRESS_NAMES_SHORTNAME = "c";
 	
 }

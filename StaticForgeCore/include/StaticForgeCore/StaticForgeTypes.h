@@ -6,8 +6,8 @@ namespace StaticForge {
 
 	using StaticForgePath = std::filesystem::path;
 
-	constexpr uint64_t VERSION = 1;
-	constexpr uint64_t MAX_ARCHIVE_SIZE = UINT64_MAX - 2;// big boy
+	constexpr uint64_t VERSION = 2;
+	// constexpr uint64_t MAX_ARCHIVE_SIZE = UINT64_MAX - 2;// big boy
 
 	constexpr std::string_view PACK_FILE_EXTENSION = ".sfpak";
 	constexpr std::string_view META_FILE_EXTENSION = ".sfpak.meta";
@@ -25,10 +25,11 @@ namespace StaticForge {
 			std::string relativeUtf8; /*< normalized relative file name to the src dir */
 
 			uint64_t fileSize = 0;
+			uint64_t compressedFileSize = 0;
 			uint64_t blockOffset = 0;
 			uint64_t hashName = 0;
-			uint64_t indexOffset = 0;
 			uint32_t filePadding = 0;
+			uint32_t checksum;
 			uint32_t nameStrDataOffset = 0;
 			uint32_t nameStrDataLength = 0;
 		};
@@ -57,7 +58,7 @@ namespace StaticForge {
 			uint64_t hashName;		/*< relative path gehashed e.g. "textures/background.png" -> hash */
 			uint64_t fileOffset;	/*< location of the start of the file */
 			uint64_t fileSize;		/*< original size of the file */
-			uint64_t compressedFileSize;
+			uint64_t compressedFileSize; /*< compressed size of the files */
 			uint32_t filePadding;	/*< padding needed to align to ALIGNMENT_FILE */
 			uint32_t checksum;		/*< hash created with the file data to validate its content on load (will be created with compressed data) */
 		};
