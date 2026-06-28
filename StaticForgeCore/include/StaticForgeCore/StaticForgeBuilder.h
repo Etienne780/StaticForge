@@ -3,8 +3,9 @@
 #include <string>
 #include <unordered_map>
 #include <fstream>
+
 #include "StaticForgeTypes.h"
-#include "Internal/ErrorSupport.h"
+#include "ErrorSupport.h"
 
 namespace StaticForge {
 
@@ -14,7 +15,7 @@ namespace StaticForge {
 	 * Supports grouping files into archives, generating indices,
 	 * optional filename tables, and writing the final package files.
 	 */
-	class StaticForgeBuilder : public Internal::ErrorSupport {
+	class StaticForgeBuilder : public ErrorSupport {
 	public:
 		/**
 		 * @brief Creates an empty builder instance.

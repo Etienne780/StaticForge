@@ -1,7 +1,6 @@
 #pragma once
 #include <filesystem>
 #include <string_view>
-#include "Internal/StaticForgeMetaParam.h"
 
 namespace StaticForge {
 

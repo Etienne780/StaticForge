@@ -2,7 +2,7 @@
 #include <string>
 #include <vector>
 
-namespace StaticForge::Internal {
+namespace StaticForge {
 
     constexpr bool HAS_HEADER = true;
 

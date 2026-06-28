@@ -1,8 +1,9 @@
 #pragma once
 #include <string_view>
 #include <fstream>
+
 #include "StaticForgeTypes.h"
-#include "Internal/ErrorSupport.h"
+#include "ErrorSupport.h"
 
 namespace StaticForge::Internal {
 

@@ -8,11 +8,11 @@
 namespace StaticForge {
 
 	StaticForgeBuilder::StaticForgeBuilder()
-		: ErrorSupport(Internal::HAS_HEADER) {
+		: ErrorSupport(HAS_HEADER) {
 	}
 
 	StaticForgeBuilder::StaticForgeBuilder(const std::string& archiveName, const std::vector<StaticForgePath>& sourcePaths, const StaticForgePath& outputPath)
-		: ErrorSupport(Internal::HAS_HEADER), m_archiveName(archiveName), m_srcPaths(sourcePaths), m_outputPath(outputPath) {
+		: ErrorSupport(HAS_HEADER), m_archiveName(archiveName), m_srcPaths(sourcePaths), m_outputPath(outputPath) {
 	}
 
 	bool StaticForgeBuilder::Build() {

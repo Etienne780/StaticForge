@@ -5,7 +5,7 @@
 namespace StaticForge {
 
 	StaticForgeReader::StaticForgeReader() 
-		: ErrorSupport(Internal::HAS_HEADER) {
+		: ErrorSupport(HAS_HEADER) {
 	}
 
 	bool StaticForgeReader::Load(

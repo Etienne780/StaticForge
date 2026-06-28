@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+
 #include "StaticForgeTypes.h"
 
 namespace StaticForge::Internal {

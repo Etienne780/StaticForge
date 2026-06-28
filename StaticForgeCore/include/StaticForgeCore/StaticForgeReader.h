@@ -1,6 +1,6 @@
 #pragma once
 #include "StaticForgeTypes.h"
-#include "Internal/ErrorSupport.h"
+#include "ErrorSupport.h"
 
 namespace StaticForge {
 
@@ -11,7 +11,7 @@ namespace StaticForge {
 	 *
 	 * Reads archive headers, index tables, and optional filename tables.
 	 */
-	class StaticForgeReader : public Internal::ErrorSupport {
+	class StaticForgeReader : public ErrorSupport {
 	public:
 		/**
 		 * @brief Creates a new archive reader instance.

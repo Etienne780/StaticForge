@@ -1,14 +1,21 @@
 #pragma once
+#include <memory>
 #include <vector>
 #include <string>
-#include <unordered_map>
 #include <fstream>
+#include <unordered_map>
+
 #include "StaticForgeTypes.h"
 #include "StaticForgeReader.h"
-#include "Internal/ErrorSupport.h"
-#include "Internal/MmapFile.h"
+#include "ErrorSupport.h"
 
 namespace StaticForge {
+
+	namespace Internal {
+
+		class MmapFile;
+
+	}
 
 	class StaticForgeReader;
 
@@ -25,7 +32,7 @@ namespace StaticForge {
 	 *
 	 * Supports both stream-based and memory-mapped reading.
 	 */
-	class StaticForgeArchive : public Internal::ErrorSupport {
+	class StaticForgeArchive : public ErrorSupport {
 		friend class StaticForgeReader;
 	public:
 		/**
@@ -176,7 +183,7 @@ namespace StaticForge {
 	private:
 		StaticForgePath m_path;
 		std::ifstream m_stream;
-		Internal::MmapFile m_mmap;
+		std::unique_ptr<Internal::MmapFile> m_mmap;
 
 		Internal::StaticForgeHeader m_header;
 		std::vector<Internal::StaticForgeIndexEntry> m_indexEntries;

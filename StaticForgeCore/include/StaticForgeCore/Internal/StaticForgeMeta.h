@@ -1,7 +1,9 @@
 #pragma once
 #include <string>
 #include "StaticForgeTypes.h"
-#include "Internal/ErrorSupport.h"
+#include "ErrorSupport.h"
+
+#include "Internal/StaticForgeMetaParam.h"
 
 namespace StaticForge::Internal {
 

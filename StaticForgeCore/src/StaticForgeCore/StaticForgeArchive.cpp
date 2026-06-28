@@ -1,11 +1,12 @@
 #include <iostream>
 #include "StaticForgeArchive.h"
 #include "Internal/InternalHelpers.h"
+#include "Internal/MmapFile.h"
 
 namespace StaticForge {
 
 	StaticForgeArchive::StaticForgeArchive()
-		: ErrorSupport(Internal::HAS_HEADER) {
+		: ErrorSupport(HAS_HEADER), m_mmap(std::make_unique<Internal::MmapFile>()){
 	}
 
 	StaticForgeArchive::~StaticForgeArchive() {
@@ -44,7 +45,7 @@ namespace StaticForge {
 
 	bool StaticForgeArchive::OpenMapped() {
 		std::string error;
-		if (!m_mmap.Open(m_path, &error)) {
+		if (!m_mmap->Open(m_path, &error)) {
 			AddError("Failed to open map: " + error);
 			return false;
 		}
@@ -52,11 +53,11 @@ namespace StaticForge {
 	}
 
 	void StaticForgeArchive::CloseMapped() {	
-		m_mmap.Close();
+		m_mmap->Close();
 	}
 
 	bool StaticForgeArchive::IsMapped() const {
-		return m_mmap.IsOpen();
+		return m_mmap->IsOpen();
 	}
 
 	AssetView StaticForgeArchive::GetAssetMapped(const std::string& key) {
@@ -74,14 +75,14 @@ namespace StaticForge {
 
 		const uint64_t absOffset = m_header.dataOffset + entry->fileOffset;
 
-		if (!m_mmap.InRange(absOffset, entry->fileSize)) {
-			AddError("Failed to get asset mapped, entry with key '" + key + "' is out of bounds for the map (size=" + std::to_string(m_mmap.Size()) + "), entry "
+		if (!m_mmap->InRange(absOffset, entry->fileSize)) {
+			AddError("Failed to get asset mapped, entry with key '" + key + "' is out of bounds for the map (size=" + std::to_string(m_mmap->Size()) + "), entry "
 				+ " (offset=" + std::to_string(absOffset)
 				+ ", size=" + std::to_string(entry->fileSize) + ")");
 			return {};
 		}
 
-		const uint8_t* ptr = m_mmap.At(absOffset);
+		const uint8_t* ptr = m_mmap->At(absOffset);
 		AssetView view{};
 		view.data = reinterpret_cast<const std::byte*>(ptr);
 		view.size = entry->fileSize;
@@ -218,14 +219,14 @@ namespace StaticForge {
 		const uint64_t storedSize = entry->fileSize;
 		const uint64_t absOffset = m_header.dataOffset + entry->fileOffset;
 
-		if (!m_mmap.InRange(absOffset, storedSize)) {
-			AddError("Entry is out of bounds for the map (size=" + std::to_string(m_mmap.Size()) + "), entry "
+		if (!m_mmap->InRange(absOffset, storedSize)) {
+			AddError("Entry is out of bounds for the map (size=" + std::to_string(m_mmap->Size()) + "), entry "
 				+ " (offset=" + std::to_string(absOffset)
 				+ ", size=" + std::to_string(entry->fileSize) + ")");
 			return false;
 		}
 
-		const auto* src = reinterpret_cast<const std::byte*>(m_mmap.At(absOffset));
+		const auto* src = reinterpret_cast<const std::byte*>(m_mmap->At(absOffset));
 
 		if (!VerifyChecksum(src, storedSize, entry->checksum, errorOut))
 			return false;

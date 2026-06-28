@@ -1,6 +1,6 @@
-#include "Internal/ErrorSupport.h"
+#include "ErrorSupport.h"
 
-namespace StaticForge::Internal {
+namespace StaticForge {
 
 	ErrorSupport::ErrorSupport(bool hasHeader)
 		: m_hasHeader(hasHeader) {
