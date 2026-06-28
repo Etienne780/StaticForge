@@ -49,7 +49,7 @@ namespace StaticForge::Internal {
 
             if (!valid) {
                 e.hash = hash;
-                e.offset = offset;
+                e.offset = static_cast<uint32_t>(offset);
                 offset++;
                 continue;
             }
@@ -71,7 +71,7 @@ namespace StaticForge::Internal {
             EmitMatch(result, distance, matchLen);
 
             e.hash = hash;
-            e.offset = offset;
+            e.offset = static_cast<uint32_t>(offset);
 
             offset += matchLen;
             literalStart = offset;
