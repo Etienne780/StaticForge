@@ -126,13 +126,14 @@ namespace StaticForge {
 		std::unordered_map<std::string, Internal::StaticForgeMetaData> dirToArchiveMeta;
 
 		if (m_isDebugActive) {
-			std::cout << Internal::CONSOLE_SEPERATOR << std::endl;
-			std::cout << "Scanning  files" << std::endl;
-			std::cout << Internal::CONSOLE_SEPERATOR << std::endl;
+			std::cout << Internal::CONSOLE_SEPERATOR << "\n";
+			std::cout << "Scanning  files" << "\n";
+			std::cout << Internal::CONSOLE_SEPERATOR << "\n";
 
 			std::cout << "found meta files:" << std::endl;
 		}
-
+		
+		// search for meta data files
 		for (const auto& src : m_srcPaths) {
 			for (const auto& entry : fs::recursive_directory_iterator(src, fs::directory_options::skip_permission_denied)) {
 				if (!entry.is_regular_file())
@@ -149,8 +150,8 @@ namespace StaticForge {
 					return false;
 				}
 
-				std::string archiveName = metaBuilder.GetArchiveName();
-				if (archiveName.empty()) {
+				const auto& metaData = metaBuilder.GetLoadedMetaData();
+				if (metaData.archiveName.empty()) {
 					*errorOut = "Meta file '" + fullPath.u8string() + "' has archive param not set";
 					return false;
 				}
@@ -163,17 +164,30 @@ namespace StaticForge {
 					return false;
 				}
 
-				Internal::StaticForgeMetaData metaData{};
-				metaData.archiveName = archiveName;
-				metaData.excludedExtensions = metaBuilder.GetExcludedExtensions();
-				metaData.storeNames = metaBuilder.GetStoreNames();
-
 				dirToArchiveMeta[dir] = metaData;
-
+				
 				if (m_isDebugActive) {
-					std::cout << "  meta file:" << std::endl;
-					std::cout << "  - path:" << fullPath << std::endl;
-					std::cout << "  - archiveName: " << archiveName << std::endl;
+					auto booltoStr = [](bool v) -> const char*{
+						return v ? "true" : "false";
+					};
+					
+					std::cout << "  meta file:" << "\n";
+					std::cout << "  - path:" << fullPath << "\n";
+					std::cout << "  - archiveName: " << metaData.archiveName << "\n";
+					std::cout << "  - exclude: [";
+					
+					const size_t excludeSize = metaData.excludedExtensions.size();
+					if (excludeSize > 0) {
+						for (size_t i = 0; i < excludeSize - 1; i++) {
+							std::cout << metaData.excludedExtensions[i] << ", ";
+						}
+
+						std::cout << metaData.excludedExtensions[excludeSize - 1];
+					}
+					std::cout << "]\n";
+
+					std::cout << "  - store-names: " << booltoStr(metaData.storeNames) << "\n";
+					std::cout << "  - compress: " << booltoStr(metaData.compress) << "\n";
 					std::cout << std::endl;
 				}
 			}
@@ -185,6 +199,7 @@ namespace StaticForge {
 
 		m_archiveGroups.reserve(dirToArchiveMeta.size());
 
+		// adds files to archive groups
 		for (const auto& src : m_srcPaths) {
 			for (const auto& entry : fs::recursive_directory_iterator(src, fs::directory_options::skip_permission_denied)) {
 				std::error_code ec;
@@ -224,9 +239,11 @@ namespace StaticForge {
 
 				auto& archive = m_archiveGroups[archiveMeta.archiveName];
 
+				// sets the settings of the archive group if it is new
 				if (archive.name.empty()) {
 					archive.name = archiveMeta.archiveName;
 					archive.storeNames = m_storeNames ? true : archiveMeta.storeNames;
+					archive.compress = archiveMeta.compress;
 					archive.files.reserve(50);
 				}
 
@@ -250,9 +267,9 @@ namespace StaticForge {
 				f.filepath = fullPath;
 				f.relativeUtf8 = relpathStr;
 				f.fileSize = fileSize;
-				f.filePadding = static_cast<uint32_t>(fileAligned64 - fileSize);
+				f.filePadding = 0 /* static_cast<uint32_t>(fileAligned64 - fileSize) */; // filled during writing
 				f.hashName = h;
-				f.blockOffset = 0;
+				f.blockOffset = 0;// filled during writing
 
 				archive.files.push_back(std::move(f));
 			}

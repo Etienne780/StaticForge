@@ -110,6 +110,7 @@ namespace StaticForge {
 		struct ArchiveGroup {
 			std::string name;
 			bool storeNames = false;
+			bool compress = false;
 			std::vector<Internal::StaticForgeFileEntry> files;
 			std::unordered_map<size_t, std::string> seenHashes;
 

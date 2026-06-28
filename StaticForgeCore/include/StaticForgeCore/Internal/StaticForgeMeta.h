@@ -18,9 +18,7 @@ namespace StaticForge::Internal {
 		bool Load(const StaticForgePath& path);
 
 		const StaticForgePath& GetPath() const;
-		const std::string& GetArchiveName() const;
-		std::vector<std::string> GetExcludedExtensions() const;
-		bool GetStoreNames() const;
+		const StaticForgeMetaData& GetLoadedMetaData();
 
 	private:
 		struct ParserContext {
@@ -35,10 +33,7 @@ namespace StaticForge::Internal {
 		std::string m_error;
 
 		StaticForgePath m_path;
-		// a list of bools needs to be from type uint8_t because microsoft is cool
-		std::string m_archiveName;
-		bool m_storeNames = false;
-		std::vector<std::string> m_excludedExtensions;
+		StaticForgeMetaData m_metaData;
 
 		bool CheckFilepath(std::string* errorOut) const;
 		bool ParseTokens(const std::vector<Internal::MetaToken>& tokens, std::string* errorOut);
@@ -58,6 +53,8 @@ namespace StaticForge::Internal {
 
 		void* GetOutput(const std::string& name);
 		std::string BuildString(const std::vector<const Internal::MetaToken*>& outTokenList);
+
+		void FormatData(StaticForgeMetaData* data);
 		bool TryGetIdentifierSuggestions(const std::string& name, std::string* outSuggestion);
 		void Reset();
 	};

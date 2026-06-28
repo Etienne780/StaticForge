@@ -33,6 +33,8 @@ namespace StaticForge::Internal {
 			return false;
 		}
 
+		FormatData(&m_metaData);
+
 		return true;
 	}
 
@@ -40,30 +42,8 @@ namespace StaticForge::Internal {
 		return m_path;
 	}
 
-	const std::string& StaticForgeMeta::GetArchiveName() const {
-		return m_archiveName;
-	}
-
-	std::vector<std::string> StaticForgeMeta::GetExcludedExtensions() const {
-		if (m_excludedExtensions.empty())
-			return {};
-
-		std::vector<std::string> result;
-		result.reserve(m_excludedExtensions.size());
-
-		for (const auto& ext : m_excludedExtensions) {
-			std::string lower = ext;
-			std::transform(lower.begin(), lower.end(), lower.begin(),
-				[](unsigned char c) { return std::tolower(c); });
-
-			result.push_back(lower);
-		}
-
-		return result;
-	}
-
-	bool StaticForgeMeta::GetStoreNames() const {
-		return m_storeNames;
+	const StaticForgeMetaData& StaticForgeMeta::GetLoadedMetaData() {
+		return 	m_metaData;
 	}
 
 	bool StaticForgeMeta::CheckFilepath(std::string* errorOut) const {
@@ -343,15 +323,15 @@ namespace StaticForge::Internal {
 
 	void* StaticForgeMeta::GetOutput(const std::string& name) {
 		if (name == MetaParams::ARCHIVE) {
-			return static_cast<void*>(&m_archiveName);
+			return static_cast<void*>(&m_metaData.archiveName);
 		}
 
 		if (name == MetaParams::EXCLUDE) {
-			return static_cast<void*>(&m_excludedExtensions);
+			return static_cast<void*>(&m_metaData.excludedExtensions);
 		}
 
 		if (name == MetaParams::STORE_NAMES) {
-			return static_cast<void*>(&m_storeNames);
+			return static_cast<void*>(&m_metaData.storeNames);
 		}
 
 		return nullptr;
@@ -374,6 +354,27 @@ namespace StaticForge::Internal {
 		return result;
 	}
 
+
+	void StaticForgeMeta::FormatData(StaticForgeMetaData* data) {
+		{
+			// normalizes exclude extensions to lower case
+			auto& extensions = data->excludedExtensions;
+
+			std::vector<std::string> result;
+			result.reserve(extensions.size());
+
+			for (const auto& ext : extensions) {
+				std::string lower = ext;
+				std::transform(lower.begin(), lower.end(), lower.begin(),
+					[](unsigned char c) { return std::tolower(c); });
+
+				result.push_back(lower);
+			}
+
+			extensions = result;
+		}
+	}
+
 	bool StaticForgeMeta::TryGetIdentifierSuggestions(const std::string& name, std::string* outSuggestion) {
 		const std::string suggestionPrefix = "Did you mean ";
 		
@@ -394,9 +395,7 @@ namespace StaticForge::Internal {
 		m_error.clear();
 
 		m_path.clear();
-		m_archiveName.clear();
-		m_excludedExtensions.clear();
-		m_storeNames = false;
+		m_metaData = {};
 	}
 
 }
