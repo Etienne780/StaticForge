@@ -1,0 +1,159 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    permissions:
+      contents: write
+
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            name: windows
+          - os: ubuntu-latest
+            name: linux
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+
+      # --------------------------------------------------------
+      # Windows build
+      # --------------------------------------------------------
+      - name: Generate Visual Studio project
+        if: matrix.name == 'windows'
+        shell: pwsh
+        run: |
+          .\vendor\premake5\premake5.exe vs2022
+
+
+      - name: Build Windows
+        if: matrix.name == 'windows'
+        shell: pwsh
+        run: |
+          msbuild StaticForge.sln `
+            /p:Configuration=Distribution `
+            /p:Platform=x64
+
+
+      # --------------------------------------------------------
+      # Linux build
+      # --------------------------------------------------------
+      - name: Install Linux dependencies
+        if: matrix.name == 'linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+
+      - name: Generate Linux Makefiles
+        if: matrix.name == 'linux'
+        shell: bash
+        run: |
+          chmod +x vendor/premake5/premake5
+          ./vendor/premake5/premake5 gmake2
+
+
+      - name: Build Linux
+        if: matrix.name == 'linux'
+        shell: bash
+        run: |
+          make config=distribution
+
+
+      # --------------------------------------------------------
+      # Package Windows
+      # --------------------------------------------------------
+      - name: Package Windows
+        if: matrix.name == 'windows'
+        shell: pwsh
+        run: |
+          mkdir package
+
+          copy LICENSE package\
+
+          copy build\bin\StaticForgeTool\windows-x64\Distribution\StaticForgeTool.exe package\
+          copy build\bin\StaticForgeTool\windows-x64\Distribution\StaticForgeTool.pdb package\
+
+          mkdir package\include
+          xcopy StaticForgeCore\include package\include /E /I
+
+          mkdir package\lib
+          mkdir package\lib\x64
+
+          copy build\lib\StaticForgeCore\windows-x64\Distribution\StaticForgeCore.lib package\lib\x64\
+          copy build\lib\StaticForgeCore\windows-x64\Distribution\StaticForgeCore.pdb package\lib\x64\
+
+          Compress-Archive `
+            -Path package\* `
+            -DestinationPath StaticForge-${{ github.ref_name }}-windows.zip
+
+
+      # --------------------------------------------------------
+      # Package Linux
+      # --------------------------------------------------------
+      - name: Package Linux
+        if: matrix.name == 'linux'
+        shell: bash
+        run: |
+          mkdir -p package/include
+          mkdir -p package/lib/x64
+
+          cp LICENSE package/
+
+          cp build/bin/StaticForgeTool/linux-x64/Distribution/StaticForgeTool package/
+
+          cp -r StaticForgeCore/include/* package/include/
+
+          cp build/lib/StaticForgeCore/linux-x64/Distribution/libStaticForgeCore.a package/lib/x64/
+
+          chmod +x package/StaticForgeTool
+
+          tar -czf StaticForge-${{ github.ref_name }}-linux.tar.gz -C package .
+
+
+      # --------------------------------------------------------
+      # Upload build artifacts
+      # --------------------------------------------------------
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: StaticForge-${{ matrix.name }}
+          path: |
+            StaticForge-${{ github.ref_name }}-windows.zip
+            StaticForge-${{ github.ref_name }}-linux.tar.gz
+          if-no-files-found: error
+
+
+  # --------------------------------------------------------
+  # Create GitHub Release
+  # --------------------------------------------------------
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/**/*.zip
+            artifacts/**/*.tar.gz

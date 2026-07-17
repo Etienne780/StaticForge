@@ -23,7 +23,7 @@ function SetTargetAndObjDirs(projectName)
 
     
     --------------------------------------------------------
-    -- Automatically move all .lib files to centralized folder
+    -- Automatically move static libraries to centralized folder
     --------------------------------------------------------
     filter "kind:StaticLib"
         targetdir(root .. "/build/lib/" .. projectName .. "/%{cfg.system}-%{cfg.architecture}/%{cfg.buildcfg}")
@@ -40,22 +40,31 @@ function ApplyCommonConfigs()
 
     filter "configurations:Debug"
         defines { "DEBUG" }
-        runtime "Debug"
         symbols "On"
-        buildoptions { "/MDd" }
 
     filter "configurations:Release"
         defines { "NDEBUG" }
-        runtime "Release"
         optimize "Full"
-        buildoptions { "/MD" }
 
     filter "configurations:Distribution"
         defines { "NDEBUG" }
-        runtime "Release"
         optimize "Full"
-        buildoptions { "/MD" }
 
+    filter {}
+
+
+    filter "system:windows"
+        filter "configurations:Debug"
+            runtime "Debug"
+            buildoptions { "/MDd" }
+
+        filter "configurations:Release"
+            runtime "Release"
+            buildoptions { "/MD" }
+
+        filter "configurations:Distribution"
+            runtime "Release"
+            buildoptions { "/MD" }
     filter {}
 end
 
@@ -96,6 +105,7 @@ newaction {
         os.remove("**.d")
         os.remove("**.a") 
         os.remove("**.so")
+        os.remove("**.out")
         os.remove("**.exe")
 
         print("Done.")
