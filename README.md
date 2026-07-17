@@ -10,7 +10,9 @@ The system is split into three main components:
 ## Requirements
 
 - C++17 or later
-- Windows (tested); other platforms may work but are untested
+- Windows (tested)
+- Linux (Ubuntu tested; limited testing performed)
+- Other platforms may work but are currently untested
 
 ---
 
