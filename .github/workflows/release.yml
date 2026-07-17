@@ -28,6 +28,11 @@ jobs:
       # --------------------------------------------------------
       # Windows build
       # --------------------------------------------------------
+      - name: Setup MSBuild
+        if: matrix.name == 'windows'
+        uses: microsoft/setup-msbuild@v2
+
+
       - name: Generate Visual Studio project
         if: matrix.name == 'windows'
         shell: pwsh
@@ -110,11 +115,11 @@ jobs:
 
           cp LICENSE package/
 
-          cp build/bin/StaticForgeTool/linux-x64/Distribution/StaticForgeTool package/
+          cp build/bin/StaticForgeTool/linux-x86_64/Distribution/StaticForgeTool package/
 
           cp -r StaticForgeCore/include/* package/include/
 
-          cp build/lib/StaticForgeCore/linux-x64/Distribution/libStaticForgeCore.a package/lib/x64/
+          cp build/lib/StaticForgeCore/linux-x86_64/Distribution/libStaticForgeCore.a package/lib/x64/
 
           chmod +x package/StaticForgeTool
 

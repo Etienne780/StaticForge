@@ -34,9 +34,6 @@ end
 -- Helper for common configuration settings
 --------------------------------------------------------
 function ApplyCommonConfigs()
-    filter "system:windows"
-        filter "action:vs*"
-            flags { "MultiProcessorCompile" }
 
     filter "configurations:Debug"
         defines { "DEBUG" }
@@ -50,21 +47,22 @@ function ApplyCommonConfigs()
         defines { "NDEBUG" }
         optimize "Full"
 
-    filter {}
 
+    filter { "system:windows", "action:vs*" }
+        flags { "MultiProcessorCompile" }
 
-    filter "system:windows"
-        filter "configurations:Debug"
-            runtime "Debug"
-            buildoptions { "/MDd" }
+    filter { "system:windows", "configurations:Debug" }
+        runtime "Debug"
+        buildoptions { "/MDd" }
 
-        filter "configurations:Release"
-            runtime "Release"
-            buildoptions { "/MD" }
+    filter { "system:windows", "configurations:Release" }
+        runtime "Release"
+        buildoptions { "/MD" }
 
-        filter "configurations:Distribution"
-            runtime "Release"
-            buildoptions { "/MD" }
+    filter { "system:windows", "configurations:Distribution" }
+        runtime "Release"
+        buildoptions { "/MD" }
+
     filter {}
 end
 
