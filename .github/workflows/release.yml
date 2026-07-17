@@ -92,7 +92,11 @@ jobs:
           copy build\bin\StaticForgeTool\windows-x86_64\Distribution\StaticForgeTool.pdb package\
 
           mkdir package\include
-          xcopy StaticForgeCore\include package\include /E /I
+          robocopy StaticForgeCore\include package\include /E /XD Internal
+
+          if ($LASTEXITCODE -gt 7) {
+            exit $LASTEXITCODE
+          }
 
           mkdir package\lib
           mkdir package\lib\x64
@@ -119,7 +123,7 @@ jobs:
 
           cp build/bin/StaticForgeTool/linux-x86_64/Distribution/StaticForgeTool package/
 
-          cp -r StaticForgeCore/include/* package/include/
+          rsync -a --exclude='Internal' StaticForgeCore/include/ package/include/
 
           cp build/lib/StaticForgeCore/linux-x86_64/Distribution/libStaticForgeCore.a package/lib/x64/
 
