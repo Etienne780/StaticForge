@@ -5,7 +5,8 @@
 namespace StaticForge::Internal {
 
     LZ4Compression::LZ4Compression(bool isLittleEndian, bool storeHeader)
-        : m_isLittleEndian(isLittleEndian), m_storeHeader(storeHeader){
+        : m_isLittleEndian(isLittleEndian), m_storeHeader(storeHeader) {
+        m_table.fill(Entry{});
     }
 
     std::vector<std::byte> LZ4Compression::Compress(const char* data, size_t size) {

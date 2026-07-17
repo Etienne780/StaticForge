@@ -79,8 +79,6 @@ namespace StaticForge::Internal {
         struct Entry {
             uint32_t offset = 0;
             uint32_t hash = 0;
-
-            Entry() = default;
         };
 
         static constexpr uint8_t  BLOCK_END = 0x00;
@@ -100,7 +98,7 @@ namespace StaticForge::Internal {
         const bool m_isLittleEndian = false;
         const bool m_storeHeader = false;
 
-        std::array<Entry, TABLE_SIZE> m_table{};
+        std::array<Entry, TABLE_SIZE> m_table;
         mutable std::vector<std::string> m_errors;
 
         /**
