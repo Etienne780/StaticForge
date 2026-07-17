@@ -39,7 +39,7 @@ jobs:
         if: matrix.name == 'windows'
         shell: pwsh
         run: |
-          msbuild StaticForge.sln `
+          msbuild Project.sln `
             /p:Configuration=Distribution `
             /p:Platform=x64
 
