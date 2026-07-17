@@ -113,6 +113,9 @@ jobs:
               exit $robocopyExitCode
           }
 
+          # Reset PowerShell native exit state
+          $global:LASTEXITCODE = 0
+
           # Copy libraries
           mkdir package-sdk\lib\x64
           mkdir package-sdk-only\lib\x64
