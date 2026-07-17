@@ -84,8 +84,6 @@ jobs:
         if: matrix.name == 'windows'
         shell: pwsh
         run: |
-          Get-ChildItem build -Recurse | Select-Object FullName
-
           mkdir package
 
           copy LICENSE package\
@@ -94,35 +92,32 @@ jobs:
           copy build\bin\StaticForgeTool\windows-x86_64\Distribution\StaticForgeTool.pdb package\
 
           mkdir package\include
+
           robocopy StaticForgeCore\include package\include /E /XD Internal
 
           $robocopyExitCode = $LASTEXITCODE
+
+          Write-Host "Robocopy exit code: $robocopyExitCode"
 
           if ($robocopyExitCode -gt 7) {
               exit $robocopyExitCode
           }
 
+          # Reset PowerShell native exit state
+          $global:LASTEXITCODE = 0
+
           mkdir package\lib
           mkdir package\lib\x64
 
-          $libPath = "build\lib\StaticForgeCore\windows-x86_64\Distribution"
+          copy build\lib\StaticForgeCore\windows-x86_64\Distribution\StaticForgeCore.lib package\lib\x64\
 
-          if (!(Test-Path "$libPath\StaticForgeCore.lib")) {
-              Write-Error "Missing StaticForgeCore.lib"
-              Get-ChildItem -Recurse build\lib
-              exit 1
-          }
-
-          copy "$libPath\StaticForgeCore.lib" package\lib\x64\
-
-          if (Test-Path "$libPath\StaticForgeCore.pdb") {
-              copy "$libPath\StaticForgeCore.pdb" package\lib\x64\
+          if (Test-Path build\lib\StaticForgeCore\windows-x86_64\Distribution\StaticForgeCore.pdb) {
+              copy build\lib\StaticForgeCore\windows-x86_64\Distribution\StaticForgeCore.pdb package\lib\x64\
           }
 
           Compress-Archive `
             -Path package\* `
             -DestinationPath StaticForge-${{ github.ref_name }}-windows.zip
-
 
       # --------------------------------------------------------
       # Package Linux
