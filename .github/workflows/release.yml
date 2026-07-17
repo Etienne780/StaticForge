@@ -84,6 +84,8 @@ jobs:
         if: matrix.name == 'windows'
         shell: pwsh
         run: |
+          Get-ChildItem build -Recurse | Select-Object FullName
+
           mkdir package
 
           copy LICENSE package\
@@ -103,8 +105,19 @@ jobs:
           mkdir package\lib
           mkdir package\lib\x64
 
-          copy build\lib\StaticForgeCore\windows-x86_64\Distribution\StaticForgeCore.lib package\lib\x64\
-          copy build\lib\StaticForgeCore\windows-x86_64\Distribution\StaticForgeCore.pdb package\lib\x64\
+          $libPath = "build\lib\StaticForgeCore\windows-x86_64\Distribution"
+
+          if (!(Test-Path "$libPath\StaticForgeCore.lib")) {
+              Write-Error "Missing StaticForgeCore.lib"
+              Get-ChildItem -Recurse build\lib
+              exit 1
+          }
+
+          copy "$libPath\StaticForgeCore.lib" package\lib\x64\
+
+          if (Test-Path "$libPath\StaticForgeCore.pdb") {
+              copy "$libPath\StaticForgeCore.pdb" package\lib\x64\
+          }
 
           Compress-Archive `
             -Path package\* `
