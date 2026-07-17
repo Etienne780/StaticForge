@@ -1,5 +1,3 @@
-#include "Internal/MmapFile.h"
-
 #if defined(_WIN32)
 #	ifndef WIN32_LEAN_AND_MEAN
 #		define WIN32_LEAN_AND_MEAN
@@ -14,8 +12,11 @@
 #	include <fcntl.h>
 #	include <unistd.h>
 #else
-#  error "MmapFile: unsupported platform"
+#	error "StaticForge::MmapFile: unsupported platform"
 #endif
+
+#include <cstring>
+#include "Internal/MmapFile.h"
 
 namespace StaticForge::Internal {
 
