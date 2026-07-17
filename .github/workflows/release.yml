@@ -41,6 +41,7 @@ jobs:
 
 
       - name: Build Windows
+        if: matrix.name == 'windows'
         shell: pwsh
         run: |
           msbuild Project.sln `
