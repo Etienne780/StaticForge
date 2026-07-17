@@ -84,40 +84,57 @@ jobs:
         if: matrix.name == 'windows'
         shell: pwsh
         run: |
-          mkdir package
+          mkdir package-sdk
+          mkdir package-sdk-only
+          mkdir package-tool
 
-          copy LICENSE package\
+          copy LICENSE package-sdk\
+          copy LICENSE package-sdk-only\
+          copy LICENSE package-tool\
 
-          copy build\bin\StaticForgeTool\windows-x86_64\Distribution\StaticForgeTool.exe package\
-          copy build\bin\StaticForgeTool\windows-x86_64\Distribution\StaticForgeTool.pdb package\
+          # Copy executable
+          copy build\bin\StaticForgeTool\windows-x86_64\Distribution\StaticForgeTool.exe package-sdk\
+          copy build\bin\StaticForgeTool\windows-x86_64\Distribution\StaticForgeTool.exe package-tool\
 
-          mkdir package\include
+          if (Test-Path build\bin\StaticForgeTool\windows-x86_64\Distribution\StaticForgeTool.pdb) {
+              copy build\bin\StaticForgeTool\windows-x86_64\Distribution\StaticForgeTool.pdb package-sdk\
+          }
 
-          robocopy StaticForgeCore\include package\include /E /XD Internal
+          # Copy headers
+          mkdir package-sdk\include
+          mkdir package-sdk-only\include
+
+          robocopy StaticForgeCore\include package-sdk\include /E /XD Internal
+          robocopy StaticForgeCore\include package-sdk-only\include /E /XD Internal
 
           $robocopyExitCode = $LASTEXITCODE
-
-          Write-Host "Robocopy exit code: $robocopyExitCode"
 
           if ($robocopyExitCode -gt 7) {
               exit $robocopyExitCode
           }
 
-          # Reset PowerShell native exit state
-          $global:LASTEXITCODE = 0
+          # Copy libraries
+          mkdir package-sdk\lib\x64
+          mkdir package-sdk-only\lib\x64
 
-          mkdir package\lib
-          mkdir package\lib\x64
-
-          copy build\lib\StaticForgeCore\windows-x86_64\Distribution\StaticForgeCore.lib package\lib\x64\
+          copy build\lib\StaticForgeCore\windows-x86_64\Distribution\StaticForgeCore.lib package-sdk\lib\x64\
+          copy build\lib\StaticForgeCore\windows-x86_64\Distribution\StaticForgeCore.lib package-sdk-only\lib\x64\
 
           if (Test-Path build\lib\StaticForgeCore\windows-x86_64\Distribution\StaticForgeCore.pdb) {
-              copy build\lib\StaticForgeCore\windows-x86_64\Distribution\StaticForgeCore.pdb package\lib\x64\
+              copy build\lib\StaticForgeCore\windows-x86_64\Distribution\StaticForgeCore.pdb package-sdk\lib\x64\
           }
 
           Compress-Archive `
-            -Path package\* `
+            -Path package-sdk\* `
             -DestinationPath StaticForge-${{ github.ref_name }}-windows.zip
+
+          Compress-Archive `
+            -Path package-sdk-only\* `
+            -DestinationPath StaticForgeSDK-${{ github.ref_name }}-windows.zip
+
+          Compress-Archive `
+            -Path package-tool\* `
+            -DestinationPath StaticForgeTool-${{ github.ref_name }}-windows.zip
 
       # --------------------------------------------------------
       # Package Linux
@@ -126,20 +143,34 @@ jobs:
         if: matrix.name == 'linux'
         shell: bash
         run: |
-          mkdir -p package/include
-          mkdir -p package/lib/x64
+          mkdir -p package-sdk/include
+          mkdir -p package-sdk-only/include
+          mkdir -p package-sdk/lib/x64
+          mkdir -p package-sdk-only/lib/x64
+          mkdir -p package-tool
 
-          cp LICENSE package/
+          cp LICENSE package-sdk/
+          cp LICENSE package-sdk-only/
+          cp LICENSE package-tool/
 
-          cp build/bin/StaticForgeTool/linux-x86_64/Distribution/StaticForgeTool package/
+          # Copy executable
+          cp build/bin/StaticForgeTool/linux-x86_64/Distribution/StaticForgeTool package-sdk/
+          cp build/bin/StaticForgeTool/linux-x86_64/Distribution/StaticForgeTool package-tool/
 
-          rsync -a --exclude='Internal' StaticForgeCore/include/ package/include/
+          # Copy headers
+          rsync -a --exclude='Internal' StaticForgeCore/include/ package-sdk/include/
+          rsync -a --exclude='Internal' StaticForgeCore/include/ package-sdk-only/include/
 
-          cp build/lib/StaticForgeCore/linux-x86_64/Distribution/libStaticForgeCore.a package/lib/x64/
+          # Copy libraries
+          cp build/lib/StaticForgeCore/linux-x86_64/Distribution/libStaticForgeCore.a package-sdk/lib/x64/
+          cp build/lib/StaticForgeCore/linux-x86_64/Distribution/libStaticForgeCore.a package-sdk-only/lib/x64/
 
-          chmod +x package/StaticForgeTool
+          chmod +x package-sdk/StaticForgeTool
+          chmod +x package-tool/StaticForgeTool
 
-          tar -czf StaticForge-${{ github.ref_name }}-linux.tar.gz -C package .
+          tar -czf StaticForge-${{ github.ref_name }}-linux.tar.gz -C package-sdk .
+          tar -czf StaticForgeSDK-${{ github.ref_name }}-linux.tar.gz -C package-sdk-only .
+          tar -czf StaticForgeTool-${{ github.ref_name }}-linux.tar.gz -C package-tool .
 
 
       # --------------------------------------------------------
@@ -150,8 +181,8 @@ jobs:
         with:
           name: StaticForge-${{ matrix.name }}
           path: |
-            StaticForge-${{ github.ref_name }}-windows.zip
-            StaticForge-${{ github.ref_name }}-linux.tar.gz
+            StaticForge*.zip
+            StaticForge*.tar.gz
           if-no-files-found: error
 
 
