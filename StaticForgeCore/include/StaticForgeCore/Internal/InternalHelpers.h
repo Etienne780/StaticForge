@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <fstream>
 
 #include "StaticForgeTypes.h"
 
@@ -27,6 +28,19 @@ namespace StaticForge::Internal {
     uint16_t SwapEndian(uint16_t v);
     uint32_t SwapEndian(uint32_t v);
     uint64_t SwapEndian(uint64_t v);
+
+	/**
+	 * @brief Writes a value in little-endian byte order.
+	 *
+	 * @tparam T Value type.
+	 * @param stream Output stream.
+	 * @param value Value to write.
+	 */
+	template<typename T>
+	void WriteLE(std::ofstream& stream, T value) {
+		auto le = SwapEndian(value);
+		stream.write(reinterpret_cast<const char*>(&le), sizeof(le));
+	};
 
     bool IsLittleEndian() noexcept;
 }

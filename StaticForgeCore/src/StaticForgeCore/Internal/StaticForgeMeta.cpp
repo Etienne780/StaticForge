@@ -1,4 +1,5 @@
 #include <variant>
+#include <algorithm>
 
 #include "Internal/StaticForgeMeta.h"
 #include "Internal/InternalHelpers.h"

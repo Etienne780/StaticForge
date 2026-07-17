@@ -1,5 +1,6 @@
-#include <iostream>
+#include <algorithm>
 #include <variant>
+#include <iostream>
 
 #include "StaticForgeBuilder.h"
 #include "Internal/InternalHelpers.h"
@@ -544,12 +545,12 @@ namespace StaticForge {
 		}
 		else {
 			stream.write(h.magic, sizeof(h.magic));
-			WriteLE(stream, h.version);
-			WriteLE(stream, h.fileCount);
-			WriteLE(stream, h.indexOffset);
-			WriteLE(stream, h.indexSize);
-			WriteLE(stream, h.dataOffset);
-			WriteLE(stream, h.nameTableHeaderOffset);
+			Internal::WriteLE(stream, h.version);
+			Internal::WriteLE(stream, h.fileCount);
+			Internal::WriteLE(stream, h.indexOffset);
+			Internal::WriteLE(stream, h.indexSize);
+			Internal::WriteLE(stream, h.dataOffset);
+			Internal::WriteLE(stream, h.nameTableHeaderOffset);
 		}
 
 		if (stream.fail()) {
@@ -604,12 +605,12 @@ namespace StaticForge {
 				);
 			}
 			else {
-				WriteLE(stream, e.hashName);
-				WriteLE(stream, e.fileOffset);
-				WriteLE(stream, e.fileSize);
-				WriteLE(stream, e.compressedFileSize);
-				WriteLE(stream, e.filePadding);
-				WriteLE(stream, e.checksum);
+				Internal::WriteLE(stream, e.hashName);
+				Internal::WriteLE(stream, e.fileOffset);
+				Internal::WriteLE(stream, e.fileSize);
+				Internal::WriteLE(stream, e.compressedFileSize);
+				Internal::WriteLE(stream, e.filePadding);
+				Internal::WriteLE(stream, e.checksum);
 			}
 
 			if (stream.fail()) {
@@ -830,8 +831,8 @@ namespace StaticForge {
 			);
 		}
 		else {
-			WriteLE(stream, h.entryOffset);
-			WriteLE(stream, h.stringDataOffset);
+			Internal::WriteLE(stream, h.entryOffset);
+			Internal::WriteLE(stream, h.stringDataOffset);
 		}
 
 		if (stream.fail()) {
@@ -870,9 +871,9 @@ namespace StaticForge {
 				);
 			}
 			else {
-				WriteLE(stream, e.hash);
-				WriteLE(stream, e.nameLength);
-				WriteLE(stream, e.nameOffset);
+				Internal::WriteLE(stream, e.hash);
+				Internal::WriteLE(stream, e.nameLength);
+				Internal::WriteLE(stream, e.nameOffset);
 			}
 
 			if (stream.fail()) {

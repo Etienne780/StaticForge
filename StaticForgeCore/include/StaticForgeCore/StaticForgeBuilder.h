@@ -223,19 +223,6 @@ namespace StaticForge {
 			const StaticForgePath& extension,
 			const std::vector<std::string>& extensions
 		);
-
-		/**
-		 * @brief Writes a value in little-endian byte order.
-		 *
-		 * @tparam T Value type.
-		 * @param stream Output stream.
-		 * @param value Value to write.
-		 */
-		template<typename T>
-		void WriteLE(std::ofstream& stream, T value) const {
-			auto le = Internal::SwapEndian(value);
-			stream.write(reinterpret_cast<const char*>(&le), sizeof(le));
-		};
 	};
 
 }

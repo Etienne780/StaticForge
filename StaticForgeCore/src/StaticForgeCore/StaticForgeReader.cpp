@@ -1,3 +1,5 @@
+#include <cstring>
+
 #include "Internal/InternalHelpers.h"
 #include "StaticForgeReader.h"
 #include "StaticForgeArchive.h"

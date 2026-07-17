@@ -1,5 +1,6 @@
 #include <iostream>
 #include <algorithm> 
+
 #include "Config.h"
 #include "ConsoleArgument.h"
 #include "ArgumentNames.h"
