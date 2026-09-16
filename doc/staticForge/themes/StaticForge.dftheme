@@ -85,6 +85,16 @@
           "active": true
         },
         {
+          "name": "code-diff-add",
+          "value": "#2da44e",
+          "active": true
+        },
+        {
+          "name": "code-diff-removed",
+          "value": "#cf222e",
+          "active": true
+        },
+        {
           "name": "heading",
           "value": "#f0ebe0",
           "active": true
