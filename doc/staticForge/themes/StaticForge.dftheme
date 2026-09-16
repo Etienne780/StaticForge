@@ -1,0 +1,287 @@
+{
+  "kind": "theme",
+  "storageVersion": 2,
+  "data": {
+    "id": "docTheme_mu3td1ku1jtptgevrul47",
+    "name": "StaticForge",
+    "builtIn": false,
+    "createdAt": 1789545796158,
+    "lastOpenedAt": 1789545796158,
+    "settings": {
+      "entries": [
+        {
+          "name": "background",
+          "value": "#0c0c12",
+          "active": true
+        },
+        {
+          "name": "background-surface",
+          "value": "#13131c",
+          "active": true
+        },
+        {
+          "name": "background-elevated",
+          "value": "#1a1a26",
+          "active": true
+        },
+        {
+          "name": "text-primary",
+          "value": "#e0dbd0",
+          "active": true
+        },
+        {
+          "name": "text-secondary",
+          "value": "#9898b0",
+          "active": true
+        },
+        {
+          "name": "text-muted",
+          "value": "#7a7a95",
+          "active": true
+        },
+        {
+          "name": "accent",
+          "value": "#22d4a8",
+          "active": true
+        },
+        {
+          "name": "accent-hover",
+          "value": "#1fb89a",
+          "active": true
+        },
+        {
+          "name": "link",
+          "value": "#78a8ff",
+          "active": true
+        },
+        {
+          "name": "link-underline",
+          "value": "#6286c8",
+          "active": true
+        },
+        {
+          "name": "border",
+          "value": "#252538",
+          "active": true
+        },
+        {
+          "name": "code-background",
+          "value": "#07070f",
+          "active": true
+        },
+        {
+          "name": "code-border",
+          "value": "#1c1c2a",
+          "active": true
+        },
+        {
+          "name": "code-text",
+          "value": "#7a7a95",
+          "active": true
+        },
+        {
+          "name": "code-tag-text",
+          "value": "#80d89a",
+          "active": true
+        },
+        {
+          "name": "heading",
+          "value": "#f0ebe0",
+          "active": true
+        },
+        {
+          "name": "gap-paragraph",
+          "value": 16,
+          "active": true
+        },
+        {
+          "name": "gap-heading",
+          "value": 24,
+          "active": true
+        },
+        {
+          "name": "code-block-gap",
+          "value": 32,
+          "active": true
+        },
+        {
+          "name": "list-item-gap",
+          "value": 4,
+          "active": true
+        },
+        {
+          "name": "table-cell-padding",
+          "value": 7,
+          "active": true
+        },
+        {
+          "name": "blockquote-border-width",
+          "value": 3,
+          "active": true
+        },
+        {
+          "name": "blockquote-radius",
+          "value": 5,
+          "active": true
+        },
+        {
+          "name": "padding-content",
+          "value": 24,
+          "active": true
+        },
+        {
+          "name": "scrollbar-size",
+          "value": 6,
+          "active": true
+        },
+        {
+          "name": "code-radius",
+          "value": 4,
+          "active": true
+        },
+        {
+          "name": "font-size",
+          "value": 15,
+          "active": true
+        },
+        {
+          "name": "font-size-code",
+          "value": 14,
+          "active": true
+        },
+        {
+          "name": "heading-h1",
+          "value": 32,
+          "active": true
+        },
+        {
+          "name": "heading-h2",
+          "value": 24,
+          "active": true
+        },
+        {
+          "name": "heading-h3",
+          "value": 18,
+          "active": true
+        },
+        {
+          "name": "heading-h4",
+          "value": 14,
+          "active": true
+        },
+        {
+          "name": "line-height",
+          "value": 1.75,
+          "active": true
+        },
+        {
+          "name": "code-line-height",
+          "value": 1.65,
+          "active": true
+        },
+        {
+          "name": "header-show",
+          "value": "top",
+          "active": true
+        },
+        {
+          "name": "header-style",
+          "value": "solid",
+          "active": true
+        },
+        {
+          "name": "header-height",
+          "value": 60,
+          "active": true
+        },
+        {
+          "name": "toc-show",
+          "value": "always",
+          "active": true
+        },
+        {
+          "name": "toc-position",
+          "value": "right",
+          "active": true
+        },
+        {
+          "name": "content-max-width",
+          "value": 1200,
+          "active": true
+        },
+        {
+          "name": "content-show-nav",
+          "value": "always",
+          "active": true
+        },
+        {
+          "name": "sidebar-width-type",
+          "value": "pixels",
+          "active": true
+        },
+        {
+          "name": "sidebar-width-px",
+          "value": 225,
+          "active": true
+        },
+        {
+          "name": "sidebar-width-per",
+          "value": 20,
+          "active": true
+        },
+        {
+          "name": "sidebar-min-width",
+          "value": 0,
+          "active": true
+        },
+        {
+          "name": "toc-width-type",
+          "value": "pixels",
+          "active": true
+        },
+        {
+          "name": "toc-width-px",
+          "value": 200,
+          "active": true
+        },
+        {
+          "name": "toc-width-per",
+          "value": 20,
+          "active": true
+        },
+        {
+          "name": "toc-min-width",
+          "value": 0,
+          "active": true
+        },
+        {
+          "name": "search-enabled",
+          "value": true,
+          "active": true
+        },
+        {
+          "name": "search-position",
+          "value": "header",
+          "active": true
+        },
+        {
+          "name": "search-show-in-tab",
+          "value": true,
+          "active": true
+        },
+        {
+          "name": "typography-heading",
+          "value": "system",
+          "active": true
+        },
+        {
+          "name": "typography-body",
+          "value": "system",
+          "active": true
+        }
+      ],
+      "langStyleIds": {},
+      "mapping": []
+    }
+  }
+}
