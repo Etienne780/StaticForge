@@ -30,8 +30,6 @@ namespace StaticForge::Internal {
 			}
 		};
 
-		std::string m_error;
-
 		StaticForgePath m_path;
 		StaticForgeMetaData m_metaData;
 

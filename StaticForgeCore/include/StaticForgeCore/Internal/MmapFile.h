@@ -72,8 +72,8 @@ namespace StaticForge::Internal {
 		void Close();
 
 		/**
-		 * @brief Checks whether a file is currently mapped.
-		 * @return true if a file is open and mapped.
+		 * @brief Checks whether a file is currently open.
+		 * @return true if a file is open (an empty file is open but has no mapped data).
 		 */
 		bool IsOpen() const;
 
@@ -128,8 +128,8 @@ namespace StaticForge::Internal {
 		uint64_t m_size = 0;
 
 #if defined(_WIN32)
-		FileHandle m_file;// INVALID_HANDLE_VALUE
-		MappingHandle m_mapping;// INVALID_HANDLE_VALUE
+		FileHandle m_file;// INVALID_HANDLE_VALUE if not open
+		MappingHandle m_mapping;// nullptr if not open
 #else
 		int m_fd = -1;
 #endif

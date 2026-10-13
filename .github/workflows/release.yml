@@ -67,7 +67,7 @@ jobs:
         shell: bash
         run: |
           chmod +x vendor/premake5/premake5
-          ./vendor/premake5/premake5 gmake2
+          ./vendor/premake5/premake5 gmake
 
 
       - name: Build Linux
@@ -104,14 +104,12 @@ jobs:
           mkdir package-sdk\include
           mkdir package-sdk-only\include
 
+          # robocopy exit codes above 7 are errors, check both copies
           robocopy StaticForgeCore\include package-sdk\include /E /XD Internal
+          if ($LASTEXITCODE -gt 7) { exit $LASTEXITCODE }
+
           robocopy StaticForgeCore\include package-sdk-only\include /E /XD Internal
-
-          $robocopyExitCode = $LASTEXITCODE
-
-          if ($robocopyExitCode -gt 7) {
-              exit $robocopyExitCode
-          }
+          if ($LASTEXITCODE -gt 7) { exit $LASTEXITCODE }
 
           # Reset PowerShell native exit state
           $global:LASTEXITCODE = 0

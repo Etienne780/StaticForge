@@ -1,9 +1,10 @@
-#include <cmath>
+#include <algorithm>
+#include <cctype>
 #include <iostream>
 #include "ConsoleArgument.h"
 
 ConsoleArgument::ConsoleArgument(const std::string& name, const std::string& shortName, ConsoleArgType type)
-	: m_name(name), m_shortName(shortName), m_type(type) {
+	: m_type(type), m_name(name), m_shortName(shortName) {
 }
 
 bool ConsoleArgument::CanEvaluateValue() const {
@@ -38,9 +39,9 @@ bool ConsoleArgument::TryGetSuggestionMessage(const std::string& other, std::str
 		return out;
 	};
 
-	auto checkName = [&](const std::string& name, const std::string& other) -> bool {
+	auto checkName = [&](const std::string& name, const std::string& input) -> bool {
 		std::string a = normalizeName(name);
-		std::string b = normalizeName(other);
+		std::string b = normalizeName(input);
 		
 		size_t nameSize = a.size();
 		size_t otherSize = b.size();

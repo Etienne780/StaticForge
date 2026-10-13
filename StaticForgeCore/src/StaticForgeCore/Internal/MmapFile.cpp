@@ -15,6 +15,7 @@
 #	error "StaticForge::MmapFile: unsupported platform"
 #endif
 
+#include <cerrno>
 #include <cstring>
 #include "Internal/MmapFile.h"
 
@@ -22,8 +23,8 @@ namespace StaticForge::Internal {
 
 	MmapFile::MmapFile()
 #if defined(_WIN32)
-		: m_file(INVALID_HANDLE_VALUE) 
-		, m_mapping(INVALID_HANDLE_VALUE) 
+		: m_file(INVALID_HANDLE_VALUE)
+		, m_mapping(nullptr)
 #endif
 	{
 	}
@@ -251,7 +252,8 @@ namespace StaticForge::Internal {
 	}
 
 	bool MmapFile::IsOpen() const {
-		return m_data != nullptr;
+		// same as on unix, an empty file is open but has no mapped data
+		return m_file != INVALID_HANDLE_VALUE;
 	}
 #else
 	bool MmapFile::Open(const FilePath& path, std::string* errorOut) {

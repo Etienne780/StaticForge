@@ -28,7 +28,7 @@ namespace Actions {
         return true;
     }
 
-    bool Help(const Config& config) {
+    bool Help(const Config&) {
         std::cout << HELP_MESSAGE << std::endl;
         return true;
     }
@@ -169,7 +169,7 @@ namespace Actions {
                 targets.push_back(std::move(target));
             }
 
-            std::cout << "Extracting '" << archivePath.u8string() << "' (" << count << " files"
+            std::cout << "Extracting '" << archivePath.u8string() << "' (" << count << (count == 1 ? " file" : " files")
                 << (storesNames ? "" : ", no names stored, files are named by hash") << ")" << std::endl;
 
             std::vector<std::byte> data;

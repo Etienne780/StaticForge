@@ -75,13 +75,13 @@ namespace StaticForge::Internal {
 
 		using TType = Internal::MetaTokenType;
 
-		auto addErrTokeAt = [errorOut](const std::string& error, const Internal::MetaToken* token) {
+		auto addErrTokeAt = [errorOut](const std::string& message, const Internal::MetaToken* token) {
 			if (!token) {
-				*errorOut = error;
+				*errorOut = message;
 				return;
 			}
 
-			std::string e = error;
+			std::string e = message;
 			e.append(" at line: ");
 			e.append(std::to_string(token->line));
 			e.append(", column: ");
@@ -105,7 +105,7 @@ namespace StaticForge::Internal {
 			}
 
 			if (!Expect(TType::Identifier, firstIdentifierToken)) {
-				addErrTokeAt("Expected identifer", firstIdentifierToken);
+				addErrTokeAt("Expected identifier", firstIdentifierToken);
 				return false;
 			}
 
@@ -186,7 +186,7 @@ namespace StaticForge::Internal {
 			std::string v{ values[0]->content };
 
 			std::transform(v.begin(), v.end(), v.begin(),
-				[](unsigned char c) { return std::tolower(c); });
+				[](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 
 			bool* b = static_cast<bool*>(output);
 			if (v == "true") {
@@ -394,7 +394,7 @@ namespace StaticForge::Internal {
 			for (const auto& ext : extensions) {
 				std::string lower = ext;
 				std::transform(lower.begin(), lower.end(), lower.begin(),
-					[](unsigned char c) { return std::tolower(c); });
+					[](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 
 				// "png" is treated as ".png", so it does not match "file.xpng"
 				if (!lower.empty() && lower[0] != '.')
@@ -425,7 +425,6 @@ namespace StaticForge::Internal {
 
 	void StaticForgeMeta::Reset() {
 		ClearErrors();
-		m_error.clear();
 
 		m_path.clear();
 		m_metaData = {};

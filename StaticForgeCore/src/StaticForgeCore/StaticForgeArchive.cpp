@@ -176,20 +176,21 @@ namespace StaticForge {
 		return it->second;
 	}
 
+	// the index getters return 0 for an invalid index
 	uint64_t StaticForgeArchive::GetHashName(size_t index) const {
-		return m_indexEntries[index].hashName;
+		return index < m_indexEntries.size() ? m_indexEntries[index].hashName : 0;
 	}
 
 	uint64_t StaticForgeArchive::GetFileOffset(size_t index) const {
-		return m_indexEntries[index].fileOffset;
+		return index < m_indexEntries.size() ? m_indexEntries[index].fileOffset : 0;
 	}
 
 	uint64_t StaticForgeArchive::GetFileSize(size_t index) const {
-		return m_indexEntries[index].fileSize;
+		return index < m_indexEntries.size() ? m_indexEntries[index].fileSize : 0;
 	}
 
 	uint64_t StaticForgeArchive::GetFilePadding(size_t index) const {
-		return m_indexEntries[index].filePadding;
+		return index < m_indexEntries.size() ? m_indexEntries[index].filePadding : 0;
 	}
 
 	bool StaticForgeArchive::LoadEntry(
@@ -244,6 +245,10 @@ namespace StaticForge {
 				uint32_t origSize32 = 0;
 				std::memcpy(&compSize32, raw.data() + pos, sizeof(uint32_t));
 				std::memcpy(&origSize32, raw.data() + pos + sizeof(uint32_t), sizeof(uint32_t));
+				if (!Internal::IsLittleEndian()) {
+					compSize32 = Internal::SwapEndian(compSize32);
+					origSize32 = Internal::SwapEndian(origSize32);
+				}
 				pos += sizeof(uint32_t) * 2;
 
 				if (pos + compSize32 > raw.size()) {

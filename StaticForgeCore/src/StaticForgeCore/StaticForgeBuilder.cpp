@@ -16,10 +16,10 @@ namespace StaticForge {
 
 	StaticForgeBuilder::StaticForgeBuilder(const std::string& archiveName, const std::vector<StaticForgePath>& sourcePaths, const StaticForgePath& outputPath)
 		: ErrorSupport(HAS_HEADER)
-		, m_compressor(std::make_unique<Internal::LZ4Compression>(Internal::IsLittleEndian(), !Internal::LZ4_STORE_HEADER))
 		, m_archiveName(archiveName)
 		, m_srcPaths(sourcePaths)
-		, m_outputPath(outputPath) {
+		, m_outputPath(outputPath)
+		, m_compressor(std::make_unique<Internal::LZ4Compression>(Internal::IsLittleEndian(), !Internal::LZ4_STORE_HEADER)) {
 	}
 
 	StaticForgeBuilder::~StaticForgeBuilder() {
@@ -809,9 +809,13 @@ namespace StaticForge {
 						return false;
 					}
 
-					// Framing: [uint32_t compressedBlockSize][uint32_t originalBlockSize][data]
+					// Framing: [uint32_t compressedBlockSize][uint32_t originalBlockSize][data], little endian like the rest of the file
 					uint32_t compSize32 = static_cast<uint32_t>(dataSize);
 					uint32_t origSize32 = static_cast<uint32_t>(bytesRead);
+					if (!Internal::IsLittleEndian()) {
+						compSize32 = Internal::SwapEndian(compSize32);
+						origSize32 = Internal::SwapEndian(origSize32);
+					}
 
 					checksum = Internal::FNV1a(reinterpret_cast<const char*>(&compSize32), sizeof(uint32_t), checksum);
 					checksum = Internal::FNV1a(reinterpret_cast<const char*>(&origSize32), sizeof(uint32_t), checksum);
@@ -866,8 +870,8 @@ namespace StaticForge {
 			}
 
 			if (filePadding > 0) {
-				std::vector<char> pad(filePadding, 0);
-				stream.write(pad.data(), filePadding);
+				std::vector<char> filePad(filePadding, 0);
+				stream.write(filePad.data(), filePadding);
 
 				if (stream.fail()) {
 					*errorOut = "Failed to write data padding";

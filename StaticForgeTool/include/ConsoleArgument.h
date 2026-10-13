@@ -1,7 +1,9 @@
 #pragma once
 #include <string>
+#include <string_view>
 #include <vector>
 #include <functional>
+#include <unordered_map>
 
 enum class ConsoleArgType {
 	Filepath,

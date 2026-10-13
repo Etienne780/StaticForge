@@ -74,7 +74,7 @@ inline void InitConsoleArguments() {
 	auto& verboseArg = CAM::RegisterConsoleArgument(ArgName::VERBOSE, ArgName::VERBOSE_SHORTNAME, ConsoleArgType::Bool);
 	verboseArg.SetEvaluationFunction(boolParser);
 
-	auto& helpArg = CAM::RegisterConsoleArgument(ArgName::HELP, ArgName::HELP_SHORTNAME, ConsoleArgType::None);
+	CAM::RegisterConsoleArgument(ArgName::HELP, ArgName::HELP_SHORTNAME, ConsoleArgType::None);
 
 	auto& storeNameArg = CAM::RegisterConsoleArgument(ArgName::STORE_NAMES, ArgName::STORE_NAMES_SHORTNAME, ConsoleArgType::Bool);
 	storeNameArg.SetEvaluationFunction(boolParser);

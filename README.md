@@ -3,15 +3,15 @@
 **StaticForge** is a simple asset archive system for bundling and loading game files.  
 Its goal is to combine multiple files into a compact, structured container format (`.sfpak`) for efficient storage and fast runtime access.
 
-The system is split into three main components:
+The system is split into two main components: the command-line tool `StaticForgeTool` and the library `StaticForgeCore`.
 
 ---
 
 ## Requirements
 
 - C++17 or later
-- Windows (tested)
-- Linux (Ubuntu tested; limited testing performed)
+- Windows (tested with MSVC)
+- Linux (tested with GCC on Ubuntu)
 - Other platforms may work but are currently untested
 
 ---
@@ -22,10 +22,10 @@ The `StaticForgeTool` is a command-line application used to create and manage ar
 
 **Responsibilities:**
 - Creating `.sfpak` archive files from source folders
-- Adding files to an archive
-- Packing assets with automatic alignment
+- Packing assets with automatic alignment and optional compression
 - Generating index and metadata
 - Inspecting and debugging archives (view header and index info)
+- Extracting archives back into normal files
 
 This tool is typically used during the build process or in an asset pipeline.
 
@@ -62,8 +62,8 @@ if (!reader.Load("./build/textures.sfpak", &archive)) {
 }
 
 std::vector<std::byte> data;
-if (!archive.LoadAsset("textures/background.png", data)) {
-    std::cerr << archive.GetError() << std::endl;
+if (!archive.LoadAsset("textures/background.png", &data)) {
+    std::cerr << archive.TakeError() << std::endl;
 }
 ```
 
@@ -77,7 +77,7 @@ StaticForgeTool
             ├── StaticForgeBuilder   (pack archives)
             ├── StaticForgeReader    (read archives)
             ├── StaticForgeArchive   (runtime handle)
-            └── Internal helpers     (hashing, meta parsing)
+            └── Internal helpers     (hashing, meta parsing, compression)
 
 Your Game / Application
     └── StaticForgeCore
@@ -87,20 +87,25 @@ Your Game / Application
 
 ### Key Features
 
-- **Fast lookups** - Filenames are stored as FNV-1a hashes, enabling O(1) access via hash maps
+- **Fast lookups** - Filenames are stored as 64-bit FNV-1a hashes, enabling O(1) access via hash maps
 - **Alignment-friendly** - Data blocks are padded to 4096 bytes for direct memory-mapped access
 - **Checksum validation** - Each file's integrity is verified when loaded
+- **Optional compression** - Block-wise LZ77 compression, decompressed automatically when loading
 - **Meta file support** - Split assets across multiple archives using `.sfpak.meta` files
-- **Move-only archive handle** - Safe ownership of file streams
-- **Cross-platform** - Written in C++17 with little-endian format
+- **Robust loading** - Damaged or truncated archives are rejected with an error instead of crashing
+- **Unicode** - File names, paths and archive names can contain any Unicode characters
+- **Cross-platform** - Written in C++17 with a little-endian format; archives are identical on Windows and Linux
 
 ### File Format (`.sfpak`)
 
-| Region  | Size              | Description                         |
-|---------|-------------------|-------------------------------------|
-| Header  | 32 bytes (min)    | Magic (`SFPK`), version, offsets    |
-| Index   | N × 32 bytes      | Hash, offset, size, padding, checksum |
-| Data    | Variable          | Raw file data, each padded to 4096 bytes |
+| Region     | Size              | Description                                    |
+|------------|-------------------|------------------------------------------------|
+| Header     | 64 bytes          | Magic (`SFPK`), version, offsets               |
+| Index      | N × 40 bytes      | Hash, offset, size, compressed size, padding, checksum |
+| Data       | Variable          | File data, each padded to 4096 bytes           |
+| Name table | Variable (optional) | Original file paths, only with `--store-names` |
+
+The format is not backward compatible: the reader only loads archives of its own format version (currently `3`). Archives are meant to be rebuilt together with the application that uses them.
 
 ---
 
@@ -124,8 +129,8 @@ Your Game / Application
    }
    
    std::vector<std::byte> textureData;
-   if (!archive.LoadAsset("textures/hero.png", textureData)) {
-       std::cerr << archive.GetError() << std::endl;
+   if (!archive.LoadAsset("textures/hero.png", &textureData)) {
+       std::cerr << archive.TakeError() << std::endl;
    }
    ```
 
@@ -146,15 +151,20 @@ Your Game / Application
 
 ## Command Line Reference
 
-| Argument      | Description                                      | Default |
-|---------------|--------------------------------------------------|---------|
-| `--source`    | Source path(s) of files to pack                  | —       |
-| `--output`    | Output directory for `.sfpak` file               | —       |
-| `--name`      | Default archive name (no meta file)              | `main`  |
-| `--mkdir`     | Create output directory if missing               | `false` |
-| `--info`      | Display header/index info of an archive          | —       |
-| `--verbose`   | Enable detailed console output                   | `false` |
-| `--help`      | Show help message                                | —       |
+| Argument        | Description                                          | Default |
+|-----------------|------------------------------------------------------|---------|
+| `--source`      | Source directory/directories of files to pack        | —       |
+| `--output`      | Output directory for archives or extracted files     | —       |
+| `--name`        | Default archive name (no meta file)                  | `main`  |
+| `--mkdir`       | Create output directory if missing                   | `false` |
+| `--info`        | Display header/index info of an archive              | —       |
+| `--extract`     | Extract archive(s) into `<output>/<archive name>/`   | —       |
+| `--verbose`     | Enable detailed console output                       | `false` |
+| `--store-names` | Store original file paths in the archives            | `false` |
+| `--compress`    | Compress files larger than 4096 bytes                | `false` |
+| `--help`        | Show help message                                    | —       |
+
+Bool arguments can be used without a value (`--mkdir` is the same as `--mkdir true`). The compression can be tuned with `--compress-block-size`, `--compress-table-size` and `--compress-min-match`. See the documentation for all details.
 
 ---
 
@@ -172,9 +182,9 @@ The build system uses [Premake5](https://premake.github.io/) via a `build.bat` s
 ### Generating project files
 
 ```bat
-build.bat vs2022       # Visual Studio 2022
+build.bat vs2022       # Visual Studio 2022 (also opens in newer versions)
 build.bat vs2019       # Visual Studio 2019
-build.bat gmake        # GNU Makefiles (MinGW / Cygwin)
+build.bat gmake        # GNU Makefiles
 ```
 
 Run `build.bat help` to see all available targets.
@@ -185,11 +195,17 @@ Run `build.bat help` to see all available targets.
 build.bat compile
 ```
 
-This generates a Visual Studio 2022 solution and immediately builds it in Debug/x64 using `msbuild`. It requires either an active Visual Studio developer environment or Visual Studio 2022 Community installed at the default path.
+This generates a Visual Studio solution and immediately builds it in Debug/x64 using `msbuild`. It uses the active Visual Studio developer environment, or finds the newest installed Visual Studio with C++ tools automatically (via `vswhere`).
 
-### Other platforms
+### Linux
 
-Premake5 supports other targets (`gmake`, `xcode4`, etc.), but the project has only been tested on Windows. You may need to adjust include paths or compiler flags for other platforms.
+```bash
+chmod +x vendor/premake5/premake5
+./vendor/premake5/premake5 gmake
+make config=release
+```
+
+The binaries are written to `build/bin/` and the library to `build/lib/`.
 
 ---
 

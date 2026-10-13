@@ -173,22 +173,22 @@ namespace StaticForge {
 		std::string GetName(size_t fileIndex) const;
 
 		/**
-		 * @brief Returns the hash of the filename at the given index.
+		 * @brief Returns the hash of the filename at the given index. (0 if the index is invalid)
 		 */
 		uint64_t GetHashName(size_t fileIndex) const;
 
 		/**
-		 * @brief Returns the file offset inside the archive.
+		 * @brief Returns the file offset inside the archive. (0 if the index is invalid)
 		 */
 		uint64_t GetFileOffset(size_t fileIndex) const;
 
 		/**
-		 * @brief Returns the file size.
+		 * @brief Returns the file size. (0 if the index is invalid)
 		 */
 		uint64_t GetFileSize(size_t fileIndex) const;
 
 		/**
-		 * @brief Returns padding size after the file data.
+		 * @brief Returns padding size after the file data. (0 if the index is invalid)
 		 */
 		uint64_t GetFilePadding(size_t fileIndex) const;
 
