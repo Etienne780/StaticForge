@@ -66,6 +66,18 @@ bool Config::GetCompress() const {
 	return m_compress;
 }
 
+const std::optional<uint64_t>& Config::GetCompressBlockSize() const {
+	return m_compressBlockSize;
+}
+
+const std::optional<uint64_t>& Config::GetCompressTableSize() const {
+	return m_compressTableSize;
+}
+
+const std::optional<uint64_t>& Config::GetCompressMinMatch() const {
+	return m_compressMinMatch;
+}
+
 const std::string& Config::GetError() const {
 	return m_error;
 }
@@ -136,7 +148,10 @@ void Config::EvaluateArgument(const std::string& name, const std::string& value)
 				return;
 			}
 
-			arg->EvaluateValue(v, output);
+			if (!arg->EvaluateValue(v, output)) {
+				AddError("Invalid value '" + v + "' for argument '" + name + "'");
+				return;
+			}
 		}
 	}
 	else {
@@ -189,6 +204,18 @@ void* Config::GetOutput(const ConsoleArgument* arg) {
 
 	if (argName == ArgName::COMPRESS_NAMES) {
 		return static_cast<void*>(&m_compress);
+	}
+
+	if (argName == ArgName::COMPRESS_BLOCK_SIZE) {
+		return static_cast<void*>(&m_compressBlockSize);
+	}
+
+	if (argName == ArgName::COMPRESS_TABLE_SIZE) {
+		return static_cast<void*>(&m_compressTableSize);
+	}
+
+	if (argName == ArgName::COMPRESS_MIN_MATCH) {
+		return static_cast<void*>(&m_compressMinMatch);
 	}
 
 	return nullptr;
@@ -275,6 +302,8 @@ void Config::ValidateConfig() {
 			AddError("Cannot set store name while printing help");
 		if (m_compress)
 			AddError("Cannot set compress while printing help");
+		if (m_compressBlockSize || m_compressTableSize || m_compressMinMatch)
+			AddError("Cannot set compression settings while printing help");
 		break;
 
 	case ConfigMode::INFO:
@@ -290,6 +319,12 @@ void Config::ValidateConfig() {
 			AddError("--store-name cannot be used with --info");
 		if (m_compress)
 			AddError("--compress cannot be used with --info");
+		if (m_compressBlockSize)
+			AddError("--compress-block-size cannot be used with --info");
+		if (m_compressTableSize)
+			AddError("--compress-table-size cannot be used with --info");
+		if (m_compressMinMatch)
+			AddError("--compress-min-match cannot be used with --info");
 		// --verbose
 		break;
 

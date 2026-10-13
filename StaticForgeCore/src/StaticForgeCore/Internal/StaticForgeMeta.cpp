@@ -1,5 +1,6 @@
 #include <variant>
 #include <algorithm>
+#include <charconv>
 
 #include "Internal/StaticForgeMeta.h"
 #include "Internal/InternalHelpers.h"
@@ -205,6 +206,17 @@ namespace StaticForge::Internal {
 				return false;
 			break;
 		}
+		case MTType::UInt: {
+			const std::string_view str = values[0]->content;
+			uint64_t value = 0;
+			auto [end, ec] = std::from_chars(str.data(), str.data() + str.size(), value);
+			// whole value has to be a number
+			if (ec != std::errc{} || end != str.data() + str.size())
+				return false;
+
+			*static_cast<std::optional<uint64_t>*>(output) = value;
+			break;
+		}
 		case MTType::None:
 		default: {
 			return false;
@@ -337,6 +349,18 @@ namespace StaticForge::Internal {
 
 		if (name == MetaParams::COMPRESS) {
 			return static_cast<void*>(&m_metaData.compress);
+		}
+
+		if (name == MetaParams::COMPRESS_BLOCK_SIZE) {
+			return static_cast<void*>(&m_metaData.compressionBlockSize);
+		}
+
+		if (name == MetaParams::COMPRESS_TABLE_SIZE) {
+			return static_cast<void*>(&m_metaData.compressionTableSizeLog2);
+		}
+
+		if (name == MetaParams::COMPRESS_MIN_MATCH) {
+			return static_cast<void*>(&m_metaData.compressionMinMatchLength);
 		}
 
 		return nullptr;

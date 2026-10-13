@@ -3,6 +3,8 @@
 #include <vector>
 #include <unordered_set>
 #include <filesystem>
+#include <optional>
+#include <cstdint>
 
 class ConsoleArgument;
 
@@ -30,6 +32,9 @@ public:
 	bool GetVerbosePrint() const;
 	bool GetStoreNames() const;
 	bool GetCompress() const;
+	const std::optional<uint64_t>& GetCompressBlockSize() const;
+	const std::optional<uint64_t>& GetCompressTableSize() const;
+	const std::optional<uint64_t>& GetCompressMinMatch() const;
 
 	const std::string& GetError() const;
 
@@ -49,6 +54,9 @@ private:
 	bool m_verbosePrint = false;
 	bool m_storeNames = false;
 	bool m_compress = false;
+	std::optional<uint64_t> m_compressBlockSize;
+	std::optional<uint64_t> m_compressTableSize;
+	std::optional<uint64_t> m_compressMinMatch;
 
 	void ProcessArgument(int* index, int count, char* argv[]);
 	void EvaluateArgument(const std::string& name, const std::string& value);

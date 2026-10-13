@@ -133,7 +133,7 @@ namespace StaticForge {
 		 * @param sizeLog2 Table size as power of two (default DEFAULT_COMPRESSION_TABLE_SIZE_LOG2).
 		 * @return Reference to the builder instance.
 		 */
-		StaticForgeBuilder& SetCompressionTableSizeLog2(uint32_t sizeLog2);
+		StaticForgeBuilder& SetCompressionTableSizeLog2(uint64_t sizeLog2);
 
 		/**
 		 * @brief Sets the shortest repeated sequence the compressor stores as a reference.
@@ -143,7 +143,7 @@ namespace StaticForge {
 		 * @param length Length in bytes (default DEFAULT_COMPRESSION_MIN_MATCH_LENGTH).
 		 * @return Reference to the builder instance.
 		 */
-		StaticForgeBuilder& SetCompressionMinMatchLength(uint32_t length);
+		StaticForgeBuilder& SetCompressionMinMatchLength(uint64_t length);
 
 	private:
 		/**
@@ -153,6 +153,9 @@ namespace StaticForge {
 			std::string name;
 			bool storeNames = false;
 			bool compress = false;
+			uint64_t compressionBlockSize = DEFAULT_COMPRESSION_BLOCK_SIZE;
+			uint32_t compressionTableSizeLog2 = DEFAULT_COMPRESSION_TABLE_SIZE_LOG2;
+			uint32_t compressionMinMatchLength = DEFAULT_COMPRESSION_MIN_MATCH_LENGTH;
 			std::vector<Internal::StaticForgeFileEntry> files;
 			std::unordered_map<size_t, std::string> seenHashes;
 
@@ -170,9 +173,10 @@ namespace StaticForge {
 		bool m_isDebugActive = false;
 		bool m_storeNames = false;
 		bool m_compress = false;
-		uint64_t m_compressionBlockSize = DEFAULT_COMPRESSION_BLOCK_SIZE;
-		uint32_t m_compressionTableSizeLog2 = DEFAULT_COMPRESSION_TABLE_SIZE_LOG2;
-		uint32_t m_compressionMinMatchLength = DEFAULT_COMPRESSION_MIN_MATCH_LENGTH;
+		// set values override the meta files, otherwise the meta file value or the default is used
+		std::optional<uint64_t> m_compressionBlockSize;
+		std::optional<uint64_t> m_compressionTableSizeLog2;
+		std::optional<uint64_t> m_compressionMinMatchLength;
 
 		std::unordered_map<std::string, ArchiveGroup> m_archiveGroups;
 		std::unique_ptr<Internal::LZ4Compression> m_compressor;
@@ -183,9 +187,19 @@ namespace StaticForge {
 		void Reset();
 
 		/**
-		 * @brief Validates the compression settings and applies them to the compressor.
+		 * @brief Validates compression settings, values that are not set are skipped.
 		 */
-		bool CheckCompressionSettings(std::string* errorOut);
+		bool CheckCompressionSettings(
+			const std::optional<uint64_t>& blockSize,
+			const std::optional<uint64_t>& tableSizeLog2,
+			const std::optional<uint64_t>& minMatchLength,
+			std::string* errorOut
+		) const;
+
+		/**
+		 * @brief Sets the compression settings of an archive (builder value -> meta value -> default).
+		 */
+		void ApplyCompressionSettings(ArchiveGroup& archive, const Internal::StaticForgeMetaData& meta) const;
 
 		/**
 		 * @brief Validates all configured file paths.

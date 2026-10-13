@@ -13,7 +13,8 @@ enum class ConsoleArgType {
 
 class ConsoleArgument {
 public:
-	using EvalFunc = std::function<void(const std::string& value, void* output)>;
+	// returns false if the value is invalid
+	using EvalFunc = std::function<bool(const std::string& value, void* output)>;
 
 	ConsoleArgument() = default;
 	ConsoleArgument(const std::string& name, const std::string& shortName, ConsoleArgType type);
@@ -21,7 +22,7 @@ public:
 
 	bool CanEvaluateValue() const;
 
-	void EvaluateValue(const std::string& value, void* output) const;
+	bool EvaluateValue(const std::string& value, void* output) const;
 
 	bool MatchesName(const std::string& other) const;
 

@@ -17,6 +17,7 @@ namespace StaticForge::Internal {
 		String,
 		Bool,
 		List,
+		UInt,		// stored as std::optional<uint64_t>
 	};
 
 	class StaticForgeMetaParam {

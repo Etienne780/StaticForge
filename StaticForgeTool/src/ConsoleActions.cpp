@@ -76,6 +76,14 @@ namespace Actions {
             .SetStoreNames(config.GetStoreNames())
             .SetCompress(config.GetCompress());
 
+        // only override the meta file values if they were set
+        if (config.GetCompressBlockSize())
+            builder.SetCompressionBlockSize(*config.GetCompressBlockSize());
+        if (config.GetCompressTableSize())
+            builder.SetCompressionTableSizeLog2(*config.GetCompressTableSize());
+        if (config.GetCompressMinMatch())
+            builder.SetCompressionMinMatchLength(*config.GetCompressMinMatch());
+
         if (!builder.Build()) {
             std::cout << "Build failed: " << builder.GetError() << std::endl;
             return false;

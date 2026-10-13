@@ -54,7 +54,7 @@ namespace StaticForge::Internal {
 			SkipComment();
 			break;
 		default:
-			if (std::isalpha(static_cast<unsigned char>(c)) || 
+			if (std::isalnum(static_cast<unsigned char>(c)) ||
 				c == '_' ||
 				c == '.' ||
 				c == '-') {

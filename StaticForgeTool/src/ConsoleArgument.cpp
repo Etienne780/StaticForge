@@ -10,8 +10,8 @@ bool ConsoleArgument::CanEvaluateValue() const {
 	return m_evaluationFunc != nullptr;
 }
 
-void ConsoleArgument::EvaluateValue(const std::string& value, void* output) const {
-	m_evaluationFunc(value, output);
+bool ConsoleArgument::EvaluateValue(const std::string& value, void* output) const {
+	return m_evaluationFunc(value, output);
 }
 
 bool ConsoleArgument::MatchesName(const std::string& other) const {

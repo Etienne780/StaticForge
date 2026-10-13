@@ -21,6 +21,9 @@ namespace StaticForge::Internal {
 		AddParam(MetaParams::EXCLUDE, MType::List, MType::String);
 		AddParam(MetaParams::STORE_NAMES, MType::Bool);
 		AddParam(MetaParams::COMPRESS, MType::Bool);
+		AddParam(MetaParams::COMPRESS_BLOCK_SIZE, MType::UInt);
+		AddParam(MetaParams::COMPRESS_TABLE_SIZE, MType::UInt);
+		AddParam(MetaParams::COMPRESS_MIN_MATCH, MType::UInt);
 	}
 
 	const std::unordered_map<std::string, StaticForgeMetaParam>& GetAllMetaParams() {

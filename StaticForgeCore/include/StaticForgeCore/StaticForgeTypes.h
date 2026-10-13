@@ -3,6 +3,8 @@
 #include <string>
 #include <filesystem>
 #include <string_view>
+#include <optional>
+#include <cstdint>
 
 namespace StaticForge {
 
@@ -56,6 +58,11 @@ namespace StaticForge {
 			std::vector<std::string> excludedExtensions;
 			bool storeNames = false;
 			bool compress = false;
+
+			// not set means the builder value or the default is used
+			std::optional<uint64_t> compressionBlockSize;
+			std::optional<uint64_t> compressionTableSizeLog2;
+			std::optional<uint64_t> compressionMinMatchLength;
 		};
 
 		// Order of the elements is important for the reading

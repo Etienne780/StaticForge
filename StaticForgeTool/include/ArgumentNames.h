@@ -21,6 +21,15 @@ Commands:
 | compress| c     | Compresses files if they are larger than 4096 bytes                        | bool     | false   | false       |
 |---------|-------|----------------------------------------------------------------------------|----------|---------|-------------|
 
+Compression settings (only used with --compress, override the values of .sfpak.meta files):
+|---------------------|-------|------------------------------------------------------------------|------|---------|-------------|
+| name                | short | description                                                      | type | default | range       |
+|---------------------|-------|------------------------------------------------------------------|------|---------|-------------|
+| compress-block-size | cbs   | Size in bytes of the blocks a file is split into for compression | int  | 65536   | 1024 - 64MB |
+| compress-table-size | cts   | Match table size as power of two (entries = 2^value)             | int  | 16      | 8 - 24      |
+| compress-min-match  | cmm   | Shortest repeated sequence that is stored as a reference         | int  | 8       | 4 - 65535   |
+|---------------------|-------|------------------------------------------------------------------|------|---------|-------------|
+
 )""";
 
 namespace ArgName {
@@ -54,5 +63,14 @@ namespace ArgName {
 
 	const std::string_view COMPRESS_NAMES = "compress";
 	const std::string_view COMPRESS_NAMES_SHORTNAME = "c";
+
+	const std::string_view COMPRESS_BLOCK_SIZE = "compress-block-size";
+	const std::string_view COMPRESS_BLOCK_SIZE_SHORTNAME = "cbs";
+
+	const std::string_view COMPRESS_TABLE_SIZE = "compress-table-size";
+	const std::string_view COMPRESS_TABLE_SIZE_SHORTNAME = "cts";
+
+	const std::string_view COMPRESS_MIN_MATCH = "compress-min-match";
+	const std::string_view COMPRESS_MIN_MATCH_SHORTNAME = "cmm";
 	
 }
