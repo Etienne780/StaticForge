@@ -308,6 +308,18 @@ namespace StaticForge {
 		return &m_indexEntries[it->second];
 	}
 
+	void StaticForgeArchive::Reset() {
+		CloseFileStream();
+		m_stream.clear();
+		CloseMapped();
+
+		m_path.clear();
+		m_header = {};
+		m_indexEntries.clear();
+		m_hashNameToEntry.clear();
+		m_indexToName.clear();
+	}
+
 	bool StaticForgeArchive::VerifyChecksum(
 		const std::byte* data,
 		uint64_t size,

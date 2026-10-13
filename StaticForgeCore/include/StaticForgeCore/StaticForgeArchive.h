@@ -198,6 +198,11 @@ namespace StaticForge {
 		Internal::StaticForgeIndexEntry* GetIndexEntry(uint64_t hash);
 
 		/**
+		 * @brief Closes all open resources and clears the loaded archive data.
+		 */
+		void Reset();
+
+		/**
 		 * @brief Validates checksum of loaded asset data.
 		 */
 		bool VerifyChecksum(const std::byte* data, uint64_t size,

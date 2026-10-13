@@ -25,6 +25,9 @@ namespace StaticForge {
 			return false;
 		}
 
+		// resets the archive so it is allways fresh
+		archiveOut->Reset();
+
 		// open file
 		archiveOut->m_path = path;
 		archiveOut->OpenFileStream();
