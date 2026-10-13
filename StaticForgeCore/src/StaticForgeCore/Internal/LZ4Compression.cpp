@@ -1,12 +1,42 @@
 #include "Internal/LZ4Compression.h"
+#include <algorithm>
 #include <cassert>
 #include <cstdio>
 
 namespace StaticForge::Internal {
 
-    LZ4Compression::LZ4Compression(bool isLittleEndian, bool storeHeader)
-        : m_isLittleEndian(isLittleEndian), m_storeHeader(storeHeader) {
-        m_table.fill(Entry{});
+    LZ4Compression::LZ4Compression(bool isLittleEndian, bool storeHeader, uint32_t tableSizeLog2, uint32_t minMatchLength)
+        : m_isLittleEndian(isLittleEndian)
+        , m_storeHeader(storeHeader) {
+        SetTableSizeLog2(tableSizeLog2);
+        SetMinMatchLength(minMatchLength);
+    }
+
+    void LZ4Compression::SetTableSizeLog2(uint32_t tableSizeLog2) {
+        uint32_t value = std::clamp(tableSizeLog2, MIN_TABLE_SIZE_LOG2, MAX_TABLE_SIZE_LOG2);
+        if (value == m_tableSizeLog2)
+            return;
+
+        m_tableSizeLog2 = value;
+        // gets reallocated with the new size on the next Compress call
+        m_table.clear();
+        m_table.shrink_to_fit();
+    }
+
+    void LZ4Compression::SetMinMatchLength(uint32_t minMatchLength) {
+        m_minMatchLength = std::clamp(minMatchLength, MIN_MATCH, MAX_MATCH);
+    }
+
+    uint32_t LZ4Compression::GetTableSizeLog2() const {
+        return m_tableSizeLog2;
+    }
+
+    uint32_t LZ4Compression::GetTableSize() const {
+        return 1u << m_tableSizeLog2;
+    }
+
+    uint32_t LZ4Compression::GetMinMatchLength() const {
+        return m_minMatchLength;
     }
 
     std::vector<std::byte> LZ4Compression::Compress(const char* data, size_t size) {
@@ -37,7 +67,7 @@ namespace StaticForge::Internal {
         uint64_t literalStart = 0;
         while (offset <= ctx.size - MIN_MATCH) {
             uint32_t hash = Read4ByteSequence(ctx.data + offset);
-            size_t idx = hash & (TABLE_SIZE - 1);
+            uint32_t idx = GetTableIndex(hash);
 
             Entry& e = m_table[idx];
 
@@ -50,21 +80,27 @@ namespace StaticForge::Internal {
                 (offset - matchStart) <= MAX_DISTANCE &&
                 std::memcmp(ctx.data + matchStart, ctx.data + offset, MIN_MATCH) == 0;
 
+            uint64_t matchLen = MIN_MATCH;
+            if (valid) {
+                while (
+                    offset + matchLen < ctx.size &&
+                    matchLen < MAX_MATCH &&
+                    ctx.data[matchStart + matchLen] == ctx.data[offset + matchLen])
+                {
+                    matchLen++;
+                }
+
+                // short matches cost more than storing the bytes as literals
+                if (matchLen < m_minMatchLength)
+                    valid = false;
+            }
+
             if (!valid) {
                 e.hash = hash;
                 e.offset = static_cast<uint32_t>(offset);
                 e.generation = m_generation;
                 offset++;
                 continue;
-            }
-
-            uint64_t matchLen = MIN_MATCH;
-            while (
-                offset + matchLen < ctx.size &&
-                matchLen < MAX_MATCH &&
-                ctx.data[matchStart + matchLen] == ctx.data[offset + matchLen])
-            {
-                matchLen++;
             }
 
             uint64_t literalLen = offset - literalStart;
@@ -207,11 +243,17 @@ namespace StaticForge::Internal {
     }
 
     void LZ4Compression::ResetTable() {
+        if (m_table.empty()) {
+            m_table.assign(GetTableSize(), Entry{});
+            m_generation = 1;
+            return;
+        }
+
         m_generation++;
 
         // only clear the table when the generation counter wraps around
         if (m_generation == 0) {
-            m_table.fill(Entry{});
+            std::fill(m_table.begin(), m_table.end(), Entry{});
             m_generation = 1;
         }
     }
@@ -307,6 +349,11 @@ namespace StaticForge::Internal {
         uint32_t seq;
         std::memcpy(&seq, p, sizeof(seq));
         return m_isLittleEndian ? seq : SwapEndian(seq);
+    }
+
+    uint32_t LZ4Compression::GetTableIndex(uint32_t sequence) const {
+        // spreads all 4 bytes over the index bits, so small tables also work well
+        return (sequence * 2654435761u) >> (32 - m_tableSizeLog2);
     }
 
 }

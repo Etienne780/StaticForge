@@ -14,6 +14,21 @@ namespace StaticForge {
 	constexpr std::string_view PACK_FILE_EXTENSION = ".sfpak";
 	constexpr std::string_view META_FILE_EXTENSION = ".sfpak.meta";
 
+	// size of the blocks a file gets split into for compression
+	constexpr uint64_t DEFAULT_COMPRESSION_BLOCK_SIZE = 64 * 1024;
+	constexpr uint64_t MIN_COMPRESSION_BLOCK_SIZE = 1024;
+	constexpr uint64_t MAX_COMPRESSION_BLOCK_SIZE = 64 * 1024 * 1024;
+
+	// match table of the compressor has (1 << log2) entries
+	constexpr uint32_t DEFAULT_COMPRESSION_TABLE_SIZE_LOG2 = 16;
+	constexpr uint32_t MIN_COMPRESSION_TABLE_SIZE_LOG2 = 8;
+	constexpr uint32_t MAX_COMPRESSION_TABLE_SIZE_LOG2 = 24;
+
+	// shorter matches are stored uncompressed, because they would take more space
+	constexpr uint32_t DEFAULT_COMPRESSION_MIN_MATCH_LENGTH = 8;
+	constexpr uint32_t MIN_COMPRESSION_MIN_MATCH_LENGTH = 4;
+	constexpr uint32_t MAX_COMPRESSION_MIN_MATCH_LENGTH = 0xFFFF;
+
 	namespace Internal {
 
 		constexpr std::string_view CONSOLE_SEPERATOR = "===================================";

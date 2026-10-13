@@ -29,6 +29,11 @@ namespace StaticForge {
 		Reset();
 
 		std::string error;
+		if (!CheckCompressionSettings(&error)) {
+			AddError("CheckCompressionSettings: " + error);
+			return false;
+		}
+
 		if (!CheckFilepaths(&error)) {
 			AddError("CheckFilepaths: " + error);
 			return false;
@@ -87,9 +92,52 @@ namespace StaticForge {
 		return *this;
 	}
 
+	StaticForgeBuilder& StaticForgeBuilder::SetCompressionBlockSize(uint64_t size) {
+		m_compressionBlockSize = size;
+		return *this;
+	}
+
+	StaticForgeBuilder& StaticForgeBuilder::SetCompressionTableSizeLog2(uint32_t sizeLog2) {
+		m_compressionTableSizeLog2 = sizeLog2;
+		return *this;
+	}
+
+	StaticForgeBuilder& StaticForgeBuilder::SetCompressionMinMatchLength(uint32_t length) {
+		m_compressionMinMatchLength = length;
+		return *this;
+	}
+
 	void StaticForgeBuilder::Reset() {
 		ClearErrors();
 		m_archiveGroups.clear();
+	}
+
+	bool StaticForgeBuilder::CheckCompressionSettings(std::string* errorOut) {
+		auto outOfRange = [errorOut](const std::string& name, uint64_t value, uint64_t min, uint64_t max) {
+			*errorOut = name + " '" + std::to_string(value) + "' is out of range, must be between '"
+				+ std::to_string(min) + "' and '" + std::to_string(max) + "'";
+			return false;
+		};
+
+		if (m_compressionBlockSize < MIN_COMPRESSION_BLOCK_SIZE || m_compressionBlockSize > MAX_COMPRESSION_BLOCK_SIZE)
+			return outOfRange("Compression block size", m_compressionBlockSize, MIN_COMPRESSION_BLOCK_SIZE, MAX_COMPRESSION_BLOCK_SIZE);
+
+		if (m_compressionTableSizeLog2 < MIN_COMPRESSION_TABLE_SIZE_LOG2 || m_compressionTableSizeLog2 > MAX_COMPRESSION_TABLE_SIZE_LOG2)
+			return outOfRange("Compression table size log2", m_compressionTableSizeLog2, MIN_COMPRESSION_TABLE_SIZE_LOG2, MAX_COMPRESSION_TABLE_SIZE_LOG2);
+
+		if (m_compressionMinMatchLength < MIN_COMPRESSION_MIN_MATCH_LENGTH || m_compressionMinMatchLength > MAX_COMPRESSION_MIN_MATCH_LENGTH)
+			return outOfRange("Compression min match length", m_compressionMinMatchLength, MIN_COMPRESSION_MIN_MATCH_LENGTH, MAX_COMPRESSION_MIN_MATCH_LENGTH);
+
+		m_compressor->SetTableSizeLog2(m_compressionTableSizeLog2);
+		m_compressor->SetMinMatchLength(m_compressionMinMatchLength);
+
+		if (m_isDebugActive && m_compress) {
+			std::cout << "compression: block size " << m_compressionBlockSize
+				<< ", table size 2^" << m_compressionTableSizeLog2
+				<< ", min match length " << m_compressionMinMatchLength << std::endl << std::endl;
+		}
+
+		return true;
 	}
 
 	bool StaticForgeBuilder::CheckFilepaths(std::string* errorOut) {
@@ -635,7 +683,10 @@ namespace StaticForge {
 
 	bool StaticForgeBuilder::WriteData(ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) const {
 		constexpr uint64_t blockSize = Internal::ALIGNMENT_FILE;// 4096
-		std::vector<char> buffer(blockSize);
+
+		// files are read (and compressed) in blocks of this size
+		const uint64_t readSize = m_compressionBlockSize;
+		std::vector<char> buffer(readSize);
 
 		// write padding
 		// header + index table = archive.dataStart
@@ -670,7 +721,7 @@ namespace StaticForge {
 			uint64_t written = 0;
 
 			while (fileStream) {
-				fileStream.read(buffer.data(), blockSize);
+				fileStream.read(buffer.data(), static_cast<std::streamsize>(readSize));
 				std::streamsize bytesRead = fileStream.gcount();
 
 				if (bytesRead <= 0)

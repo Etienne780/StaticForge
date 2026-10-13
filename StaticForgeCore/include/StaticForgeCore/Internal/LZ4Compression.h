@@ -1,10 +1,11 @@
 #pragma once
 #include <vector>
 #include <string>
-#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+
+#include "StaticForgeTypes.h"
 
 namespace StaticForge::Internal {
 
@@ -24,18 +25,62 @@ namespace StaticForge::Internal {
      * Constraints:
      * - distance <= 65535
      * - matchLen <= 65535
-     * - minimum match length = 4
+     * - minimum match length = 4 (the encoder only emits matches >= GetMinMatchLength())
      */
     class LZ4Compression {
     public:
+        static constexpr uint32_t MIN_TABLE_SIZE_LOG2 = MIN_COMPRESSION_TABLE_SIZE_LOG2;
+        static constexpr uint32_t MAX_TABLE_SIZE_LOG2 = MAX_COMPRESSION_TABLE_SIZE_LOG2;
+        static constexpr uint32_t DEFAULT_TABLE_SIZE_LOG2 = DEFAULT_COMPRESSION_TABLE_SIZE_LOG2;
+
+        static constexpr uint32_t MIN_MATCH = MIN_COMPRESSION_MIN_MATCH_LENGTH;
+        static constexpr uint32_t MAX_MATCH = MAX_COMPRESSION_MIN_MATCH_LENGTH;
+        static constexpr uint32_t DEFAULT_MIN_MATCH_LENGTH = DEFAULT_COMPRESSION_MIN_MATCH_LENGTH;
+
         explicit LZ4Compression() = default;
 
         /**
          * @brief Constructs compressor instance.
          * @param isLittleEndian Input byte order flag. (LZ4_IS_LITTLE_ENDIAN)
          * @param storeHeader Write/read original size header. (LZ4_STORE_HEADER)
+         * @param tableSizeLog2 Match table size as power of two, see SetTableSizeLog2()
+         * @param minMatchLength Shortest match the encoder emits, see SetMinMatchLength()
          */
-        explicit LZ4Compression(bool isLittleEndian, bool storeHeader);
+        explicit LZ4Compression(
+            bool isLittleEndian,
+            bool storeHeader,
+            uint32_t tableSizeLog2 = DEFAULT_TABLE_SIZE_LOG2,
+            uint32_t minMatchLength = DEFAULT_MIN_MATCH_LENGTH
+        );
+
+        /**
+         * @brief Sets the match table size (entries = 1 << tableSizeLog2).
+         *
+         * Clamped to [MIN_TABLE_SIZE_LOG2, MAX_TABLE_SIZE_LOG2].
+         */
+        void SetTableSizeLog2(uint32_t tableSizeLog2);
+
+        /**
+         * @brief Sets the shortest match the encoder emits, shorter matches are stored as literals.
+         *
+         * Clamped to [MIN_MATCH, MAX_MATCH]. Does not affect decompression.
+         */
+        void SetMinMatchLength(uint32_t minMatchLength);
+
+        /**
+         * @brief Returns the match table size as power of two.
+         */
+        uint32_t GetTableSizeLog2() const;
+
+        /**
+         * @brief Returns the number of entries in the match table.
+         */
+        uint32_t GetTableSize() const;
+
+        /**
+         * @brief Returns the shortest match the encoder emits.
+         */
+        uint32_t GetMinMatchLength() const;
 
         /**
          * @brief Compresses a memory buffer.
@@ -83,20 +128,16 @@ namespace StaticForge::Internal {
         static constexpr uint8_t  BLOCK_LITERAL = 0x01;
         static constexpr uint8_t  BLOCK_MATCH = 0x02;
 
-        static constexpr uint32_t MIN_MATCH = 4;
         static constexpr uint32_t MAX_DISTANCE = 0xFFFF;
-        static constexpr uint32_t MAX_MATCH = 0xFFFF;
         static constexpr uint32_t MAX_LITERAL_CHUNK = 0xFFFF;
-
-        static constexpr uint32_t TABLE_SIZE = 1 << 20; // 1M entries (adjust)
-        static constexpr uint32_t HASH_MASK = TABLE_SIZE - 1;
-
-        static constexpr uint64_t WINDOW_SIZE = 64 * 1024;
 
         const bool m_isLittleEndian = false;
         const bool m_storeHeader = false;
+        uint32_t m_tableSizeLog2 = DEFAULT_TABLE_SIZE_LOG2;
+        uint32_t m_minMatchLength = DEFAULT_MIN_MATCH_LENGTH;
 
-        std::array<Entry, TABLE_SIZE> m_table;
+        // only allocated on the first Compress call, decompression does not need it
+        std::vector<Entry> m_table;
         uint32_t m_generation = 0;
         mutable std::vector<std::string> m_errors;
 
@@ -125,6 +166,9 @@ namespace StaticForge::Internal {
 
         uint32_t SwapEndian(uint32_t v) const;
         uint32_t Read4ByteSequence(const char* p) const;
+
+        /// Maps a 4 byte sequence to an index in the match table.
+        uint32_t GetTableIndex(uint32_t sequence) const;
     };
 
 }

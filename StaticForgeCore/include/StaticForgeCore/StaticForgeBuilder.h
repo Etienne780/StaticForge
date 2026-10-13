@@ -114,6 +114,37 @@ namespace StaticForge {
 		 */
 		StaticForgeBuilder& SetCompress(bool active);
 
+		/**
+		 * @brief Sets the size of the blocks a file gets split into for compression.
+		 *
+		 * Larger blocks compress better, the compression can only reference data inside the same block.
+		 * Must be between MIN_COMPRESSION_BLOCK_SIZE and MAX_COMPRESSION_BLOCK_SIZE.
+		 *
+		 * @param size Block size in bytes (default DEFAULT_COMPRESSION_BLOCK_SIZE).
+		 * @return Reference to the builder instance.
+		 */
+		StaticForgeBuilder& SetCompressionBlockSize(uint64_t size);
+
+		/**
+		 * @brief Sets the size of the compressor match table (entries = 1 << sizeLog2).
+		 *
+		 * Must be between MIN_COMPRESSION_TABLE_SIZE_LOG2 and MAX_COMPRESSION_TABLE_SIZE_LOG2.
+		 *
+		 * @param sizeLog2 Table size as power of two (default DEFAULT_COMPRESSION_TABLE_SIZE_LOG2).
+		 * @return Reference to the builder instance.
+		 */
+		StaticForgeBuilder& SetCompressionTableSizeLog2(uint32_t sizeLog2);
+
+		/**
+		 * @brief Sets the shortest repeated sequence the compressor stores as a reference.
+		 *
+		 * Must be between MIN_COMPRESSION_MIN_MATCH_LENGTH and MAX_COMPRESSION_MIN_MATCH_LENGTH.
+		 *
+		 * @param length Length in bytes (default DEFAULT_COMPRESSION_MIN_MATCH_LENGTH).
+		 * @return Reference to the builder instance.
+		 */
+		StaticForgeBuilder& SetCompressionMinMatchLength(uint32_t length);
+
 	private:
 		/**
 		 * @brief Internal archive build data container.
@@ -139,6 +170,9 @@ namespace StaticForge {
 		bool m_isDebugActive = false;
 		bool m_storeNames = false;
 		bool m_compress = false;
+		uint64_t m_compressionBlockSize = DEFAULT_COMPRESSION_BLOCK_SIZE;
+		uint32_t m_compressionTableSizeLog2 = DEFAULT_COMPRESSION_TABLE_SIZE_LOG2;
+		uint32_t m_compressionMinMatchLength = DEFAULT_COMPRESSION_MIN_MATCH_LENGTH;
 
 		std::unordered_map<std::string, ArchiveGroup> m_archiveGroups;
 		std::unique_ptr<Internal::LZ4Compression> m_compressor;
@@ -147,6 +181,11 @@ namespace StaticForge {
 		 * @brief Clears all data of a previous build.
 		 */
 		void Reset();
+
+		/**
+		 * @brief Validates the compression settings and applies them to the compressor.
+		 */
+		bool CheckCompressionSettings(std::string* errorOut);
 
 		/**
 		 * @brief Validates all configured file paths.
