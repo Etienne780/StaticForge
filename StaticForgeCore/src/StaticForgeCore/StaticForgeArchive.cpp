@@ -192,6 +192,9 @@ namespace StaticForge {
 		const uint64_t start = m_header.dataOffset + entry->fileOffset;
 
 		std::vector<std::byte> raw(readSize);
+
+		// prevents a previous failed load from breaking all following loads
+		m_stream.clear();
 		m_stream.seekg(static_cast<std::streamoff>(start), std::ios::beg);
 		if (!m_stream) {
 			*errorOut = "Failed to seek at offset " + std::to_string(start);
