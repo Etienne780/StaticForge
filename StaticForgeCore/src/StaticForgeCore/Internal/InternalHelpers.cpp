@@ -18,6 +18,17 @@ namespace StaticForge::Internal {
 		return hash;
 	}
 
+	uint64_t FNV1a64(const void* data, size_t size, uint64_t hash) {
+		const uint8_t* bytes = static_cast<const uint8_t*>(data);
+
+		for (size_t i = 0; i < size; i++) {
+			hash ^= bytes[i];
+			hash *= 1099511628211ull;
+		}
+
+		return hash;
+	}
+
 	std::string NormalizeFilepathSlashes(const std::string& path) {
 		std::string result;
 		result.reserve(path.size());
@@ -133,7 +144,7 @@ namespace StaticForge::Internal {
 	}
 
 	uint64_t HashFilename(const std::string& filename) {
-		return FNV1a(filename.data(), filename.size());
+		return FNV1a64(filename.data(), filename.size());
 	}
 
 	bool HasExtension(const StaticForgePath& path, std::string_view extension, bool ignoreCase) {

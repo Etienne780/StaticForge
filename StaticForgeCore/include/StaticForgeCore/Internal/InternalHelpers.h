@@ -7,6 +7,7 @@
 namespace StaticForge::Internal {
 
     uint32_t FNV1a(const void* data, size_t size, uint32_t hash = 2166136261u);
+    uint64_t FNV1a64(const void* data, size_t size, uint64_t hash = 14695981039346656037ull);
 
 	std::string NormalizeFilepathSlashes(const std::string& path);
 

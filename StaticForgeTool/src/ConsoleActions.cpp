@@ -11,7 +11,7 @@ namespace Actions {
 
     static std::string HashToHex(uint64_t hash) {
         std::ostringstream stream;
-        stream << std::hex << std::setw(8) << std::setfill('0') << hash;
+        stream << std::hex << std::setw(16) << std::setfill('0') << hash;
         return stream.str();
     }
 

@@ -157,7 +157,7 @@ namespace StaticForge {
 			uint32_t compressionTableSizeLog2 = DEFAULT_COMPRESSION_TABLE_SIZE_LOG2;
 			uint32_t compressionMinMatchLength = DEFAULT_COMPRESSION_MIN_MATCH_LENGTH;
 			std::vector<Internal::StaticForgeFileEntry> files;
-			std::unordered_map<size_t, std::string> seenHashes;
+			std::unordered_map<uint64_t, std::string> seenHashes;
 
 			uint64_t totalArchiveSize = 0;
 			uint64_t dataStart = 0;
