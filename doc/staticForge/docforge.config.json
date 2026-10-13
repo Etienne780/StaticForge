@@ -5,6 +5,8 @@
     "isThemePreset": false,
     "currentThemeId": "docTheme_mu3td1ku1jtptgevrul47"
   },
+  "languagesStyles": [],
+  "links": [],
   "tabs": [
     {
       "id": "tab_mu3td1ku2qztxt16axy53",
@@ -15,35 +17,41 @@
           "id": "node_mu3td1kuufx8v3a1hzju",
           "name": "Getting Started",
           "fileName": "Getting Started",
+          "type": "page",
           "children": [
             {
               "id": "node_mu3td1ku93dq7vjxmvr2",
               "name": "Packing Assets",
               "fileName": "Packing Assets",
+              "type": "page",
               "children": []
             },
             {
               "id": "node_mu3td1ku1d4g35y4wv21q",
               "name": "Meta Files",
               "fileName": "Meta Files",
+              "type": "page",
               "children": []
             },
             {
               "id": "node_mu3td1ku1w2zp279b2ssx",
               "name": "Inspecting Archives",
               "fileName": "Inspecting Archives",
+              "type": "page",
               "children": []
             },
             {
               "id": "node_mu3td1kuzgocka16m5db0",
               "name": "Loading Assets at Runtime",
               "fileName": "Loading Assets at Runtime",
+              "type": "page",
               "children": []
             },
             {
               "id": "node_mu3td1kurklac1g47o2b",
               "name": "Building Archives in Code",
               "fileName": "Building Archives in Code",
+              "type": "page",
               "children": []
             }
           ]
@@ -52,6 +60,7 @@
           "id": "node_mu3td1kuw60i4y16ior5l",
           "name": "CLI Reference",
           "fileName": "CLI Reference",
+          "type": "page",
           "children": []
         }
       ]
@@ -65,42 +74,49 @@
           "id": "node_mu3td1ku1de5w2cswv1sn",
           "name": "Architecture",
           "fileName": "Architecture",
+          "type": "page",
           "children": []
         },
         {
           "id": "node_mu3td1kuuhnvwc15ryskk",
           "name": "File Format",
           "fileName": "File Format",
+          "type": "page",
           "children": []
         },
         {
           "id": "node_mu3td1kucsyh3x1ldzws1",
           "name": "Hashing",
           "fileName": "Hashing",
+          "type": "page",
           "children": []
         },
         {
           "id": "node_mu3td1kulgv50d577zxf",
           "name": "Build Process",
           "fileName": "Build Process",
+          "type": "page",
           "children": []
         },
         {
           "id": "node_mu3td1ku1hsv9km18cfhyf",
           "name": "Meta File Parser",
           "fileName": "Meta File Parser",
+          "type": "page",
           "children": []
         },
         {
           "id": "node_mu3td1ku1t629jd11ytz7k",
           "name": "StaticForgeArchive",
           "fileName": "StaticForgeArchive",
+          "type": "page",
           "children": []
         },
         {
           "id": "node_mu3td1ku72xkz714tsyqd",
           "name": "ErrorSupport",
           "fileName": "ErrorSupport",
+          "type": "page",
           "children": []
         }
       ]
