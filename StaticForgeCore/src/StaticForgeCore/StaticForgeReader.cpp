@@ -1,6 +1,7 @@
 #include <cstring>
 
 #include "Internal/InternalHelpers.h"
+#include "Internal/LZ4Compression.h"
 #include "StaticForgeReader.h"
 #include "StaticForgeArchive.h"
 
@@ -230,7 +231,9 @@ namespace StaticForge {
 		Internal::StaticForgeNameTableHeader h{};
 
 		if (!ReadLE64(stream, h.entryOffset) ||
-			!ReadLE64(stream, h.stringDataOffset)) {
+			!ReadLE64(stream, h.stringDataOffset) ||
+			!ReadLE64(stream, h.stringDataSize) ||
+			!ReadLE64(stream, h.stringDataCompressedSize)) {
 			*errorOut = "Failed to read name table header (unexpected EOF)";
 			return false;
 		}
@@ -242,7 +245,37 @@ namespace StaticForge {
 			return false;
 		}
 
-		stream.seekg(h.entryOffset);
+		if (!InFile(h.stringDataOffset, h.stringDataCompressedSize, fileSize)) {
+			*errorOut = "Name table string data is outside of the file (archive is corrupted)";
+			return false;
+		}
+
+		// a 5 byte match block expands to at most 65535 bytes, a larger size is not possible
+		constexpr uint64_t maxExpansion = 65535 / 5 + 1;
+		uint64_t maxStringDataSize = 0;
+		if (!Internal::SafeMulU64(h.stringDataCompressedSize, maxExpansion, &maxStringDataSize) ||
+			h.stringDataSize > maxStringDataSize) {
+			*errorOut = "Name table string data size is invalid (archive is corrupted)";
+			return false;
+		}
+
+		// read and decompress all names at once
+		std::vector<std::byte> compressed(static_cast<size_t>(h.stringDataCompressedSize));
+		stream.seekg(static_cast<std::streamoff>(h.stringDataOffset));
+		stream.read(reinterpret_cast<char*>(compressed.data()), static_cast<std::streamsize>(compressed.size()));
+		if (!stream) {
+			*errorOut = "Failed to read name table string data";
+			return false;
+		}
+
+		auto& compressor = *archive->m_compressor;
+		std::vector<std::byte> stringData = compressor.Decompress(compressed.data(), compressed.size(), static_cast<size_t>(h.stringDataSize));
+		if (!compressor.IsValid() || stringData.size() != h.stringDataSize) {
+			*errorOut = "Failed to decompress name table string data: " + compressor.GetError();
+			return false;
+		}
+
+		stream.seekg(static_cast<std::streamoff>(h.entryOffset));
 		if (!stream) {
 			*errorOut = "Failed to seek to name table entries";
 			return false;
@@ -258,43 +291,13 @@ namespace StaticForge {
 				return false;
 			}
 
-			uint64_t nameStart = 0;
-			if (!Internal::SafeAddU64(h.stringDataOffset, entry.nameOffset, &nameStart) ||
-				!InFile(nameStart, entry.nameLength, fileSize)) {
-				*errorOut = "Name of name table entry " + std::to_string(i) + " is outside of the file (archive is corrupted)";
+			if (!InFile(entry.nameOffset, entry.nameLength, h.stringDataSize)) {
+				*errorOut = "Name of name table entry " + std::to_string(i) + " is outside of the string data (archive is corrupted)";
 				return false;
 			}
 
-			auto returnPos = stream.tellg();
-			if (returnPos < 0) {
-				*errorOut = "Failed to get current stream position while reading name table";
-				return false;
-			}
-
-			stream.seekg(static_cast<std::streamoff>(nameStart));
-
-			if (!stream) {
-				*errorOut = "Failed to seek to string data for name table entry " + std::to_string(i);
-				return false;
-			}
-
-			std::string name(entry.nameLength, '\0');
-
-			stream.read(name.data(), static_cast<std::streamsize>(entry.nameLength));
-
-			if (!stream) {
-				*errorOut = "Failed to read string data for name table entry " + std::to_string(i);
-				return false;
-			}
-
-			stream.seekg(returnPos);
-
-			if (!stream) {
-				*errorOut = "Failed to restore stream position after reading name table entry " + std::to_string(i);
-				return false;
-			}
-
-			archive->m_indexToName[i] = std::move(name);
+			const char* nameStart = reinterpret_cast<const char*>(stringData.data()) + entry.nameOffset;
+			archive->m_indexToName[i] = std::string(nameStart, entry.nameLength);
 		}
 
 		return true;

@@ -89,7 +89,9 @@ namespace StaticForge {
 
 		struct StaticForgeNameTableHeader {
 			uint64_t entryOffset = 0;        /*< offset to name table entries */
-			uint64_t stringDataOffset = 0;   /*< offset to raw string data block */
+			uint64_t stringDataOffset = 0;   /*< offset to the compressed string data block */
+			uint64_t stringDataSize = 0;     /*< size of the string data after decompression */
+			uint64_t stringDataCompressedSize = 0; /*< size of the compressed string data in the file */
 		};
 
 		struct StaticForgeNameTableEntry {

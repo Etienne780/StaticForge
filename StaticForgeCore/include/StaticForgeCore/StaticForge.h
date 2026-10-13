@@ -36,18 +36,20 @@ namespace StaticForge {
 
 		[optional]
 		NAME TABLE HEADER
-		- entry offset			uint64_t -> NAME TABLE ENTRIES
-		- string data offset	uint64_t -> NAME TABLE STRING DATA
+		- entry offset				uint64_t -> NAME TABLE ENTRIES
+		- string data offset		uint64_t -> NAME TABLE STRING DATA
+		- string data size			uint64_t (after decompression)
+		- string data compressed size	uint64_t
 
 		[optional]
 		NAME TABLE ENTRIES (16 bytes per file)
 		- hash			uint64_t
 		- name length	uint32_t
-		- name offset	uint32_t -> NAME TABLE HEADER.string data offset + NAME TABLE STRING DATA
+		- name offset	uint32_t -> offset inside the decompressed NAME TABLE STRING DATA
 
 		[optional]
 		NAME TABLE STRING DATA
-		- raw string data ('textures/level1/background.png', ...)
+		- all names packed together and compressed as one block ('textures/level1/background.png', ...)
 	*/
 
 }

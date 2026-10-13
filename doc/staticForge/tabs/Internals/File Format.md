@@ -79,10 +79,12 @@ The FNV-1a checksum covers all chunk bytes as written on disk — framing header
 
 Present only when the archive was built with name storage enabled. Located at `nameTableHeaderOffset`.
 
-| Field              | Type       | Description                                            |
-|--------------------|------------|--------------------------------------------------------|
-| `entryOffset`      | `uint64_t` | Byte offset to the first Name Table Entry              |
-| `stringDataOffset` | `uint64_t` | Byte offset to the start of Name Table String Data     |
+| Field                      | Type       | Description                                                  |
+|----------------------------|------------|--------------------------------------------------------------|
+| `entryOffset`              | `uint64_t` | Byte offset to the first Name Table Entry                    |
+| `stringDataOffset`         | `uint64_t` | Byte offset to the start of the compressed String Data       |
+| `stringDataSize`           | `uint64_t` | Size of the String Data after decompression                  |
+| `stringDataCompressedSize` | `uint64_t` | Size of the compressed String Data in the file               |
 
 ## Name Table Entry
 
@@ -92,11 +94,13 @@ One 16-byte entry per file, stored contiguously starting at `entryOffset`, in th
 |--------------|------------|--------------------------------------------------------------------------------|
 | `hash`       | `uint64_t` | FNV-1a hash of the path (matches `hashName` in the corresponding index entry)  |
 | `nameLength` | `uint32_t` | Length of the UTF-8 path string in bytes                                       |
-| `nameOffset` | `uint32_t` | Byte offset within the String Data region where this path starts               |
+| `nameOffset` | `uint32_t` | Byte offset within the decompressed String Data where this path starts         |
 
 ## Name Table String Data
 
-Raw UTF-8 path strings packed end-to-end with no separators. To read a filename, seek to `stringDataOffset + nameOffset` and read `nameLength` bytes. Paths use `/` as separator and are relative to the source folder.
+UTF-8 path strings packed end-to-end with no separators. The whole block is always compressed as one piece with the same compression as the file data (without framing header), because paths usually share long prefixes and compress very well (often to 20 - 50 %).
+
+To read a filename, read `stringDataCompressedSize` bytes at `stringDataOffset`, decompress them to `stringDataSize` bytes, then take `nameLength` bytes at `nameOffset`. Paths use `/` as separator and are relative to the source folder.
 
 ## Alignment
 
@@ -113,6 +117,7 @@ This alignment ensures that file offsets are always multiples of 4096, which all
 - `indexSize` must match `fileCount × 40`, and the index must be inside the file.
 - `dataOffset` and the name table must be inside the file.
 - The data of every index entry must be inside the file, and every hash must be unique.
-- Every name table entry and every name must be inside the file.
+- The compressed string data must be inside the file, and `stringDataSize` must be possible for its compressed size (at most `compressedSize × 13108`).
+- Every name must be inside the decompressed string data.
 
 When loading a compressed entry, every chunk's `originalSize` must be at most `MAX_COMPRESSION_BLOCK_SIZE` and the sum must match `fileSize`. A corrupted archive is rejected with an error instead of crashing.

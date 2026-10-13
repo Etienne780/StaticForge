@@ -586,6 +586,9 @@ namespace StaticForge {
 		
 		constexpr uint32_t uint32_max = std::numeric_limits<uint32_t>::max();
 
+		// all names packed end to end, compressed as one block below
+		std::string stringData;
+
 		uint32_t totalStrOffset = 0;
 		for (auto& f : archive.files) {
 			size_t strSize = f.relativeUtf8.size();
@@ -606,12 +609,22 @@ namespace StaticForge {
 			f.nameStrDataLength = strSize32;
 
 			totalStrOffset += strSize32;
+			stringData += f.relativeUtf8;
+		}
+
+		archive.nameStringDataSize = stringData.size();
+		archive.nameStringDataCompressed = m_compressor->Compress(stringData.data(), stringData.size());
+		if (!m_compressor->IsValid()) {
+			*errorOut = "Failed to compress name table string data: " + m_compressor->GetError();
+			return false;
 		}
 
 		if (m_isDebugActive) {
 			std::cout << "total size: " << archive.totalArchiveSize << " bytes" << std::endl;
 			std::cout << "name table start: " << archive.nameTableStart << std::endl;
 			std::cout << "name data start: " << archive.nameStringDataStart << std::endl;
+			std::cout << "name data size: " << archive.nameStringDataSize << " bytes, compressed: "
+				<< archive.nameStringDataCompressed.size() << " bytes" << std::endl;
 			std::cout << std::endl;
 		}
 
@@ -951,6 +964,8 @@ namespace StaticForge {
 		Internal::StaticForgeNameTableHeader h{};
 		h.entryOffset = archive.nameTableStart + headerSize;
 		h.stringDataOffset = archive.nameStringDataStart;
+		h.stringDataSize = archive.nameStringDataSize;
+		h.stringDataCompressedSize = static_cast<uint64_t>(archive.nameStringDataCompressed.size());
 
 		if (Internal::IsLittleEndian()) {
 			stream.write(
@@ -961,6 +976,8 @@ namespace StaticForge {
 		else {
 			Internal::WriteLE(stream, h.entryOffset);
 			Internal::WriteLE(stream, h.stringDataOffset);
+			Internal::WriteLE(stream, h.stringDataSize);
+			Internal::WriteLE(stream, h.stringDataCompressedSize);
 		}
 
 		if (stream.fail()) {
@@ -1016,22 +1033,12 @@ namespace StaticForge {
 	}
 
 	bool StaticForgeBuilder::WriteNameTableStringData(const ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) const {
-		for (size_t i = 0; i < archive.files.size(); i++) {
-			auto& f = archive.files[i];
-			
-			std::string name = f.relativeUtf8;
+		const auto& data = archive.nameStringDataCompressed;
+		stream.write(reinterpret_cast<const char*>(data.data()), static_cast<std::streamsize>(data.size()));
 
-			stream.write(
-				name.data(),
-				name.size()
-			);
-
-			if (stream.fail()) {
-				*errorOut = "Failed to write string data at index'"
-					+ std::to_string(i) + "' name='"
-					+ f.filepath.u8string() + "'";
-				return false;
-			}
+		if (stream.fail()) {
+			*errorOut = "Failed to write compressed string data";
+			return false;
 		}
 		return true;
 	}

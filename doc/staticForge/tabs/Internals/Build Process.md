@@ -50,9 +50,9 @@ For each `ArchiveGroup` the output file `<output>/<archive name>.sfpak` is creat
 
 **WriteIndex** — writes one `StaticForgeIndexEntry` per file directly after the header. Checksums computed during `WriteData` are included here — no second seek is needed.
 
-**BuildNameTable** *(optional, when store-names is enabled)* — computes the byte layout of the Name Table Header, Name Table Entries, and String Data region. Offsets are appended after the last data block.
+**BuildNameTable** *(optional, when store-names is enabled)* — computes the byte layout of the Name Table Header, Name Table Entries, and String Data region, and compresses all names as one block. Offsets are appended after the last data block.
 
-**WriteNameTable** *(optional)* — seeks to `nameTableStart` (set at the end of `WriteData`) and writes the Name Table Header, Name Table Entries, and raw UTF-8 string data.
+**WriteNameTable** *(optional)* — seeks to `nameTableStart` (set at the end of `WriteData`) and writes the Name Table Header, Name Table Entries, and the compressed UTF-8 string data.
 
 ## Write phases summary
 
@@ -61,7 +61,7 @@ For each `ArchiveGroup` the output file `<output>/<archive name>.sfpak` is creat
 | `WriteData`       | `0` (start)       | `dataStart` zero-padding, then all file data blocks in order                 |
 | `WriteHeader`     | `0` (seekp back)  | `StaticForgeHeader` struct padded to a multiple of 32 bytes                  |
 | `WriteIndex`      | after header      | One `StaticForgeIndexEntry` per file, including computed checksums           |
-| `WriteNameTable`  | `nameTableStart` (seekp forward) | Name Table Header, Name Table Entries, raw UTF-8 string data |
+| `WriteNameTable`  | `nameTableStart` (seekp forward) | Name Table Header, Name Table Entries, compressed UTF-8 string data |
 
 ## Compression
 
