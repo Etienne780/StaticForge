@@ -22,7 +22,8 @@ namespace StaticForge::Internal {
 
 	uint64_t HashFilename(const std::string& filename);
 
-	std::string GetFullExtension(const StaticForgePath& path);
+	// checks if the file name ends with the extension, so ".tar.gz" or ".sfpak.meta" also work
+	bool HasExtension(const StaticForgePath& path, std::string_view extension, bool ignoreCase = false);
 	std::string GetFormatedSizeStr(uint64_t bytes);
 
     uint16_t SwapEndian(uint16_t v);

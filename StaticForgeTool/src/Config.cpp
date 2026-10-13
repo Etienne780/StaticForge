@@ -5,14 +5,14 @@
 #include "ConsoleArgument.h"
 #include "ArgumentNames.h"
 
-Config::Config(int count, char* argv[]) {
-	if (count == 0) {
-		AddError("Invalid number of arguments write --help for more information: number of arguments '" + std::to_string(count) + "'!");
+Config::Config(const std::vector<std::string>& args) {
+	if (args.empty()) {
+		AddError("Invalid number of arguments write --help for more information: number of arguments '0'!");
 		return;
 	}
 
-	for (int i = 0; i < count; i++) {
-		ProcessArgument(&i, count, argv);
+	for (size_t i = 0; i < args.size(); i++) {
+		ProcessArgument(&i, args);
 
 		if (!IsValid())
 			return;
@@ -86,19 +86,19 @@ const std::string& Config::GetError() const {
 	return m_error;
 }
 
-void Config::ProcessArgument(int* index, int count, char* argv[]) {
-	char* argName = argv[*index];
+void Config::ProcessArgument(size_t* index, const std::vector<std::string>& args) {
+	const std::string& argName = args[*index];
 
 	if (!IsArgumentFlag(argName)) {
-		AddError("Invalid argument at index " + std::to_string(*index) + ": '" + std::string(argName) + "'. Expected format '--name'!");
+		AddError("Invalid argument at index " + std::to_string(*index) + ": '" + argName + "'. Expected format '--name'!");
 		return;
 	}
 
-	std::string name = std::string(argName + 2);
+	std::string name = argName.substr(2);
 	std::string value;
 
-	if (*index + 1 < count && !IsArgumentFlag(argv[*index + 1])) {
-		value = std::string(argv[*index + 1]);
+	if (*index + 1 < args.size() && !IsArgumentFlag(args[*index + 1])) {
+		value = args[*index + 1];
 		// increment index to skip value argument in outer for
 		*index += 1;
 	}
@@ -371,8 +371,8 @@ void Config::ValidateConfig() {
 	}
 }
 
-bool Config::IsArgumentFlag(const char* arg) {
-	return arg && arg[0] == '-' && arg[1] == '-';
+bool Config::IsArgumentFlag(const std::string& arg) {
+	return arg.rfind("--", 0) == 0;
 }
 
 std::string Config::TrimStr(const std::string& str) {

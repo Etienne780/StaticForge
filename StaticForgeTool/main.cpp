@@ -4,15 +4,16 @@
 #include "InitConsoleArguments.h"
 #include "ConsoleActions.h"
 #include "Config.h"
+#include "Utf8Console.h"
 
 int main(int argc, char** argv) {
+	Utf8Console console;
+
 	std::cout << "======== StaticForgeTool v" << StaticForge::VERSION << " ========" << std::endl;
 
 	InitConsoleArguments();
 
-	// skip first argument
-	char** newArgv = argv + 1;
-	Config config{ argc - 1, newArgv };
+	Config config{ console.GetArguments(argc, argv) };
 
 	if (!config.IsValid()) {
 		std::cout << config.GetError() << std::endl;

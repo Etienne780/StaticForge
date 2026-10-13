@@ -1,5 +1,8 @@
 #include <sstream>
 #include <iomanip>
+#include <algorithm>
+#include <cctype>
+#include <limits>
 #include "Internal/InternalHelpers.h"
 
 namespace StaticForge::Internal {
@@ -133,12 +136,22 @@ namespace StaticForge::Internal {
 		return FNV1a(filename.data(), filename.size());
 	}
 
-	std::string GetFullExtension(const StaticForgePath& path) {
+	bool HasExtension(const StaticForgePath& path, std::string_view extension, bool ignoreCase) {
 		std::string filename = path.filename().u8string();
-		auto pos = filename.find('.');
-		if (pos == std::string::npos)
-			return "";
-		return filename.substr(pos);
+		if (extension.empty() || filename.size() < extension.size())
+			return false;
+
+		std::string end = filename.substr(filename.size() - extension.size());
+		if (ignoreCase) {
+			auto toLower = [](unsigned char c) { return static_cast<char>(std::tolower(c)); };
+			std::transform(end.begin(), end.end(), end.begin(), toLower);
+
+			std::string ext{ extension };
+			std::transform(ext.begin(), ext.end(), ext.begin(), toLower);
+			return end == ext;
+		}
+
+		return end == extension;
 	}
 
 	std::string GetFormatedSizeStr(uint64_t bytes) {

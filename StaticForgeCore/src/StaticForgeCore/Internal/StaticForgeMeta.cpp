@@ -56,8 +56,7 @@ namespace StaticForge::Internal {
 			return false;
 		}
 
-		std::string fullExtension = Internal::GetFullExtension(m_path);
-		if (fullExtension != META_FILE_EXTENSION) {
+		if (!Internal::HasExtension(m_path, META_FILE_EXTENSION)) {
 			*errorOut =
 				"Invalid meta file extension for '" +
 				m_path.u8string() +
@@ -396,6 +395,10 @@ namespace StaticForge::Internal {
 				std::string lower = ext;
 				std::transform(lower.begin(), lower.end(), lower.begin(),
 					[](unsigned char c) { return std::tolower(c); });
+
+				// "png" is treated as ".png", so it does not match "file.xpng"
+				if (!lower.empty() && lower[0] != '.')
+					lower.insert(lower.begin(), '.');
 
 				result.push_back(lower);
 			}

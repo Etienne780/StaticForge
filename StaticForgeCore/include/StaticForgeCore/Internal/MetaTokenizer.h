@@ -58,6 +58,7 @@ namespace StaticForge::Internal {
 
 		void SkipComment();
 		void ReadIdentifier();
+		static bool IsIdentifierChar(char c);
 
 		bool Get(char& c);
 		void Unget();

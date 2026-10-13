@@ -143,20 +143,29 @@ namespace StaticForge {
 			meta.compressionMinMatchLength.value_or(DEFAULT_COMPRESSION_MIN_MATCH_LENGTH)));
 	}
 
+	// the archive name becomes a file name, so it must not point to another directory
+	static bool IsValidArchiveName(const std::string& name) {
+		return !name.empty()
+			&& name != "."
+			&& name != ".."
+			&& name.find('/') == std::string::npos
+			&& name.find('\\') == std::string::npos;
+	}
+
 	bool StaticForgeBuilder::CheckFilepaths(std::string* errorOut) {
 		if (m_isDebugActive) {
 			std::cout << Internal::CONSOLE_SEPERATOR << std::endl;
 			std::cout << "Validating file paths" << std::endl;
 			std::cout << Internal::CONSOLE_SEPERATOR << std::endl;
-			std::cout << "output path: " << m_outputPath << std::endl;
+			std::cout << "output path: " << m_outputPath.u8string() << std::endl;
 			
 			if (m_srcPaths.size() <= 1) {
-				std::cout << "source path: " << (m_srcPaths.empty() ? "" : m_srcPaths[0]) << std::endl;
+				std::cout << "source path: " << (m_srcPaths.empty() ? std::string() : m_srcPaths[0].u8string()) << std::endl;
 			}
 			else {
 				std::cout << "source paths: " << std::endl;
 				for (const auto& p : m_srcPaths) {
-					std::cout << "- " << p << std::endl;
+					std::cout << "- " << p.u8string() << std::endl;
 				}
 			}
 
@@ -164,6 +173,11 @@ namespace StaticForge {
 		}
 
 		std::error_code ec;
+
+		if (!IsValidArchiveName(m_archiveName)) {
+			*errorOut = "Invalid archive name '" + m_archiveName + "' (must not be empty, contain '/' or '\\' or be '.' or '..')";
+			return false;
+		}
 
 		// check src paths
 		for (const auto& p : m_srcPaths) {
@@ -247,8 +261,7 @@ namespace StaticForge {
 		// search for meta data files
 		for (const auto& files : srcFiles) {
 			for (const auto& fullPath : files) {
-				std::string ext = Internal::GetFullExtension(fullPath);
-				if (ext != META_FILE_EXTENSION)
+				if (!Internal::HasExtension(fullPath, META_FILE_EXTENSION))
 					continue;
 
 				metaBuilder.Load(fullPath);
@@ -260,6 +273,12 @@ namespace StaticForge {
 				const auto& metaData = metaBuilder.GetLoadedMetaData();
 				if (metaData.archiveName.empty()) {
 					*errorOut = "Meta file '" + fullPath.u8string() + "' has archive param not set";
+					return false;
+				}
+
+				if (!IsValidArchiveName(metaData.archiveName)) {
+					*errorOut = "Meta file '" + fullPath.u8string() + "' has an invalid archive name '" + metaData.archiveName
+						+ "' (must not contain '/' or '\\' and must not be '.' or '..')";
 					return false;
 				}
 
@@ -285,7 +304,7 @@ namespace StaticForge {
 					};
 					
 					std::cout << "  meta file:" << "\n";
-					std::cout << "  - path:" << fullPath << "\n";
+					std::cout << "  - path: " << fullPath.u8string() << "\n";
 					std::cout << "  - archiveName: " << metaData.archiveName << "\n";
 					std::cout << "  - exclude: [";
 					
@@ -326,7 +345,7 @@ namespace StaticForge {
 			for (const auto& fullPath : srcFiles[srcIndex]) {
 				std::error_code ec;
 
-				if (Internal::GetFullExtension(fullPath) == META_FILE_EXTENSION)
+				if (Internal::HasExtension(fullPath, META_FILE_EXTENSION))
 					continue;
 
 				StaticForgePath relativePath = fs::relative(fullPath, src, ec);
@@ -347,9 +366,8 @@ namespace StaticForge {
 					return false;
 				}
 
-				if (ExcludedFileExtension(relativePath.extension(), archiveMeta.excludedExtensions)) {
+				if (ExcludedFileExtension(fullPath, archiveMeta.excludedExtensions))
 					continue;
-				}
 
 				auto& archive = m_archiveGroups[archiveMeta.archiveName];
 
@@ -440,8 +458,8 @@ namespace StaticForge {
 		std::ofstream stream;
 
 		for (auto& [archiveName, archive] : m_archiveGroups) {
-			StaticForgePath outputPath = m_outputPath / archive.name;
-			outputPath.replace_extension(PACK_FILE_EXTENSION);
+			// the name is UTF-8 and may contain dots, so the extension is appended and not replaced
+			StaticForgePath outputPath = m_outputPath / std::filesystem::u8path(archive.name + std::string(PACK_FILE_EXTENSION));
 
 			stream.open(outputPath, std::ios::out | std::ios::binary | std::ios::trunc);
 			if (!stream.is_open()) {
@@ -1036,15 +1054,13 @@ namespace StaticForge {
 		return dummy;
 	}
 
-	bool StaticForgeBuilder::ExcludedFileExtension(const StaticForgePath& extension, const std::vector<std::string>& extensions) {
-		if (extensions.empty())
-			return false;
+	bool StaticForgeBuilder::ExcludedFileExtension(const StaticForgePath& filePath, const std::vector<std::string>& extensions) const {
+		for (const auto& ext : extensions) {
+			if (Internal::HasExtension(filePath, ext, true))
+				return true;
+		}
 
-		std::string ext = extension.u8string();
-		std::transform(ext.begin(), ext.end(), ext.begin(),
-			[](unsigned char c) { return std::tolower(c); });
-		
-		return std::find(extensions.begin(), extensions.end(), ext) != extensions.end();
+		return false;
 	}
 
 }

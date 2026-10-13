@@ -18,7 +18,17 @@ namespace StaticForge::Internal {
 		m_cur = m_fileContent.data();
 		m_end = m_fileContent.data() + m_fileContent.size();
 
+		// skips the UTF-8 BOM some editors write at the start of the file
+		if (m_fileContent.rfind("\xEF\xBB\xBF", 0) == 0)
+			m_cur += 3;
+
 		ProcessContent();
+	}
+
+	bool MetaTokenizer::IsIdentifierChar(char c) {
+		const unsigned char uc = static_cast<unsigned char>(c);
+		// bytes >= 0x80 are part of UTF-8 characters (e.g. archive = chinese chars;)
+		return std::isalnum(uc) || c == '_' || c == '.' || c == '-' || uc >= 0x80;
 	}
 
 	const std::vector<MetaToken>& MetaTokenizer::GetTokens() const {
@@ -54,11 +64,8 @@ namespace StaticForge::Internal {
 			SkipComment();
 			break;
 		default:
-			if (std::isalnum(static_cast<unsigned char>(c)) ||
-				c == '_' ||
-				c == '.' ||
-				c == '-') {
-				Unget(); 
+			if (IsIdentifierChar(c)) {
+				Unget();
 				--m_column;
 				ReadIdentifier();
 				break;
@@ -85,10 +92,7 @@ namespace StaticForge::Internal {
 		const char* textStart = m_cur;
 		while (!EndOfFile()) {
 			c = *m_cur;
-			if (!std::isalnum(static_cast<unsigned char>(c)) && 
-				c != '_' &&
-				c != '.' &&
-				c != '-')
+			if (!IsIdentifierChar(c))
 				break;
 			m_cur++;
 			Advance(c); 
@@ -117,7 +121,8 @@ namespace StaticForge::Internal {
 			m_line++;
 			m_column = 1;
 		}
-		else {
+		// UTF-8 continuation bytes belong to the previous character
+		else if ((static_cast<unsigned char>(c) & 0xC0) != 0x80) {
 			m_column++;
 		}
 	}

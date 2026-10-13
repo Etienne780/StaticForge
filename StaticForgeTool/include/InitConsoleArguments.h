@@ -9,8 +9,8 @@ inline void InitConsoleArguments() {
 	using CAM = ConsoleArgumentManager;
 
 	auto filepathParser = [](const std::string& value, void* output) {
-		std::filesystem::path path{ value };
-		*static_cast<std::filesystem::path*>(output) = std::move(path);
+		// arguments are UTF-8
+		*static_cast<std::filesystem::path*>(output) = std::filesystem::u8path(value);
 		return true;
 	};
 

@@ -276,16 +276,16 @@ namespace StaticForge {
 		) const;
 
 		/**
-		 * @brief Checks whether a file extension is excluded.
+		 * @brief Checks whether a file ends with one of the excluded extensions (case insensitive).
 		 *
-		 * @param extension File extension to test.
-		 * @param extensions List of excluded extensions.
-		 * @return true if the extension is excluded.
+		 * @param filePath File to test.
+		 * @param extensions List of excluded extensions (e.g. ".png" or ".tar.gz").
+		 * @return true if the file is excluded.
 		 */
 		bool ExcludedFileExtension(
-			const StaticForgePath& extension,
+			const StaticForgePath& filePath,
 			const std::vector<std::string>& extensions
-		);
+		) const;
 	};
 
 }

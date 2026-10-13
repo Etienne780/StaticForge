@@ -18,7 +18,10 @@ enum class ConfigMode {
 
 class Config  {
 public:
-	Config(int count, char* argv[]);
+	/**
+	 * @brief Parses the command line arguments (UTF-8, without the program name).
+	 */
+	Config(const std::vector<std::string>& args);
 
 	bool IsValid() const;
 	ConfigMode GetMode() const;
@@ -61,7 +64,7 @@ private:
 	std::optional<uint64_t> m_compressTableSize;
 	std::optional<uint64_t> m_compressMinMatch;
 
-	void ProcessArgument(int* index, int count, char* argv[]);
+	void ProcessArgument(size_t* index, const std::vector<std::string>& args);
 	void EvaluateArgument(const std::string& name, const std::string& value);
 
 	void EvaluateFlagArgument(const ConsoleArgument* argument);
@@ -71,7 +74,7 @@ private:
 
 	void ValidateConfig();
 
-	static bool IsArgumentFlag(const char* arg);
+	static bool IsArgumentFlag(const std::string& arg);
 	static std::string TrimStr(const std::string& str);
 	void AddError(const std::string& error);
 };
