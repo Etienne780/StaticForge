@@ -78,12 +78,13 @@ namespace StaticForge {
 
 		if (entry->compressedFileSize != 0) {
 			AddError("Failed to get asset mapped for key '" + key
-				+ "', asset is compressed — use LoadAsset() or LoadAssetMapped() instead");
+				+ "', asset is compressed - use LoadAsset() instead");
 			return {};
 		}
 
 		const uint64_t absOffset = m_header.dataOffset + entry->fileOffset;
-		if (!m_mmap->InRange(absOffset, entry->fileSize)) {
+		const auto* src = reinterpret_cast<const std::byte*>(m_mmap->At(absOffset, entry->fileSize));
+		if (!src) {
 			AddError("Entry with key '" + key + "' is out of bounds"
 				+ " (offset=" + std::to_string(absOffset)
 				+ ", size=" + std::to_string(entry->fileSize)
@@ -92,7 +93,7 @@ namespace StaticForge {
 		}
 
 		AssetView view{};
-		view.data = reinterpret_cast<const std::byte*>(m_mmap->At(absOffset));
+		view.data = src;
 		view.size = entry->fileSize;
 		return view;
 	}
@@ -267,14 +268,15 @@ namespace StaticForge {
 		std::string* errorOut
 	) {
 		if (entry->compressedFileSize != 0) {
-			*errorOut = "Entry is compressed — memory-mapped loading is not supported for compressed assets";
+			*errorOut = "Entry is compressed - memory-mapped loading is not supported for compressed assets";
 			return false;
 		}
 
 		const uint64_t storedSize = entry->fileSize;
 		const uint64_t absOffset = m_header.dataOffset + entry->fileOffset;
 
-		if (!m_mmap->InRange(absOffset, storedSize)) {
+		const auto* src = reinterpret_cast<const std::byte*>(m_mmap->At(absOffset, storedSize));
+		if (!src) {
 			*errorOut = "Entry is out of bounds"
 				+ std::string(" (offset=") + std::to_string(absOffset)
 				+ ", size=" + std::to_string(storedSize)
@@ -282,7 +284,6 @@ namespace StaticForge {
 			return false;
 		}
 
-		const auto* src = reinterpret_cast<const std::byte*>(m_mmap->At(absOffset));
 		if (!VerifyChecksum(src, storedSize, entry->checksum, errorOut))
 			return false;
 

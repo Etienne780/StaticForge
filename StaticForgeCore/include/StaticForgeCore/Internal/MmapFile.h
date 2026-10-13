@@ -108,10 +108,18 @@ namespace StaticForge::Internal {
 		const uint8_t* At(uint64_t offset) const;
 
 		/**
+		 * @brief Returns a pointer to a range inside the mapped file.
+		 * @param offset Start offset.
+		 * @param size Number of bytes that will be accessed.
+		 * @return Pointer to the start of the range, or nullptr if the range is not fully inside the file.
+		 */
+		const uint8_t* At(uint64_t offset, uint64_t size) const;
+
+		/**
 		 * @brief Checks whether a memory range is valid inside the mapped file.
 		 * @param offset Start offset.
 		 * @param size Number of bytes.
-		 * @return true if the range is fully inside the mapped file.
+		 * @return true if the range is fully inside the mapped file (an empty range may start at the end of the file).
 		 */
 		bool InRange(uint64_t offset, uint64_t size) const;
 

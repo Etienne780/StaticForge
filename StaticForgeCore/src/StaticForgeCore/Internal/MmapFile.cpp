@@ -328,8 +328,14 @@ namespace StaticForge::Internal {
 		return m_data + offset;
 	}
 
+	const uint8_t* MmapFile::At(uint64_t offset, uint64_t size) const {
+		if (!InRange(offset, size))
+			return nullptr;
+		return m_data + offset;
+	}
+
 	bool MmapFile::InRange(uint64_t offset, uint64_t size) const {
-		if (!m_data || size == 0)
+		if (!m_data)
 			return false;
 
 		if (offset > m_size)
