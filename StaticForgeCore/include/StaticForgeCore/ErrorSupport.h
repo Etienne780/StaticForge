@@ -39,6 +39,18 @@ namespace StaticForge {
          */
         std::string GetError() const;
 
+        /**
+         * @brief Returns all collected error messages and clears them.
+         *
+         * @return Combined error message string.
+         */
+        std::string TakeError();
+
+        /**
+         * @brief Removes all collected error messages.
+         */
+        void ClearErrors();
+
     protected:
         /**
          * @brief Adds an error message to the internal error list.

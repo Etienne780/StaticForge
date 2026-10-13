@@ -309,6 +309,7 @@ namespace StaticForge {
 	}
 
 	void StaticForgeArchive::Reset() {
+		ClearErrors();
 		CloseFileStream();
 		m_stream.clear();
 		CloseMapped();

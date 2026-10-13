@@ -88,6 +88,7 @@ namespace StaticForge {
 	}
 
 	void StaticForgeBuilder::Reset() {
+		ClearErrors();
 		m_archiveGroups.clear();
 	}
 

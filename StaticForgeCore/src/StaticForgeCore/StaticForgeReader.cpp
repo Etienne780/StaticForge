@@ -14,6 +14,8 @@ namespace StaticForge {
 		const StaticForgePath& path,
 		StaticForgeArchive* archiveOut
 	) {
+		ClearErrors();
+
 		if (!archiveOut) {
 			AddError("Load needs a valid 'StaticForgeArchive' object");
 			return false;

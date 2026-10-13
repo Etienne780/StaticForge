@@ -37,4 +37,14 @@ namespace StaticForge {
 		return result;
 	}
 
+	std::string ErrorSupport::TakeError() {
+		std::string result = GetError();
+		ClearErrors();
+		return result;
+	}
+
+	void ErrorSupport::ClearErrors() {
+		m_errors.clear();
+	}
+
 }

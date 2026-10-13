@@ -397,6 +397,7 @@ namespace StaticForge::Internal {
 	}
 
 	void StaticForgeMeta::Reset() {
+		ClearErrors();
 		m_error.clear();
 
 		m_path.clear();
