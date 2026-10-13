@@ -192,8 +192,9 @@ namespace StaticForge {
 			}
 		}
 
-		if (m_outputPath.has_extension()) {
-			*errorOut = "Output path must be a directory path: '" + m_outputPath.u8string() + "'";
+		if (Internal::HasExtension(m_outputPath, PACK_FILE_EXTENSION, true)) {
+			*errorOut = "Output path must be a directory path, not an archive file: '" + m_outputPath.u8string()
+				+ "' (the archive file name comes from the archive name (--name) or a meta file)";
 			return false;
 		}
 
