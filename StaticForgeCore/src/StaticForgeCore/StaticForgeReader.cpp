@@ -6,7 +6,13 @@
 
 namespace StaticForge {
 
-	StaticForgeReader::StaticForgeReader() 
+	// checks that [offset, offset + size) is inside the archive file
+	static bool InFile(uint64_t offset, uint64_t size, uint64_t fileSize) {
+		uint64_t end = 0;
+		return Internal::SafeAddU64(offset, size, &end) && end <= fileSize;
+	}
+
+	StaticForgeReader::StaticForgeReader()
 		: ErrorSupport(HAS_HEADER) {
 	}
 
@@ -27,6 +33,13 @@ namespace StaticForge {
 			return false;
 		}
 
+		std::error_code ec;
+		const uint64_t fileSize = std::filesystem::file_size(path, ec);
+		if (ec) {
+			AddError("Failed to get file size of '" + path.u8string() + "': " + ec.message());
+			return false;
+		}
+
 		// resets the archive so it is allways fresh
 		archiveOut->Reset();
 
@@ -38,18 +51,18 @@ namespace StaticForge {
 			return false;
 		}
 
-		if (!ReadHeader(archiveOut, &error)) {
+		if (!ReadHeader(archiveOut, fileSize, &error)) {
 			AddError("ReadHeader: " + error);
 			return false;
 		}
 
-		if (!ReadIndex(archiveOut, &error)) {
+		if (!ReadIndex(archiveOut, fileSize, &error)) {
 			AddError("ReadIndex: " + error);
 			return false;
 		}
 
 		if (archiveOut->StoresNames()) {
-			if (!ReadNameTable(archiveOut, &error)) {
+			if (!ReadNameTable(archiveOut, fileSize, &error)) {
 				AddError("ReadNameTable: " + error);
 				return false;
 			}
@@ -70,15 +83,16 @@ namespace StaticForge {
 			return false;
 		}
 
-		if (!std::filesystem::exists(path)) {
-			*errorOut = "Output path '" + path.u8string() + "' does not exist!";
+		std::error_code ec;
+		if (!std::filesystem::is_regular_file(path, ec)) {
+			*errorOut = "Archive '" + path.u8string() + "' does not exist or is not a file!";
 			return false;
 		}
 
 		return true;
 	}
 
-	bool StaticForgeReader::ReadHeader(StaticForgeArchive* archive, std::string* errorOut) const {
+	bool StaticForgeReader::ReadHeader(StaticForgeArchive* archive, uint64_t fileSize, std::string* errorOut) const {
 		auto& stream = archive->m_stream;
 		auto& header = archive->m_header;
 
@@ -117,10 +131,35 @@ namespace StaticForge {
 			return false;
 		}
 
+		// a corrupted header must not lead to huge allocations or reads outside of the file
+		uint64_t expectedIndexSize = 0;
+		if (!Internal::SafeMulU64(header.fileCount, sizeof(Internal::StaticForgeIndexEntry), &expectedIndexSize) ||
+			header.indexSize != expectedIndexSize) {
+			*errorOut = "Index size '" + std::to_string(header.indexSize) + "' does not match file count '"
+				+ std::to_string(header.fileCount) + "' (archive is corrupted)";
+			return false;
+		}
+
+		if (!InFile(header.indexOffset, header.indexSize, fileSize)) {
+			*errorOut = "Index table is outside of the file (archive is corrupted)";
+			return false;
+		}
+
+		if (header.dataOffset > fileSize) {
+			*errorOut = "Data offset is outside of the file (archive is corrupted)";
+			return false;
+		}
+
+		if (header.nameTableHeaderOffset != 0 &&
+			!InFile(header.nameTableHeaderOffset, sizeof(Internal::StaticForgeNameTableHeader), fileSize)) {
+			*errorOut = "Name table is outside of the file (archive is corrupted)";
+			return false;
+		}
+
 		return true;
 	}
 
-	bool StaticForgeReader::ReadIndex(StaticForgeArchive* archive, std::string* errorOut) const {
+	bool StaticForgeReader::ReadIndex(StaticForgeArchive* archive, uint64_t fileSize, std::string* errorOut) const {
 		auto& stream = archive->m_stream;
 		auto& header = archive->m_header;
 
@@ -149,6 +188,20 @@ namespace StaticForge {
 				return false;
 			}
 
+			// the stored data of every entry has to be inside of the file
+			uint64_t dataStart = 0;
+			const uint64_t storedSize = entry.compressedFileSize != 0 ? entry.compressedFileSize : entry.fileSize;
+			if (!Internal::SafeAddU64(header.dataOffset, entry.fileOffset, &dataStart) ||
+				!InFile(dataStart, storedSize, fileSize)) {
+				*errorOut = "Data of index entry " + std::to_string(i) + " is outside of the file (archive is corrupted)";
+				return false;
+			}
+
+			if (archive->m_hashNameToEntry.count(entry.hashName)) {
+				*errorOut = "Index entry " + std::to_string(i) + " has a duplicate hash (archive is corrupted)";
+				return false;
+			}
+
 			archive->m_indexEntries.push_back(entry);
 			archive->m_hashNameToEntry[entry.hashName] = i;
 		}
@@ -161,7 +214,7 @@ namespace StaticForge {
 		return true;
 	}
 
-	bool StaticForgeReader::ReadNameTable(StaticForgeArchive* archive, std::string* errorOut) const {
+	bool StaticForgeReader::ReadNameTable(StaticForgeArchive* archive, uint64_t fileSize, std::string* errorOut) const {
 		auto& stream = archive->m_stream;
 		auto& header = archive->m_header;
 
@@ -182,6 +235,13 @@ namespace StaticForge {
 			return false;
 		}
 
+		uint64_t entriesSize = 0;
+		if (!Internal::SafeMulU64(header.fileCount, sizeof(Internal::StaticForgeNameTableEntry), &entriesSize) ||
+			!InFile(h.entryOffset, entriesSize, fileSize)) {
+			*errorOut = "Name table entries are outside of the file (archive is corrupted)";
+			return false;
+		}
+
 		stream.seekg(h.entryOffset);
 		if (!stream) {
 			*errorOut = "Failed to seek to name table entries";
@@ -198,15 +258,20 @@ namespace StaticForge {
 				return false;
 			}
 
+			uint64_t nameStart = 0;
+			if (!Internal::SafeAddU64(h.stringDataOffset, entry.nameOffset, &nameStart) ||
+				!InFile(nameStart, entry.nameLength, fileSize)) {
+				*errorOut = "Name of name table entry " + std::to_string(i) + " is outside of the file (archive is corrupted)";
+				return false;
+			}
+
 			auto returnPos = stream.tellg();
 			if (returnPos < 0) {
 				*errorOut = "Failed to get current stream position while reading name table";
 				return false;
 			}
 
-			stream.seekg(
-				static_cast<std::streamoff>(h.stringDataOffset + entry.nameOffset)
-			);
+			stream.seekg(static_cast<std::streamoff>(nameStart));
 
 			if (!stream) {
 				*errorOut = "Failed to seek to string data for name table entry " + std::to_string(i);

@@ -42,8 +42,14 @@ int main(int argc, char** argv) {
 		return -1;
 	}
 
-	// execute action
-	if (!action(config)) {
+	// execute action, catches unexpected errors so the tool never ends without a message
+	try {
+		if (!action(config)) {
+			return -1;
+		}
+	}
+	catch (const std::exception& e) {
+		std::cout << "[Error]: Unexpected error: " << e.what() << std::endl;
 		return -1;
 	}
 

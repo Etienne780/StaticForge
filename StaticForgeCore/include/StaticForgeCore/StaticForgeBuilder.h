@@ -207,6 +207,11 @@ namespace StaticForge {
 		bool CheckFilepaths(std::string* errorOut);
 
 		/**
+		 * @brief Collects all regular files inside a directory (recursive).
+		 */
+		bool ListFiles(const StaticForgePath& directory, std::vector<StaticForgePath>* outFiles, std::string* errorOut) const;
+
+		/**
 		 * @brief Scans source directories and collects files.
 		 */
 		bool ScanFiles(std::string* errorOut);

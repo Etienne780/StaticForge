@@ -163,10 +163,17 @@ namespace StaticForge {
 			std::cout << std::endl;
 		}
 
+		std::error_code ec;
+
 		// check src paths
 		for (const auto& p : m_srcPaths) {
-			if (!std::filesystem::exists(p)) {
+			if (!std::filesystem::exists(p, ec)) {
 				*errorOut = "Source path '" + p.u8string() + "' does not exist!";
+				return false;
+			}
+
+			if (!std::filesystem::is_directory(p, ec)) {
+				*errorOut = "Source path '" + p.u8string() + "' must be a directory!";
 				return false;
 			}
 		}
@@ -177,17 +184,41 @@ namespace StaticForge {
 		}
 
 		// checks/creates output path
-		if (!std::filesystem::exists(m_outputPath)) {
+		if (!std::filesystem::exists(m_outputPath, ec)) {
 			if (!m_createOutputDir) {
 				*errorOut = "Output path '" + m_outputPath.u8string() + "' does not exist!";
 				return false;
 			}
 			else {
-				if (!std::filesystem::create_directories((m_outputPath.has_filename() ? m_outputPath : m_outputPath.parent_path()))) {
-					*errorOut = "Failed to create output directory '" + m_outputPath.u8string() + "'!";
+				std::filesystem::create_directories((m_outputPath.has_filename() ? m_outputPath : m_outputPath.parent_path()), ec);
+				if (ec) {
+					*errorOut = "Failed to create output directory '" + m_outputPath.u8string() + "': " + ec.message();
 					return false;
 				}
 			}
+		}
+		else if (!std::filesystem::is_directory(m_outputPath, ec)) {
+			*errorOut = "Output path '" + m_outputPath.u8string() + "' must be a directory!";
+			return false;
+		}
+
+		return true;
+	}
+
+	bool StaticForgeBuilder::ListFiles(const StaticForgePath& directory, std::vector<StaticForgePath>* outFiles, std::string* errorOut) const {
+		namespace fs = std::filesystem;
+
+		std::error_code ec;
+		fs::recursive_directory_iterator it(directory, fs::directory_options::skip_permission_denied, ec);
+		for (; !ec && it != fs::recursive_directory_iterator(); it.increment(ec)) {
+			std::error_code typeEc;
+			if (it->is_regular_file(typeEc))
+				outFiles->push_back(it->path());
+		}
+
+		if (ec) {
+			*errorOut = "Failed to read directory '" + directory.u8string() + "': " + ec.message();
+			return false;
 		}
 
 		return true;
@@ -198,6 +229,13 @@ namespace StaticForge {
 		Internal::StaticForgeMeta metaBuilder;
 		std::unordered_map<std::string, Internal::StaticForgeMetaData> dirToArchiveMeta;
 
+		// files of every source path, the directories are only read once
+		std::vector<std::vector<StaticForgePath>> srcFiles(m_srcPaths.size());
+		for (size_t i = 0; i < m_srcPaths.size(); i++) {
+			if (!ListFiles(m_srcPaths[i], &srcFiles[i], errorOut))
+				return false;
+		}
+
 		if (m_isDebugActive) {
 			std::cout << Internal::CONSOLE_SEPERATOR << "\n";
 			std::cout << "Scanning  files" << "\n";
@@ -207,12 +245,8 @@ namespace StaticForge {
 		}
 		
 		// search for meta data files
-		for (const auto& src : m_srcPaths) {
-			for (const auto& entry : fs::recursive_directory_iterator(src, fs::directory_options::skip_permission_denied)) {
-				if (!entry.is_regular_file())
-					continue;
-
-				StaticForgePath fullPath = entry.path();
+		for (const auto& files : srcFiles) {
+			for (const auto& fullPath : files) {
 				std::string ext = Internal::GetFullExtension(fullPath);
 				if (ext != META_FILE_EXTENSION)
 					continue;
@@ -235,7 +269,7 @@ namespace StaticForge {
 					return false;
 				}
 
-				std::string dir = entry.path().parent_path().u8string();
+				std::string dir = fullPath.parent_path().u8string();
 
 				auto it = dirToArchiveMeta.find(dir);
 				if (it != dirToArchiveMeta.end()) {
@@ -286,20 +320,14 @@ namespace StaticForge {
 		m_archiveGroups.reserve(dirToArchiveMeta.size());
 
 		// adds files to archive groups
-		for (const auto& src : m_srcPaths) {
-			for (const auto& entry : fs::recursive_directory_iterator(src, fs::directory_options::skip_permission_denied)) {
+		for (size_t srcIndex = 0; srcIndex < m_srcPaths.size(); srcIndex++) {
+			const StaticForgePath& src = m_srcPaths[srcIndex];
+
+			for (const auto& fullPath : srcFiles[srcIndex]) {
 				std::error_code ec;
-				if (!entry.is_regular_file(ec)) {
-					ec.clear();
-					continue;
-				}
 
-				StaticForgePath fullPath = entry.path();
-
-				if (Internal::GetFullExtension(fullPath) == META_FILE_EXTENSION) {
-					ec.clear();
+				if (Internal::GetFullExtension(fullPath) == META_FILE_EXTENSION)
 					continue;
-				}
 
 				StaticForgePath relativePath = fs::relative(fullPath, src, ec);
 				if (ec) {
@@ -307,13 +335,13 @@ namespace StaticForge {
 					return false;
 				}
 
-				uint64_t fileSize = entry.file_size(ec);
+				uint64_t fileSize = fs::file_size(fullPath, ec);
 				if (ec) {
 					*errorOut = "Failed to read file size: " + fullPath.u8string();
 					return false;
 				}
 
-				auto archiveMeta = ResolveArchive(entry.path(), dirToArchiveMeta);
+				auto archiveMeta = ResolveArchive(fullPath, dirToArchiveMeta);
 				if (archiveMeta.archiveName.empty()) {
 					*errorOut = "Archive name was not set. The name must be provided either via the meta file or manually.";
 					return false;

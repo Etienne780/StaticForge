@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 #include "StaticForgeArchive.h"
 #include "Internal/InternalHelpers.h"
 #include "Internal/MmapFile.h"
@@ -228,7 +229,8 @@ namespace StaticForge {
 
 		if (isCompressed) {
 			std::vector<std::byte> allDecompressed;
-			allDecompressed.reserve(entry->fileSize);
+			// fileSize comes from the archive, so only reserve what the block sizes allow
+			allDecompressed.reserve(static_cast<size_t>(std::min<uint64_t>(entry->fileSize, MAX_COMPRESSION_BLOCK_SIZE)));
 
 			size_t pos = 0;
 			while (pos < raw.size()) {
@@ -246,6 +248,11 @@ namespace StaticForge {
 
 				if (pos + compSize32 > raw.size()) {
 					*errorOut = "Compressed block overflows data at pos " + std::to_string(pos);
+					return false;
+				}
+
+				if (origSize32 > MAX_COMPRESSION_BLOCK_SIZE || allDecompressed.size() + origSize32 > entry->fileSize) {
+					*errorOut = "Compressed block at pos " + std::to_string(pos) + " has an invalid size (archive is corrupted)";
 					return false;
 				}
 

@@ -9,12 +9,11 @@
 *.exp
 
 #  Make
-MakeFile
+[Mm]ake[Ff]ile
 
 # Build artifacts
 build/
 .build/
-./.build/
 **/[Bb]in/
 **/[Oo]bj/
 **/[Rr]elease/
@@ -31,8 +30,3 @@ build/
 *.env
 *.log
 *.tmp
-
-# Ignore cmake/build temp files in vendor
-./vendor/**/cmake/
-./vendor/**/bin/
-./vendor/**/obj/
