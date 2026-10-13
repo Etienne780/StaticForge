@@ -40,9 +40,6 @@ namespace StaticForge::Internal {
         /**
          * @brief Compresses a memory buffer.
          *
-         * The internal match map is not reset automatically.
-         * Call Reset() manually if a clean state is required.
-         *
          * @param data Input buffer
          * @param size Input size in bytes
          * @return Compressed byte stream or empty on error
@@ -79,6 +76,7 @@ namespace StaticForge::Internal {
         struct Entry {
             uint32_t offset = 0;
             uint32_t hash = 0;
+            uint32_t generation = 0; /*< entry is only valid if it matches m_generation */
         };
 
         static constexpr uint8_t  BLOCK_END = 0x00;
@@ -99,12 +97,13 @@ namespace StaticForge::Internal {
         const bool m_storeHeader = false;
 
         std::array<Entry, TABLE_SIZE> m_table;
+        uint32_t m_generation = 0;
         mutable std::vector<std::string> m_errors;
 
         /**
-        * @brief Resets internal state and error log.
+        * @brief Invalidates all match table entries without clearing the whole table.
         */
-        void Reset();
+        void ResetTable();
 
         void AddError(const std::string& message) const;
 

@@ -10,7 +10,8 @@ namespace StaticForge::Internal {
     }
 
     std::vector<std::byte> LZ4Compression::Compress(const char* data, size_t size) {
-        Reset();
+        m_errors.clear();
+        ResetTable();
 
         if (data == nullptr && size > 0) {
             AddError("Compress: data pointer is null with non-zero size");
@@ -43,6 +44,7 @@ namespace StaticForge::Internal {
             uint32_t matchStart = e.offset;
 
             bool valid =
+                e.generation == m_generation &&
                 e.hash == hash &&
                 offset > matchStart &&
                 (offset - matchStart) <= MAX_DISTANCE &&
@@ -51,6 +53,7 @@ namespace StaticForge::Internal {
             if (!valid) {
                 e.hash = hash;
                 e.offset = static_cast<uint32_t>(offset);
+                e.generation = m_generation;
                 offset++;
                 continue;
             }
@@ -73,6 +76,7 @@ namespace StaticForge::Internal {
 
             e.hash = hash;
             e.offset = static_cast<uint32_t>(offset);
+            e.generation = m_generation;
 
             offset += matchLen;
             literalStart = offset;
@@ -87,7 +91,7 @@ namespace StaticForge::Internal {
     }
 
     std::vector<std::byte> LZ4Compression::Decompress(const std::byte* data, size_t size, size_t oriSize) {
-        Reset();
+        m_errors.clear();
 
         if (data == nullptr && size > 0) {
             AddError("Decompress: data pointer is null with non-zero size");
@@ -202,9 +206,14 @@ namespace StaticForge::Internal {
         return result;
     }
 
-    void LZ4Compression::Reset() {
-        m_table.fill({ 0xFFFFFFFFu, 0 });
-        m_errors.clear();
+    void LZ4Compression::ResetTable() {
+        m_generation++;
+
+        // only clear the table when the generation counter wraps around
+        if (m_generation == 0) {
+            m_table.fill(Entry{});
+            m_generation = 1;
+        }
     }
 
     void LZ4Compression::AddError(const std::string& message) const {
