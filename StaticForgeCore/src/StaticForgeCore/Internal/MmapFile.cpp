@@ -140,11 +140,22 @@ namespace StaticForge::Internal {
 				c = L'\\';
 		}
 
-		if (pathStr.rfind(L"\\\\", 0) == 0) {
-			pathStr = L"\\\\?\\UNC\\" + pathStr.substr(2);
-		}
-		else if (pathStr.rfind(L"\\\\?\\", 0) != 0) {
-			pathStr = L"\\\\?\\" + pathStr;
+		// the "\\?\" prefix only works with absolute paths and disables ".." / "." resolution
+		if (pathStr.rfind(L"\\\\?\\", 0) != 0) {
+			std::error_code ec;
+			FilePath absPath = std::filesystem::absolute(FilePath{ pathStr }, ec);
+			if (ec) {
+				*errorOut = "Failed to resolve absolute path for '" + path.u8string() + "': " + ec.message();
+				return false;
+			}
+			pathStr = absPath.lexically_normal().wstring();
+
+			if (pathStr.rfind(L"\\\\", 0) == 0) {
+				pathStr = L"\\\\?\\UNC\\" + pathStr.substr(2);
+			}
+			else {
+				pathStr = L"\\\\?\\" + pathStr;
+			}
 		}
 
 		m_file = ::CreateFileW(
