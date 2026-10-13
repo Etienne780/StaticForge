@@ -32,7 +32,10 @@ int main(int argc, char** argv) {
 		break;
 	case ConfigMode::PACK:
 		action = Actions::Pack;
-		break;	
+		break;
+	case ConfigMode::EXTRACT:
+		action = Actions::Extract;
+		break;
 	case ConfigMode::UNKNOWN:
 	default:
 		std::cout << "Invalid config" << std::endl;

@@ -46,6 +46,22 @@ namespace StaticForge {
 		return true;
 	}
 
+	bool StaticForgeArchive::LoadAssetAt(size_t fileIndex, std::vector<std::byte>* outData) {
+		if (fileIndex >= m_indexEntries.size()) {
+			AddError("Failed to load asset, index '" + std::to_string(fileIndex) + "' is out of range (file count "
+				+ std::to_string(m_indexEntries.size()) + ")");
+			return false;
+		}
+
+		std::string error;
+		if (!LoadEntry(&m_indexEntries[fileIndex], outData, &error)) {
+			AddError("Failed to load asset at index '" + std::to_string(fileIndex) + "': " + error);
+			return false;
+		}
+
+		return true;
+	}
+
 	bool StaticForgeArchive::OpenMapped() {
 		std::string error;
 		if (!m_mmap->Open(m_path, &error)) {

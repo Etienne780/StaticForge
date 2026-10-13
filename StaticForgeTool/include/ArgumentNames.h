@@ -14,6 +14,7 @@ Commands:
 | mkdir   | p	  | Create the output directory if it does not exist                           | bool     | false   | false       |
 | name    | n	  | Default archive name if no `.sfpak.meta` file is found                     | string   | "main"  | false       |
 | info    | i	  | Display header and index information of a `.sfpak` file (read-only mode)   | filepath | -       | true        |
+| extract | x     | Extracts `.sfpak` file(s) into --output/<archive name>/ (needs --output)   | filepath | -       | true        |
 | verbose | v	  | Enable debug mode (verbose console output)                                 | bool     | false   | false       |
 | help    | h	  | Show this help message                                                     | -        | -       | false       |
 | store-  | sn    | Stores the file names for better debuging                                  | bool     | false   | false       |
@@ -48,6 +49,9 @@ namespace ArgName {
 
 	const std::string_view INFO = "info";
 	const std::string_view INFO_SHORTNAME = "i";
+
+	const std::string_view EXTRACT = "extract";
+	const std::string_view EXTRACT_SHORTNAME = "x";
 
 	const std::string_view OUTDIR = "outdir";
 	const std::string_view OUTDIR_SHORTNAME = "od";

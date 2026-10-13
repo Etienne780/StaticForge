@@ -81,6 +81,17 @@ namespace StaticForge {
 		bool LoadAsset(const std::string& key, std::vector<std::byte>* outData);
 
 		/**
+		 * @brief Loads an asset by its index using the file stream.
+		 *
+		 * Useful to iterate over all assets.
+		 *
+		 * @param fileIndex Index of the file (0 to GetFileCount() - 1).
+		 * @param outData Output buffer receiving the asset data.
+		 * @return true if loading succeeded.
+		 */
+		bool LoadAssetAt(size_t fileIndex, std::vector<std::byte>* outData);
+
+		/**
 		 * @brief Opens the archive using memory mapping.
 		 *
 		 * @return true if mapping succeeded.

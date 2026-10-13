@@ -42,6 +42,10 @@ const std::vector<std::filesystem::path>& Config::GetInfoPaths() const {
 	return m_infoPaths;
 }
 
+const std::vector<std::filesystem::path>& Config::GetExtractPaths() const {
+	return m_extractPaths;
+}
+
 const std::string Config::GetArchiveName() const {
 	return m_archiveName;
 }
@@ -194,6 +198,11 @@ void* Config::GetOutput(const ConsoleArgument* arg) {
 		return static_cast<void*>(&m_infoPaths.back());
 	}
 
+	if (argName == ArgName::EXTRACT) {
+		m_extractPaths.emplace_back("");
+		return static_cast<void*>(&m_extractPaths.back());
+	}
+
 	if (argName == ArgName::VERBOSE) {
 		return static_cast<void*>(&m_verbosePrint);
 	}
@@ -254,15 +263,16 @@ bool Config::TryGetValueList(const std::string& value, std::vector<std::string>*
 void Config::CalculateCurrentMode() {
 	bool hasHelp = m_printHelp;
 	bool hasInfo = !m_infoPaths.empty();
-	bool hasPack = (!m_srcAbsolPaths.empty() && !m_outputAbsolPath.empty());
+	bool hasPack = !m_srcAbsolPaths.empty();
+	bool hasExtract = !m_extractPaths.empty();
 
-	m_activeModeCount = (hasHelp ? 1 : 0) + (hasInfo ? 1 : 0) + (hasPack ? 1 : 0);
+	m_activeModeCount = (hasHelp ? 1 : 0) + (hasInfo ? 1 : 0) + (hasPack ? 1 : 0) + (hasExtract ? 1 : 0);
 
 	if (m_activeModeCount > 1) {
 		m_mode = ConfigMode::UNKNOWN;
 		return;
 	}
-	
+
 	if (hasHelp) {
 		m_mode = ConfigMode::HELP;
 	} else if (hasInfo) {
@@ -271,16 +281,20 @@ void Config::CalculateCurrentMode() {
 	else if (hasPack) {
 		m_mode = ConfigMode::PACK;
 	}
+	else if (hasExtract) {
+		m_mode = ConfigMode::EXTRACT;
+	}
 }
 void Config::ValidateConfig() {
-	bool hasPartialPack = (!m_srcAbsolPaths.empty() || !m_outputAbsolPath.empty());
-
 	if (m_activeModeCount > 1) {
-		AddError("Multiple modes selected. Choose exactly one: pack (--source + --output), --info, or --help");
+		AddError("Multiple modes selected. Choose exactly one: pack (--source + --output), extract (--extract + --output), --info, or --help");
 		return;
 	}
-	if (m_activeModeCount == 0 && !hasPartialPack) {
-		AddError("No mode selected. Use --help for usage information.");
+	if (m_activeModeCount == 0) {
+		if (!m_outputAbsolPath.empty())
+			AddError("--output needs --source (packing) or --extract (extracting)");
+		else
+			AddError("No mode selected. Use --help for usage information.");
 		return;
 	}
 
@@ -304,6 +318,8 @@ void Config::ValidateConfig() {
 			AddError("Cannot set compress while printing help");
 		if (m_compressBlockSize || m_compressTableSize || m_compressMinMatch)
 			AddError("Cannot set compression settings while printing help");
+		if (!m_extractPaths.empty())
+			AddError("Cannot set extract path while printing help");
 		break;
 
 	case ConfigMode::INFO:
@@ -316,7 +332,7 @@ void Config::ValidateConfig() {
 		if (m_archiveName != "main")
 			AddError("--name cannot be used with --info");
 		if (m_storeNames)
-			AddError("--store-name cannot be used with --info");
+			AddError("--store-names cannot be used with --info");
 		if (m_compress)
 			AddError("--compress cannot be used with --info");
 		if (m_compressBlockSize)
@@ -329,26 +345,29 @@ void Config::ValidateConfig() {
 		break;
 
 	case ConfigMode::PACK:
-		if (m_srcAbsolPaths.empty())
-			AddError("--source is required for packing");
 		if (m_outputAbsolPath.empty())
 			AddError("--output is required for packing");
-		if (!m_infoPaths.empty())
-			AddError("--info cannot be used with packing");
-		// --name, --mkdir, --verbose
+		// --name, --mkdir, --verbose, --store-names, --compress*
+		break;
+
+	case ConfigMode::EXTRACT:
+		if (m_outputAbsolPath.empty())
+			AddError("--output is required for extracting");
+		if (m_archiveName != "main")
+			AddError("--name cannot be used with --extract");
+		if (m_storeNames)
+			AddError("--store-names cannot be used with --extract");
+		if (m_compress)
+			AddError("--compress cannot be used with --extract");
+		if (m_compressBlockSize || m_compressTableSize || m_compressMinMatch)
+			AddError("compression settings cannot be used with --extract");
+		// --mkdir, --verbose
 		break;
 
 	case ConfigMode::UNKNOWN:
 	default:
 		AddError("Unknown config");
 		break;
-	}
-
-	if (hasPartialPack && m_mode != ConfigMode::PACK) {
-		if (m_srcAbsolPaths.empty())
-			AddError("--source is missing for packing (--output is set)");
-		if (m_outputAbsolPath.empty())
-			AddError("--output is missing for packing (--source is set)");
 	}
 }
 

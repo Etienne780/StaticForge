@@ -10,4 +10,6 @@ namespace Actions {
 
 	bool Pack(const Config& config);
 
+	bool Extract(const Config& config);
+
 }
