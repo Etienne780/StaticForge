@@ -4,6 +4,7 @@
 const std::string_view HELP_MESSAGE = R"""(
 Pattern:
 	--CommandName value ... (value can be optional);
+	bool arguments can be used without a value: '--verbose' is the same as '--verbose true'
 
 Commands:
 |---------|-------|----------------------------------------------------------------------------|----------|---------|-------------|

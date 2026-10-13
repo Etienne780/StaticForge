@@ -47,7 +47,7 @@ StaticForgeTool --source ./assets --output ./build/packed --mkdir true
 
 ## Verbose output
 
-Add `--verbose` (or `-v`) to print detailed information about every file processed:
+Add `--verbose` (or `--v`) to print detailed information about every file processed:
 
 ```bash
 StaticForgeTool --source ./assets --output ./build --verbose

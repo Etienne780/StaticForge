@@ -1,4 +1,6 @@
 #pragma once
+#include <algorithm>
+#include <cctype>
 #include <charconv>
 #include <optional>
 
@@ -20,9 +22,21 @@ inline void InitConsoleArguments() {
 	};
 
 	auto boolParser = [](const std::string& value, void* output) {
+		std::string v = value;
+		std::transform(v.begin(), v.end(), v.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+
 		bool* b = static_cast<bool*>(output);
-		*b = (value == "1" || value == "true" || value == "yes" || value == "y");
-		return true;
+		if (v == "1" || v == "true" || v == "yes" || v == "y") {
+			*b = true;
+			return true;
+		}
+		if (v == "0" || v == "false" || v == "no" || v == "n") {
+			*b = false;
+			return true;
+		}
+
+		// e.g. "--mkdir src" would otherwise silently be false
+		return false;
 	};
 
 	auto uintParser = [](const std::string& value, void* output) {

@@ -134,13 +134,18 @@ void Config::EvaluateArgument(const std::string& name, const std::string& value)
 	}
 
 	if (arg->CanEvaluateValue()) {
-		if (value.empty()) {
-			AddError("Argument '" + name + "' requires a value");
-			return;
+		std::string argValue = value;
+		if (argValue.empty()) {
+			// bool arguments can be used without a value, in that case the value is true
+			if (arg->GetType() != ConsoleArgType::Bool) {
+				AddError("Argument '" + name + "' requires a value");
+				return;
+			}
+			argValue = "true";
 		}
 
 		std::vector<std::string> values;
-		if (!TryGetValueList(value, &values)) {
+		if (!TryGetValueList(argValue, &values)) {
 			AddError("Failed to parse value list for argument '" + name + "'!");
 			return;
 		}
