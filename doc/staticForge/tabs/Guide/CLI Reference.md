@@ -9,32 +9,61 @@ Quick reference for all `StaticForgeTool` arguments.
 
 ## Arguments
 
-| Argument        | Short   | Description                                                                | Type     | Default | Multi |
-|-----------------|---------|----------------------------------------------------------------------------|----------|---------|-------|
-| `--source`      | `--src` | Source path(s) of the files to be packed (can be specified multiple times) | filepath | —       | yes   |
-| `--output`      | `--o`   | Output directory for the `.sfpak` file                                     | filepath | —       | no    |
-| `--name`        | `--n`   | Default archive name when no `.sfpak.meta` file is found                   | string   | `main`  | no    |
-| `--mkdir`       | `--p`   | Create the output directory if it does not exist                           | bool     | false   | no    |
-| `--info`        | `--i`   | Display header and index info of a `.sfpak` file (can be repeated)         | filepath | —       | yes   |
-| `--verbose`     | `--v`   | Enable debug/verbose console output                                        | bool     | false   | no    |
-| `--store-names`  | `--sn`  | Store original filenames in all archives for debug inspection              | bool     | false   | no    |
-| `--compress`  | `--c`  | Compresses files larger than 4096 bytes before storing them in the archive    | bool     | false   | no    |
-| `--help`        | `--h`   | Show this help message                                                     | —        | —       | no    |
+| Argument        | Short   | Description                                                                  | Type     | Default | Multi |
+|-----------------|---------|------------------------------------------------------------------------------|----------|---------|-------|
+| `--source`      | `--src` | Source directory of the files to be packed (can be specified multiple times) | filepath | —       | yes   |
+| `--output`      | `--o`   | Output directory for packed archives or extracted files                      | filepath | —       | no    |
+| `--name`        | `--n`   | Default archive name when no `.sfpak.meta` file is found                     | string   | `main`  | no    |
+| `--mkdir`       | `--p`   | Create the output directory if it does not exist                             | bool     | false   | no    |
+| `--info`        | `--i`   | Display header and index info of a `.sfpak` file (can be repeated)           | filepath | —       | yes   |
+| `--extract`     | `--x`   | Extract `.sfpak` file(s) into `<output>/<archive name>/` (can be repeated)   | filepath | —       | yes   |
+| `--verbose`     | `--v`   | Enable debug/verbose console output                                          | bool     | false   | no    |
+| `--store-names` | `--sn`  | Store original filenames in all archives for debug inspection and extraction | bool     | false   | no    |
+| `--compress`    | `--c`   | Compress files larger than 4096 bytes before storing them in the archive     | bool     | false   | no    |
+| `--help`        | `--h`   | Show the help message                                                        | —        | —       | no    |
+
+Short forms always use two dashes (`--v`, not `-v`).
+
+Arguments that can be repeated also accept a comma-separated list: `--source "./textures, ./audio"`.
+
+## Compression settings
+
+Only used together with compression (`--compress` or `compress = true;` in a meta file). They override the values of `.sfpak.meta` files.
+
+| Argument                | Short   | Description                                                       | Default | Range            |
+|-------------------------|---------|-------------------------------------------------------------------|---------|------------------|
+| `--compress-block-size` | `--cbs` | Size in bytes of the blocks a file is split into for compression  | `65536` | 1024 - 67108864  |
+| `--compress-table-size` | `--cts` | Match table size as power of two (entries = 2^value)              | `16`    | 8 - 24           |
+| `--compress-min-match`  | `--cmm` | Shortest repeated sequence that is stored as a reference          | `8`     | 4 - 65535        |
+
+Larger blocks compress better, because a block can only reference data inside of itself. Above 64 KB the gain is very small.
+
+## Values
+
+- **bool** arguments can be used without a value: `--verbose` is the same as `--verbose true`. Accepted values are `true`/`false`, `1`/`0`, `yes`/`no` and `y`/`n` (case insensitive). Anything else is an error, so a forgotten value like `--mkdir ./assets` is reported instead of silently being `false`.
+- **int** arguments must be plain decimal numbers (`65536`, not `64k`).
+- All other arguments require a value.
+- Arguments and paths can contain any Unicode characters.
 
 ## Modes
 
 Exactly one mode must be active per invocation. Modes are determined by which arguments are provided:
 
-| Mode  | Required arguments              |
-|-------|---------------------------------|
-| pack  | `--source` and `--output`       |
-| info  | `--info`                        |
-| help  | `--help`                        |
+| Mode    | Required arguments            | Optional arguments                                                          |
+|---------|-------------------------------|-----------------------------------------------------------------------------|
+| pack    | `--source` and `--output`     | `--name`, `--mkdir`, `--verbose`, `--store-names`, `--compress`, `--compress-*` |
+| extract | `--extract` and `--output`    | `--mkdir`, `--verbose`                                                      |
+| info    | `--info`                      | `--verbose`                                                                 |
+| help    | `--help`                      | —                                                                           |
 
 Combining arguments from multiple modes (e.g. `--source` together with `--info`) is an error.
 
-## storenames priority
+## Exit code
 
-When `--store-names` is set on the command line, 
-name storage is forced on for every archive regardless of what the `.sfpak.meta` file specifies. 
-The meta-file value of `store-names` is only used when the CLI flag is absent.
+The tool returns `0` on success and a non-zero exit code on any error, so it can be used in build scripts.
+
+## Command line priority
+
+When `--store-names` or `--compress` is set on the command line, the option is forced on for every archive regardless of what the `.sfpak.meta` file specifies. The meta-file value is only used when the CLI flag is absent.
+
+The `--compress-*` settings replace the meta file values for all archives when they are set.

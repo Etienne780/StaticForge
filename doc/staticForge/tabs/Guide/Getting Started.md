@@ -9,7 +9,7 @@ StaticForge is an asset archive system for bundling and loading game files. It c
 
 ## What you get
 
-- A command-line tool (`StaticForgeTool`) to pack your assets during your build process
+- A command-line tool (`StaticForgeTool`) to pack your assets during your build process, and to inspect or extract existing archives
 - A C++ library (`StaticForgeCore`) to load assets from `.sfpak` files at runtime
 
 ## Typical workflow
@@ -22,3 +22,5 @@ StaticForge is an asset archive system for bundling and loading game files. It c
 ---
 
 > **Tip:** `.sfpak` files are binary and not meant to be edited manually. Always rebuild them from source assets using the tool.
+
+> **Note:** The archive format is not meant for long-term storage. Archives are rebuilt together with your application, so the reader only accepts archives of its own format version (currently `3`).

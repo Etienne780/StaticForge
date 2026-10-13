@@ -21,19 +21,38 @@ if (!reader.Load("./build/textures.sfpak", &archive)) {
 }
 ```
 
+`Load` validates the whole archive structure (header, index and name table) against the file size, so a damaged or truncated archive is rejected with an error instead of crashing. Archives of another format version are rejected as well; rebuild them with the current tool.
+
+The same archive object can be loaded again with another file. Everything of the previous archive (open stream, memory mapping, index, errors) is released first.
+
 ## Loading a file by path
 
 Pass the **relative path** of the file exactly as it appeared under the source directory:
 
 ```cpp
 std::vector<std::byte> data;
-if (!archive.LoadAsset("textures/background.png", data)) {
-    std::cerr << archive.GetError() << std::endl;
+if (!archive.LoadAsset("textures/background.png", &data)) {
+    std::cerr << archive.TakeError() << std::endl;
 }
 // data now contains the raw bytes of the file
 ```
 
-> **Important:** The asset path must exactly match the path relative to the source root. Slashes are normalized internally, but typos or case mismatches will prevent the asset from being found.
+> **Important:** The asset path must exactly match the path relative to the source root, it is case sensitive and UTF-8 encoded. Backslashes are converted to forward slashes, so `textures\background.png` works too.
+
+## Loading all files
+
+`LoadAssetAt` loads an asset by its index, which is useful to iterate over the whole archive, also if it stores no names:
+
+```cpp
+std::vector<std::byte> data;
+for (size_t i = 0; i < archive.GetFileCount(); i++) {
+    if (!archive.LoadAssetAt(i, &data)) {
+        std::cerr << archive.TakeError() << std::endl;
+        continue;
+    }
+    // archive.GetName(i) is the path if the archive stores names, otherwise empty
+}
+```
 
 ## Managing the file stream
 
@@ -45,32 +64,34 @@ archive.OpenFileStream();  // reopen when needed
 bool open = archive.IsFileStreamOpen();
 ```
 
+A failed load (e.g. a checksum mismatch) does not affect later loads of other assets.
+
 ## Memory-mapped access
 
 For better read performance, the archive can be opened using memory mapping instead of a file stream. This avoids repeated `seek`/`read` calls and lets the OS manage page caching.
 
 ```cpp
 if (!archive.OpenMapped()) {
-    std::cerr << archive.GetError() << std::endl;
+    std::cerr << archive.TakeError() << std::endl;
 }
 
 // Zero-copy view — valid only while the archive stays mapped
 StaticForge::AssetView view = archive.GetAssetMapped("textures/background.png");
 if (view.data == nullptr) {
-    std::cerr << archive.GetError() << std::endl;
+    std::cerr << archive.TakeError() << std::endl;
 }
 
 // Or copy into a buffer, same as LoadAsset
 std::vector<std::byte> data;
-if (!archive.LoadAssetMapped("textures/background.png", data)) {
-    std::cerr << archive.GetError() << std::endl;
+if (!archive.LoadAssetMapped("textures/background.png", &data)) {
+    std::cerr << archive.TakeError() << std::endl;
 }
 
 archive.CloseMapped();
 bool mapped = archive.IsMapped();
 ```
 
-`GetAssetMapped` returns a non-owning `AssetView` directly into mapped memory — no allocation or copy needed. The view becomes invalid as soon as `CloseMapped` is called.
+`GetAssetMapped` returns a non-owning `AssetView` directly into mapped memory — no allocation or copy needed. The view becomes invalid as soon as `CloseMapped` is called. For an empty file the view has `size == 0` and a valid (non-null) `data` pointer.
 
 > **Important:** Memory-mapped access is **not supported for compressed assets**. Calling `GetAssetMapped` or `LoadAssetMapped` on a compressed entry will return an error. Use `LoadAsset` (stream-based) instead, which handles decompression automatically.
 
@@ -81,29 +102,46 @@ Assets can be stored compressed inside an archive. This is transparent when usin
 ```cpp
 // Works for both compressed and uncompressed assets
 std::vector<std::byte> data;
-if (!archive.LoadAsset("maps/level1.map", data)) {
-    std::cerr << archive.GetError() << std::endl;
+if (!archive.LoadAsset("maps/level1.map", &data)) {
+    std::cerr << archive.TakeError() << std::endl;
 }
 ```
 
-Internally, compressed archives use per-block framing: each 4096-byte chunk is compressed independently and prefixed with its compressed and original size. This means the decompressor never needs to hold the entire file in memory at once.
-
-Whether an entry is compressed can be determined from the index — if `compressedFileSize != 0` the entry is compressed, otherwise it is stored raw.
+Internally, compressed files are split into blocks (64 KB by default, configurable when packing). Each block is compressed independently and prefixed with its compressed and original size.
 
 | Access method        | Uncompressed | Compressed          |
 |----------------------|:------------:|:-------------------:|
 | `LoadAsset`          | ✅            | ✅ (auto-decompress) |
+| `LoadAssetAt`        | ✅            | ✅ (auto-decompress) |
 | `LoadAssetMapped`    | ✅            | ❌ not supported     |
 | `GetAssetMapped`     | ✅            | ❌ not supported     |
 
 ## Error handling
 
-Both `StaticForgeReader` and `StaticForgeArchive` expose error messages. Always check the return value and read `GetError()` when it returns `false`:
+`StaticForgeReader` and `StaticForgeArchive` collect error messages. Always check the return value:
 
 ```cpp
-if (!archive.LoadAsset("audio/music.ogg", data)) {
+if (!archive.LoadAsset("audio/music.ogg", &data)) {
     // possible reasons: key not found, seek failure, checksum mismatch,
     // decompression failure, or compressed asset accessed via mmap
-    std::cerr << archive.GetError() << std::endl;
+    std::cerr << archive.TakeError() << std::endl;
 }
 ```
+
+| Function        | Description                                                  |
+|-----------------|--------------------------------------------------------------|
+| `IsValid()`     | `true` if no errors are stored                               |
+| `GetError()`    | Returns all stored errors as one string                      |
+| `TakeError()`   | Returns all stored errors and clears them                    |
+| `ClearErrors()` | Clears all stored errors                                     |
+
+Errors of the archive accumulate over several calls until you take or clear them, so you can load many assets and report all problems at once:
+
+```cpp
+archive.LoadAsset("a.png", &a);
+archive.LoadAsset("b.png", &b);
+if (!archive.IsValid())
+    std::cerr << archive.TakeError();  // errors of both calls
+```
+
+Errors that no longer apply are cleared automatically: `reader.Load` clears the errors of the reader and of the archive it loads into.

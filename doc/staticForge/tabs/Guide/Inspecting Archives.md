@@ -5,7 +5,7 @@ name: Inspecting Archives
 
 # Inspecting Archives
 
-Use `--info` to display header and index information of one or more existing `.sfpak` files without extracting anything.
+Use `--info` to display header and index information of one or more existing `.sfpak` files, and `--extract` to turn an archive back into normal files.
 
 ## Basic info
 
@@ -17,10 +17,10 @@ Output:
 
 ```
 Archive: textures.sfpak
-Version: 1
-File count: 42
-Index offset: 32
-Index size: 1176
+Version: 3
+File count: 2
+Index offset: 64
+Index size: 80
 Data offset: 4096
 ```
 
@@ -32,7 +32,7 @@ Data offset: 4096
 StaticForgeTool --info ./build/textures.sfpak --info ./build/audio.sfpak
 ```
 
-Each archive is printed in sequence with a separator between them.
+Each archive is printed in sequence, separated by an empty line. With more than one archive the full path is shown instead of only the file name.
 
 ## Verbose index listing
 
@@ -42,17 +42,43 @@ Add `--verbose` to also print every index entry:
 StaticForgeTool --info ./build/textures.sfpak --verbose
 ```
 
-Output includes a line per file showing its hash, byte offset, size, and checksum:
+Output includes a line per file showing its hash (hexadecimal), byte offset relative to the data section, and original size:
 
 ```
 Index entries:
-  [0] hash: 12938471234  offset: 4096    size: 204800  checksum: 3421543
-  [1] hash: 98712634521  offset: 208896  size: 81920   checksum: 9871234
-  ...
+  [0] hash: a01c85352df03fae, offset: 0, size: 9
+  [1] hash: 0254d0414b3d0eaf, offset: 4096, size: 200000
 ```
 
-## Name table
+If the archive was built with `--store-names` (or `store-names = true` in the meta file), each line also shows the original relative path:
 
-If the archive was built with `--store-names` (or `store-names = true` in the meta file), the inspector also prints the name table, showing the original relative path for each entry.
+```
+Index entries:
+  [0] name: textures/background.png, hash: 0254d0414b3d0eaf, offset: 0, size: 200000
+  [1] name: textures/ui.png, hash: a6cf994350b589ad, offset: 200704, size: 3
+```
 
-> **Note:** Without name storage the index only contains hashes. The original path is not recoverable from the archive alone — keep your source assets.
+## Extracting archives
+
+`--extract` writes every file of an archive back to disk. Each archive gets its own folder `<output>/<archive name>/`:
+
+```bash
+StaticForgeTool --extract ./build/textures.sfpak --output ./unpacked --mkdir
+```
+
+With stored names the original folder structure is restored, e.g. `./unpacked/textures/textures/background.png` (the path inside the archive is relative to the source folder).
+
+Without stored names the original paths are unknown, so the files are named after their hash, matching the `--info --verbose` output: `./unpacked/main/a01c85352df03fae.bin`.
+
+Several archives can be extracted at once:
+
+```bash
+StaticForgeTool --extract "./build/textures.sfpak, ./build/main.sfpak" --output ./unpacked --mkdir --verbose
+```
+
+Rules:
+
+- Existing files are never overwritten. If one of the target files already exists, nothing is extracted. Empty the output folder first.
+- Names in the archive must be relative paths. An archive with names like `../file` or `C:/file` is rejected, so a manipulated archive can't write outside of the output folder.
+
+> **Note:** Without name storage the index only contains hashes. The original path is not recoverable from the archive alone — keep your source assets, or pack with `--store-names` if you need to extract with the original names.

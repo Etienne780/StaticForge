@@ -27,32 +27,32 @@ Comments start with `#` and run to the end of the line:
 
 ```
 # this is a comment
-archive = main;storenames 
+archive = main; # this is also a comment
 ```
 
 ## Tokenizer
 
-`MetaTokenizer` reads the entire file into memory, then walks it character by character via `ProcessContent` → `ProcessChar`. It tracks the current line and column for error reporting and produces a flat `std::vector<MetaToken>`.
+`MetaTokenizer` reads the entire file into memory (skipping a UTF-8 BOM), then walks it character by character via `ProcessContent` → `ProcessChar`. It tracks the current line and column for error reporting and produces a flat `std::vector<MetaToken>`. Columns count characters, not bytes, so multi-byte UTF-8 characters count as one column.
 
 **Character dispatch (`ProcessChar`):**
 
-| Input                                | Action                                       |
-|--------------------------------------|----------------------------------------------|
-| Whitespace (`\r`, `\n`, ` `, `\t`)  | Skipped; newlines increment the line counter |
-| `=`                                  | Emit `Assign`                                |
-| `,`                                  | Emit `Separator`                             |
-| `;`                                  | Emit `Delimiter`                             |
-| `#`                                  | Call `SkipComment` — consume until `\n`      |
-| Alpha, `_`, `.`, `-`                 | Call `ReadIdentifier`                        |
-| Anything else                        | Add error, emit `UNKNOWN`                    |
+| Input                                        | Action                                       |
+|----------------------------------------------|----------------------------------------------|
+| Whitespace (`\r`, `\n`, ` `, `\t`)           | Skipped; newlines increment the line counter |
+| `=`                                          | Emit `Assign`                                |
+| `,`                                          | Emit `Separator`                             |
+| `;`                                          | Emit `Delimiter`                             |
+| `#`                                          | Call `SkipComment` — consume until `\n`      |
+| Letter, digit, `_`, `.`, `-`, UTF-8 byte     | Call `ReadIdentifier`                        |
+| Anything else                                | Add error, emit `UNKNOWN`                    |
 
-**`ReadIdentifier`:** records the start pointer, then advances `m_cur` while the character is alphanumeric, `_`, `.`, or `-`. The resulting `string_view` into the in-memory buffer is stored in the token without any heap allocation.
+**`ReadIdentifier`:** records the start pointer, then advances `m_cur` while the character is an identifier character (`IsIdentifierChar`: alphanumeric, `_`, `.`, `-` or a byte ≥ `0x80`, which is part of a UTF-8 character). The resulting `string_view` into the in-memory buffer is stored in the token without any heap allocation.
 
 **Token types:**
 
 | Token type   | Description                                                  |
 |--------------|--------------------------------------------------------------|
-| `Identifier` | An unquoted word — keys, values, extensions, booleans        |
+| `Identifier` | An unquoted word — keys, values, extensions, booleans, numbers |
 | `Assign`     | The `=` character                                            |
 | `Separator`  | The `,` character (used between list values like extensions) |
 | `Delimiter`  | The `;` character — terminates a statement                   |
@@ -75,29 +75,34 @@ For list values (e.g. `exclude`) the value section is instead:
 Identifier  Separator  Identifier  Separator  ...  Identifier  Delimiter
 ```
 
-Any deviation — wrong token type, unexpected `EndOfFile`, missing `Delimiter` — is a parse error that includes the line and column of the offending token.
+Any deviation — wrong token type, unexpected `EndOfFile`, missing `Delimiter` — is a parse error. Errors about the statement structure include the line and column of the offending token.
 
 ## Error suggestions
 
-If an `Identifier` key is not recognised, the parser computes the edit distance to every known key. If the closest match differs by at most 3 characters a suggestion is appended to the error:
+If a key is not recognised, the parser compares it with every known key. Separators (`-`, `_`, space) and case are ignored, and the names are compared character by character. If the lengths differ by at most 3 and at most 3 characters are different, a suggestion is appended to the error:
 
 ```
-Unknown key 'archiv' at line 1, column 1. Did you mean 'archive'?
+Unknown identifier 'archiv'. Did you mean 'archive'?
 ```
 
 ## Supported parameters
 
-| Key          | Type     | Required | Description                                                     |
-|--------------|----------|----------|-----------------------------------------------------------------|
-| `archive`    | string   | yes      | Name for the `.sfpak` archive                                   |
-| `exclude`    | string[] | no       | Comma-separated list of file extensions to skip                 |
-| `storen-ames` | bool     | no       | Store original filenames in the archive for debug inspection    |
-| `compress`   | bool     | no       | Compresses files larger than 4096 bytes before storing them in the archive.    |
+| Key                   | Type     | Required | Description                                                                 |
+|-----------------------|----------|----------|-----------------------------------------------------------------------------|
+| `archive`             | string   | yes      | Name for the `.sfpak` archive                                               |
+| `exclude`             | string[] | no       | Comma-separated list of file extensions to skip                             |
+| `store-names`         | bool     | no       | Store original filenames in the archive for debug inspection and extraction |
+| `compress`            | bool     | no       | Compress files larger than 4096 bytes                                       |
+| `compress-block-size` | uint     | no       | Compression block size in bytes                                             |
+| `compress-table-size` | uint     | no       | Compressor match table size as power of two                                 |
+| `compress-min-match`  | uint     | no       | Shortest match the compressor stores as reference                           |
 
 ## Value parsing
 
-**`archive`** — the `Identifier` token value is used as-is.
+**`archive`** — the `Identifier` token value is used as-is. The builder rejects names containing `/` or `\` and the names `.` and `..`.
 
-**`exclude`** — after the `=`, the parser collects `Identifier` tokens separated by `Separator` (`,`) tokens until it sees a `Delimiter` (`;`). Each token value is trimmed and lowercased, so `.PNG` and `.png` are treated identically.
+**`exclude`** — after the `=`, the parser collects `Identifier` tokens separated by `Separator` (`,`) tokens until it sees a `Delimiter` (`;`). Each value is lowercased and a missing leading dot is added, so `.PNG`, `.png` and `png` are treated identically.
 
-**`storenames`** — the single `Identifier` token after `=` is compared case-insensitively. `true` and `1` are truthy; anything else is false.
+**`store-names`, `compress`** — the single `Identifier` token after `=` is compared case-insensitively. Only `true` and `false` are valid, anything else is a parse error.
+
+**`compress-block-size`, `compress-table-size`, `compress-min-match`** — parsed with `std::from_chars` as an unsigned decimal number. The whole value has to be a number (`64k` or `-5` are errors). The builder checks the value against the valid range.
