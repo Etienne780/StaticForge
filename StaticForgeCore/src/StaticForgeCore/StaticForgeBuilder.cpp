@@ -26,6 +26,8 @@ namespace StaticForge {
 	}
 
 	bool StaticForgeBuilder::Build() {
+		Reset();
+
 		std::string error;
 		if (!CheckFilepaths(&error)) {
 			AddError("CheckFilepaths: " + error);
@@ -83,6 +85,10 @@ namespace StaticForge {
 	StaticForgeBuilder& StaticForgeBuilder::SetCompress(bool active) {
 		m_compress = active;
 		return *this;
+	}
+
+	void StaticForgeBuilder::Reset() {
+		m_archiveGroups.clear();
 	}
 
 	bool StaticForgeBuilder::CheckFilepaths(std::string* errorOut) {

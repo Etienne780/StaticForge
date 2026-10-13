@@ -144,6 +144,11 @@ namespace StaticForge {
 		std::unique_ptr<Internal::LZ4Compression> m_compressor;
 
 		/**
+		 * @brief Clears all data of a previous build.
+		 */
+		void Reset();
+
+		/**
 		 * @brief Validates all configured file paths.
 		 */
 		bool CheckFilepaths(std::string* errorOut);
