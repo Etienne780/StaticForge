@@ -54,9 +54,6 @@ namespace ArgName {
 	const std::string_view EXTRACT = "extract";
 	const std::string_view EXTRACT_SHORTNAME = "x";
 
-	const std::string_view OUTDIR = "outdir";
-	const std::string_view OUTDIR_SHORTNAME = "od";
-
 	const std::string_view VERBOSE = "verbose";
 	const std::string_view VERBOSE_SHORTNAME = "v";
 

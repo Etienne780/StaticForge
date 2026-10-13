@@ -111,7 +111,7 @@ void Config::EvaluateArgument(const std::string& name, const std::string& value)
 	
 	const ConsoleArgument* arg = CAM::FindArgument(name);
 	if (!arg) {
-		const std::string errorMsg = "Unkown argument '" + name + "'";
+		const std::string errorMsg = "Unknown argument '" + name + "'";
 
 		std::string suggestion;
 		if (CAM::TryGetSuggestionMessage(name, suggestion)) {

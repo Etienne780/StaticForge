@@ -71,7 +71,7 @@ namespace StaticForge::Internal {
 				break;
 			}
 			AddError(std::string("Unexpected character '") + c + "'");
-			AddToken(MetaTokenType::UNKOWN);
+			AddToken(MetaTokenType::UNKNOWN);
 			break;
 		}
 	}

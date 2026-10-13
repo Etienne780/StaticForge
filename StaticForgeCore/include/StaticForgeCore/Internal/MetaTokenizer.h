@@ -22,12 +22,12 @@ namespace StaticForge::Internal {
 		Separator,	// ,
 		Delimiter,	// ;
 		EndOfFile,
-		UNKOWN,
+		UNKNOWN,
 	};
 
 	struct MetaToken {
 		std::string_view content;
-		MetaTokenType type = MetaTokenType::UNKOWN;
+		MetaTokenType type = MetaTokenType::UNKNOWN;
 		uint32_t line = 1, column = 1;
 
 		MetaToken() = default;

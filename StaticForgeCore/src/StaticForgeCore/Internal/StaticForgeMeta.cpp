@@ -148,7 +148,7 @@ namespace StaticForge::Internal {
 			std::string suggestion = "";
 			bool found = TryGetIdentifierSuggestions(n, &suggestion);
 
-			*errorOut = "Unkown identifier '" + n + (found ? "'. " + suggestion : "'");
+			*errorOut = "Unknown identifier '" + n + (found ? "'. " + suggestion : "'");
 			return false;
 		}
 
@@ -330,7 +330,7 @@ namespace StaticForge::Internal {
 	}
 
 	bool StaticForgeMeta::Expect(Internal::MetaTokenType type, const Internal::MetaToken* token) {
-		return type == (token ? token->type : Internal::MetaTokenType::UNKOWN);
+		return type == (token ? token->type : Internal::MetaTokenType::UNKNOWN);
 	}
 
 	void* StaticForgeMeta::GetOutput(const std::string& name) {
