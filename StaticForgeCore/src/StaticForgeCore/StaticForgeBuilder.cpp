@@ -26,13 +26,6 @@ namespace StaticForge {
 	}
 
 	bool StaticForgeBuilder::Build() {
-		AddError("CheckFilepaths: ");
-		AddError("CheckFilepaths: ");
-		AddError("CheckFilepaths: ");
-		AddError("CheckFilepaths: ");
-		AddError("CheckFilepaths: ");
-		return false;
-
 		std::string error;
 		if (!CheckFilepaths(&error)) {
 			AddError("CheckFilepaths: " + error);
