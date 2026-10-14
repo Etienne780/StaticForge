@@ -16,13 +16,14 @@ The core static library. Contains all format logic and is linked by both the too
 - `StaticForgeReader` - reads and validates `.sfpak` files
 - `StaticForgeArchive` - runtime handle for an open archive
 - Meta file parsing (`StaticForgeMeta`)
+- Archive core (`Internal/ArchiveCore`): the loaded archive data, shared between archive objects, and the asset loading logic
 - Internal helpers: hashing, alignment, endian handling, compression, memory mapping, error support
 
 Only the headers directly in `include/StaticForgeCore/` are part of the public API. The `Internal/` headers are not included in the SDK release packages.
 
 ## StaticForgeTool
 
-The CLI executable. Wraps `StaticForgeCore` with argument parsing and four modes: pack, extract, info, help. Does not contain any format logic itself.
+The CLI executable. Wraps `StaticForgeCore` with argument parsing and five modes: pack, extract, info, verify, help. Does not contain any format logic itself.
 
 `Utf8Console` makes the tool work with Unicode on Windows: it reads the command line arguments as UTF-8 and switches the console output to UTF-8 while the tool runs. On other platforms the arguments already are UTF-8.
 
@@ -34,7 +35,7 @@ StaticForgeTool
             ├── StaticForgeBuilder
             ├── StaticForgeReader
             ├── StaticForgeArchive
-            └── Internal (helpers, meta, hashing, compression, mmap)
+            └── Internal (archive core, helpers, meta, hashing, compression, mmap)
 
 Your Game / Application
     └── StaticForgeCore

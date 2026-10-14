@@ -4,6 +4,7 @@
 #include "Internal/LZ4Compression.h"
 #include "StaticForgeReader.h"
 #include "StaticForgeArchive.h"
+#include "Internal/ArchiveCore.h"
 
 namespace StaticForge {
 
@@ -44,31 +45,48 @@ namespace StaticForge {
 		// resets the archive so it is allways fresh
 		archiveOut->Reset();
 
-		// open file
-		archiveOut->m_path = path;
-		archiveOut->OpenFileStream();
-		if (!archiveOut->m_stream.is_open()) {
+		auto data = std::make_shared<Internal::ArchiveData>();
+		std::ifstream stream;
+		if (!LoadData(path, fileSize, data.get(), &stream))
+			return false;
+
+		// the stream used for reading stays open for loading assets
+		archiveOut->m_data = std::move(data);
+		archiveOut->m_stream = std::move(stream);
+		return true;
+	}
+
+	bool StaticForgeReader::LoadData(
+		const StaticForgePath& path,
+		uint64_t fileSize,
+		Internal::ArchiveData* dataOut,
+		std::ifstream* streamOut
+	) {
+		dataOut->path = path;
+		streamOut->open(path, std::ios::binary | std::ios::in);
+		if (!streamOut->is_open()) {
 			AddError("Failed to open file");
 			return false;
 		}
 
-		if (!ReadHeader(archiveOut, fileSize, &error)) {
+		std::string error;
+		if (!ReadHeader(*streamOut, dataOut, fileSize, &error)) {
 			AddError("ReadHeader: " + error);
 			return false;
 		}
 
-		if (!ReadIndex(archiveOut, fileSize, &error)) {
+		if (!ReadIndex(*streamOut, dataOut, fileSize, &error)) {
 			AddError("ReadIndex: " + error);
 			return false;
 		}
 
-		if (archiveOut->StoresNames()) {
-			if (!ReadNameTable(archiveOut, fileSize, &error)) {
+		if (dataOut->header.nameTableHeaderOffset != 0) {
+			if (!ReadNameTable(*streamOut, dataOut, fileSize, &error)) {
 				AddError("ReadNameTable: " + error);
 				return false;
 			}
 		}
-		
+
 		return true;
 	}
 
@@ -93,9 +111,8 @@ namespace StaticForge {
 		return true;
 	}
 
-	bool StaticForgeReader::ReadHeader(StaticForgeArchive* archive, uint64_t fileSize, std::string* errorOut) const {
-		auto& stream = archive->m_stream;
-		auto& header = archive->m_header;
+	bool StaticForgeReader::ReadHeader(std::ifstream& stream, Internal::ArchiveData* data, uint64_t fileSize, std::string* errorOut) const {
+		auto& header = data->header;
 
 		constexpr char expectedMagic[4] = {
 			'S', 'F', 'P', 'K'
@@ -160,14 +177,13 @@ namespace StaticForge {
 		return true;
 	}
 
-	bool StaticForgeReader::ReadIndex(StaticForgeArchive* archive, uint64_t fileSize, std::string* errorOut) const {
-		auto& stream = archive->m_stream;
-		auto& header = archive->m_header;
+	bool StaticForgeReader::ReadIndex(std::ifstream& stream, Internal::ArchiveData* data, uint64_t fileSize, std::string* errorOut) const {
+		auto& header = data->header;
 
-		archive->m_indexEntries.clear();
-		archive->m_indexEntries.reserve(header.fileCount);
-		archive->m_hashNameToEntry.clear();
-		archive->m_hashNameToEntry.reserve(header.fileCount);
+		data->indexEntries.clear();
+		data->indexEntries.reserve(header.fileCount);
+		data->hashNameToEntry.clear();
+		data->hashNameToEntry.reserve(header.fileCount);
 
 		const uint64_t start = header.indexOffset;
 		stream.seekg(start, std::ios::beg);
@@ -198,13 +214,13 @@ namespace StaticForge {
 				return false;
 			}
 
-			if (archive->m_hashNameToEntry.count(entry.hashName)) {
+			if (data->hashNameToEntry.count(entry.hashName)) {
 				*errorOut = "Index entry " + std::to_string(i) + " has a duplicate hash (archive is corrupted)";
 				return false;
 			}
 
-			archive->m_indexEntries.push_back(entry);
-			archive->m_hashNameToEntry[entry.hashName] = i;
+			data->indexEntries.push_back(entry);
+			data->hashNameToEntry[entry.hashName] = i;
 		}
 
 		if (stream.fail()) {
@@ -215,12 +231,11 @@ namespace StaticForge {
 		return true;
 	}
 
-	bool StaticForgeReader::ReadNameTable(StaticForgeArchive* archive, uint64_t fileSize, std::string* errorOut) const {
-		auto& stream = archive->m_stream;
-		auto& header = archive->m_header;
+	bool StaticForgeReader::ReadNameTable(std::ifstream& stream, Internal::ArchiveData* data, uint64_t fileSize, std::string* errorOut) const {
+		auto& header = data->header;
 
-		archive->m_indexToName.clear();
-		archive->m_indexToName.reserve(header.fileCount);
+		data->indexToName.clear();
+		data->indexToName.reserve(header.fileCount);
 
 		stream.seekg(header.nameTableHeaderOffset);
 		if (!stream) {
@@ -268,10 +283,11 @@ namespace StaticForge {
 			return false;
 		}
 
-		auto& compressor = *archive->m_compressor;
-		std::vector<std::byte> stringData = compressor.Decompress(compressed.data(), compressed.size(), static_cast<size_t>(h.stringDataSize));
-		if (!compressor.IsValid() || stringData.size() != h.stringDataSize) {
-			*errorOut = "Failed to decompress name table string data: " + compressor.GetError();
+		const Internal::LZ4Compression decompressor(Internal::IsLittleEndian(), !Internal::LZ4_STORE_HEADER);
+		std::vector<std::byte> stringData(static_cast<size_t>(h.stringDataSize));
+		std::string decompressError;
+		if (!decompressor.DecompressTo(compressed.data(), compressed.size(), stringData.data(), stringData.size(), &decompressError)) {
+			*errorOut = "Failed to decompress name table string data: " + decompressError;
 			return false;
 		}
 
@@ -297,7 +313,7 @@ namespace StaticForge {
 			}
 
 			const char* nameStart = reinterpret_cast<const char*>(stringData.data()) + entry.nameOffset;
-			archive->m_indexToName[i] = std::string(nameStart, entry.nameLength);
+			data->indexToName[i] = std::string(nameStart, entry.nameLength);
 		}
 
 		return true;

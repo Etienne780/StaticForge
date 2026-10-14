@@ -25,6 +25,16 @@ if (!reader.Load("./build/textures.sfpak", &archive)) {
 
 The same archive object can be loaded again with another file. Everything of the previous archive (open stream, memory mapping, index, errors) is released first.
 
+## Cloning an archive
+
+An archive can't be copied, but `Clone()` creates a second archive object for the same file without reading it again:
+
+```cpp
+StaticForge::StaticForgeArchive clone = archive.Clone();
+```
+
+The clone shares the loaded index and names (and the memory mapping, if the archive is mapped), but has its own file stream and its own errors. A single archive object must not be used from several threads at once, but each thread can use its own clone.
+
 ## Loading a file by path
 
 Pass the **relative path** of the file exactly as it appeared under the source directory:

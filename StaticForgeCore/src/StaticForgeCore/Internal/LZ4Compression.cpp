@@ -137,8 +137,10 @@ namespace StaticForge::Internal {
         uint64_t originalSize = oriSize;
         if (m_storeHeader) {
             size_t off = 0;
-            if (!ReadU64(data, size, off, originalSize))
+            if (!ReadU64(data, size, off, originalSize)) {
+                AddError("Decompress: truncated stream reading the original size");
                 return {};
+            }
         }
 
         if (originalSize > (1ULL << 32)) {
@@ -148,30 +150,34 @@ namespace StaticForge::Internal {
         }
 
         std::vector<std::byte> result(static_cast<size_t>(originalSize));
-        if (!DecompressTo(data, size, result.data(), result.size()))
+        std::string error;
+        if (!DecompressTo(data, size, result.data(), result.size(), &error)) {
+            AddError(error);
             return {};
+        }
 
         return result;
     }
 
-    bool LZ4Compression::DecompressTo(const std::byte* data, size_t size, std::byte* out, size_t outSize) {
-        m_errors.clear();
-
-        if ((data == nullptr && size > 0) || (out == nullptr && outSize > 0)) {
-            AddError("Decompress: pointer is null with non-zero size");
+    bool LZ4Compression::DecompressTo(const std::byte* data, size_t size, std::byte* out, size_t outSize, std::string* errorOut) const {
+        auto fail = [errorOut](const std::string& message) {
+            if (errorOut)
+                *errorOut = "Decompress: " + message;
             return false;
-        }
+        };
+
+        if ((data == nullptr && size > 0) || (out == nullptr && outSize > 0))
+            return fail("pointer is null with non-zero size");
 
         size_t off = 0;
         if (m_storeHeader) {
             uint64_t storedSize = 0;
             if (!ReadU64(data, size, off, storedSize))
-                return false;
+                return fail("truncated stream reading the original size");
 
             if (storedSize != outSize) {
-                AddError("Decompress: stored size (" + std::to_string(storedSize) +
+                return fail("stored size (" + std::to_string(storedSize) +
                     ") does not match output size (" + std::to_string(outSize) + ")");
-                return false;
             }
         }
 
@@ -187,19 +193,16 @@ namespace StaticForge::Internal {
             case BLOCK_LITERAL: {
                 uint16_t len = 0;
                 if (!ReadU16(data, size, off, len))
-                    return false;
+                    return fail("truncated stream reading uint16 at offset " + std::to_string(off));
 
                 if (off + len > size) {
-                    AddError("Decompress: literal block overflows input (need " +
+                    return fail("literal block overflows input (need " +
                         std::to_string(len) + " bytes, " +
                         std::to_string(size - off) + " available)");
-                    return false;
                 }
 
-                if (len > outSize - written) {
-                    AddError("Decompress: output is larger than expected (" + std::to_string(outSize) + " bytes)");
-                    return false;
-                }
+                if (len > outSize - written)
+                    return fail("output is larger than expected (" + std::to_string(outSize) + " bytes)");
 
                 std::memcpy(out + written, data + off, len);
                 off += len;
@@ -210,33 +213,24 @@ namespace StaticForge::Internal {
                 uint16_t distance = 0;
                 uint16_t matchLen = 0;
 
-                if (!ReadU16(data, size, off, distance))
-                    return false;
-                if (!ReadU16(data, size, off, matchLen))
-                    return false;
+                if (!ReadU16(data, size, off, distance) || !ReadU16(data, size, off, matchLen))
+                    return fail("truncated stream reading uint16 at offset " + std::to_string(off));
 
-                if (distance == 0) {
-                    AddError("Decompress: zero-distance match (invalid back-reference)");
-                    return false;
-                }
+                if (distance == 0)
+                    return fail("zero-distance match (invalid back-reference)");
 
                 if (distance > written) {
-                    AddError("Decompress: match distance (" + std::to_string(distance) +
-                        ") exceeds output so far (" +
-                        std::to_string(written) + ")");
-                    return false;
+                    return fail("match distance (" + std::to_string(distance) +
+                        ") exceeds output so far (" + std::to_string(written) + ")");
                 }
 
                 if (matchLen < MIN_MATCH) {
-                    AddError("Decompress: match length " + std::to_string(matchLen) +
+                    return fail("match length " + std::to_string(matchLen) +
                         " is below minimum (" + std::to_string(MIN_MATCH) + ")");
-                    return false;
                 }
 
-                if (matchLen > outSize - written) {
-                    AddError("Decompress: output is larger than expected (" + std::to_string(outSize) + " bytes)");
-                    return false;
-                }
+                if (matchLen > outSize - written)
+                    return fail("output is larger than expected (" + std::to_string(outSize) + " bytes)");
 
                 // byte by byte, source and destination can overlap
                 const size_t copyStart = written - distance;
@@ -248,17 +242,14 @@ namespace StaticForge::Internal {
             default: {
                 char buf[32];
                 std::snprintf(buf, sizeof(buf), "0x%02X", blockType);
-                AddError(std::string("Decompress: unknown block type ") + buf);
-                return false;
+                return fail(std::string("unknown block type ") + buf);
             }
             }
         }
 
         if (written != outSize) {
-            AddError("Decompress: output size mismatch (expected " +
-                std::to_string(outSize) + ", got " +
-                std::to_string(written) + ")");
-            return false;
+            return fail("output size mismatch (expected " +
+                std::to_string(outSize) + ", got " + std::to_string(written) + ")");
         }
 
         return true;
@@ -343,11 +334,9 @@ namespace StaticForge::Internal {
     bool LZ4Compression::ReadU16(const std::byte* data, size_t size,
         size_t& off, uint16_t& out) const
     {
-        if (off + 2 > size) {
-            AddError("Decompress: truncated stream reading uint16 at offset " +
-                std::to_string(off));
+        if (off + 2 > size)
             return false;
-        }
+
         uint16_t lo = static_cast<uint8_t>(data[off]);
         uint16_t hi = static_cast<uint8_t>(data[off + 1]);
 
@@ -359,11 +348,8 @@ namespace StaticForge::Internal {
     bool LZ4Compression::ReadU64(const std::byte* data, size_t size,
         size_t& off, uint64_t& out) const
     {
-        if (off + 8 > size) {
-            AddError("Decompress: truncated stream reading uint64 at offset " +
-                std::to_string(off));
+        if (off + 8 > size)
             return false;
-        }
 
         uint64_t v = 0;
         for (int i = 0; i < 8; ++i)

@@ -14,7 +14,8 @@ namespace StaticForge {
 	namespace Internal {
 
 		class MmapFile;
-		class LZ4Compression;
+		struct ArchiveData;
+		struct EntrySource;
 
 	}
 
@@ -46,11 +47,21 @@ namespace StaticForge {
 		 */
 		~StaticForgeArchive();
 
+		// not copyable, so a copy doesn't open another file handle by accident, use Clone()
 		StaticForgeArchive(const StaticForgeArchive&) = delete;
 		StaticForgeArchive& operator=(const StaticForgeArchive&) = delete;
 
 		StaticForgeArchive(StaticForgeArchive&&) noexcept = default;
 		StaticForgeArchive& operator=(StaticForgeArchive&&) noexcept = default;
+
+		/**
+		 * @brief Creates a new archive object that shares the loaded data.
+		 *
+		 * The clone has its own file stream (opened on the first load) and its own errors.
+		 * If this archive is mapped, the clone shares the mapping. It stays open until no archive uses it anymore.
+		 * Cloning is cheap, nothing is read from the file.
+		 */
+		StaticForgeArchive Clone() const;
 
 		/**
 		 * @brief Opens the archive file stream for reading.
@@ -275,68 +286,38 @@ namespace StaticForge {
 		uint64_t GetFilePadding(size_t fileIndex) const;
 
 	private:
-		StaticForgePath m_path;
+		// shared with clones, never changed after loading (nullptr if nothing is loaded)
+		std::shared_ptr<const Internal::ArchiveData> m_data;
+		// shared with clones, closed when the last archive releases it
+		std::shared_ptr<Internal::MmapFile> m_mmap;
 		std::ifstream m_stream;
-		std::unique_ptr<Internal::MmapFile> m_mmap;
-		std::unique_ptr<Internal::LZ4Compression> m_compressor;
-
-		Internal::StaticForgeHeader m_header;
-		std::vector<Internal::StaticForgeIndexEntry> m_indexEntries;
-		std::unordered_map<uint64_t, size_t> m_hashNameToEntry;
-		std::unordered_map<size_t, std::string> m_indexToName;
 
 		/**
-		 * @brief Loads a whole entry into outVector (resized) or into outBuffer.
+		 * @brief Returns the loaded data, or empty data if nothing is loaded.
+		 */
+		const Internal::ArchiveData& Data() const;
+
+		/**
+		 * @brief Opens the stream if needed or checks that the archive is mapped.
+		 */
+		bool PrepareSource(bool mapped, Internal::EntrySource* sourceOut, std::string* errorOut);
+
+		/**
+		 * @brief Loads a whole entry, see Internal::LoadEntry().
 		 */
 		bool LoadEntry(const Internal::StaticForgeIndexEntry& entry, bool mapped,
 			std::vector<std::byte>* outVector, std::byte* outBuffer, uint64_t bufferSize, std::string* errorOut);
 
 		/**
-		 * @brief Loads a part of an entry into outBuffer, without checksum validation.
+		 * @brief Loads a part of an entry, see Internal::LoadEntryRange().
 		 */
 		bool LoadEntryRange(const Internal::StaticForgeIndexEntry& entry, bool mapped,
 			uint64_t offset, uint64_t size, std::byte* outBuffer, std::string* errorOut);
 
 		/**
-		 * @brief Opens the stream if needed or checks that the archive is mapped.
-		 */
-		bool PrepareSource(bool mapped, std::string* errorOut);
-
-		/**
-		 * @brief Reads size bytes at an absolute file offset from the stream.
-		 */
-		bool ReadStream(uint64_t absOffset, uint64_t size, std::byte* dst, std::string* errorOut);
-
-		/**
-		 * @brief Returns a pointer to size stored bytes of an entry, starting at pos.
-		 *
-		 * Mapped: points into the mapping. Stream: the bytes are read into temp.
-		 */
-		const std::byte* ReadStored(const Internal::StaticForgeIndexEntry& entry, bool mapped,
-			uint64_t pos, uint64_t size, std::vector<std::byte>* temp, std::string* errorOut);
-
-		/**
-		 * @brief Walks the compressed blocks of an entry and decompresses the blocks inside the range.
-		 *
-		 * stored: all stored bytes in memory, or nullptr to read each block with ReadStored().
-		 * dst: receives the range, or nullptr to only validate the block sizes.
-		 */
-		bool DecompressBlocks(const Internal::StaticForgeIndexEntry& entry, bool mapped, const std::byte* stored,
-			uint64_t rangeStart, uint64_t rangeSize, std::byte* dst, std::string* errorOut);
-
-		Internal::StaticForgeIndexEntry* GetIndexEntry(uint64_t hash);
-		Internal::StaticForgeIndexEntry* GetIndexEntry(const std::string& key);
-
-		/**
 		 * @brief Closes all open resources and clears the loaded archive data.
 		 */
 		void Reset();
-
-		/**
-		 * @brief Validates checksum of loaded asset data.
-		 */
-		bool VerifyChecksum(const std::byte* data, uint64_t size,
-			uint32_t expected, std::string* errorOut) const;
 	};
 
 }

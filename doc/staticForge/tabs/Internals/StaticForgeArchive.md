@@ -7,35 +7,47 @@ name: StaticForgeArchive
 
 `StaticForgeArchive` is the runtime handle for a loaded `.sfpak` file. It is populated by `StaticForgeReader::Load` and then used to retrieve asset data.
 
-## Ownership and move semantics
+## Ownership, move and Clone
 
-`StaticForgeArchive` is move-only. Copying is deleted because it owns an open `std::ifstream`.
+`StaticForgeArchive` can be moved but not copied, so a copy doesn't open another file handle by accident. Use `Clone()` for a second archive object:
 
 ```cpp
 StaticForge::StaticForgeArchive a;
 StaticForge::StaticForgeArchive b = std::move(a); // OK
 StaticForge::StaticForgeArchive c = a;            // compile error
+StaticForge::StaticForgeArchive d = b.Clone();    // OK, shares the loaded data
 ```
 
-An archive object can be loaded again with `StaticForgeReader::Load`. The reader calls the private `Reset()` first, which closes the stream and the memory mapping and clears the header, index, name table and errors of the previous archive.
+An archive object can be loaded again with `StaticForgeReader::Load`. The reader calls the private `Reset()` first, which closes the stream and releases the mapping, the loaded data and the errors of the previous archive. Clones keep the old data.
 
 ## Internal state
 
-| Member              | Description                                                         |
-|---------------------|---------------------------------------------------------------------|
-| `m_path`            | Path to the `.sfpak` file on disk                                   |
-| `m_stream`          | `std::ifstream` used for stream-based reads                         |
-| `m_mmap`            | `std::unique_ptr<Internal::MmapFile>` used for memory mapping       |
-| `m_compressor`      | `std::unique_ptr<Internal::LZ4Compression>` used for decompression  |
-| `m_header`          | Parsed `StaticForgeHeader` struct                                   |
-| `m_indexEntries`    | `std::vector<StaticForgeIndexEntry>` — one per file                 |
-| `m_hashNameToEntry` | `std::unordered_map<uint64_t, size_t>` for O(1) lookup              |
-| `m_indexToName`     | `std::unordered_map<size_t, std::string>` for reverse name lookup   |
+| Member   | Description                                                                                |
+|----------|--------------------------------------------------------------------------------------------|
+| `m_data` | `std::shared_ptr<const Internal::ArchiveData>`, the loaded data, shared with clones       |
+| `m_mmap` | `std::shared_ptr<Internal::MmapFile>`, the memory mapping, shared with clones              |
+| `m_stream` | `std::ifstream` used for stream-based reads, every archive object has its own            |
+
+`Internal::ArchiveData` (in `Internal/ArchiveCore.h`) holds everything the reader loads:
+
+| Field             | Description                                                     |
+|-------------------|-----------------------------------------------------------------|
+| `path`            | Path to the `.sfpak` file on disk                               |
+| `header`          | Parsed `StaticForgeHeader` struct                               |
+| `indexEntries`    | `std::vector<StaticForgeIndexEntry>` — one per file             |
+| `hashNameToEntry` | `std::unordered_map<uint64_t, size_t>` for O(1) lookup          |
+| `indexToName`     | `std::unordered_map<size_t, std::string>` for reverse name lookup |
+
+The data is never changed after loading, so it can be shared between archive objects and threads without locking. If nothing is loaded `m_data` is `nullptr` and the getters use empty data.
+
+`Clone()` copies both `shared_ptr`s. The clone gets its own stream (opened on the first load) and its own errors. `CloseMapped()` only releases the archive's own reference to the mapping, it is unmapped when the last archive releases it. `OpenMapped()` on an archive that isn't mapped creates a new mapping.
+
+The loading logic (`LoadEntry`, `LoadEntryRange`, `DecompressBlocks`, `VerifyEntry`) lives in `Internal/ArchiveCore` as free functions. They get the data, the entry and an `EntrySource` (the stream or the mapping), so they can be used by other archive types too. The decompressor is shared, its `DecompressTo` doesn't change the object and reports errors through a parameter.
 
 ## LoadAsset flow
 
 1. Normalize the slashes of the key and hash it with `HashFilename` (64-bit FNV-1a).
-2. Look up the hash in `m_hashNameToEntry` to find the index position.
+2. Look up the hash in `hashNameToEntry` to find the index position.
 3. Call `LoadEntry`, which is shared by all full loads (vector or buffer, stream or mapped):
 - Clear the stream state, so a previous failed read does not break this one.
 - If `compressedFileSize == 0` (uncompressed): read `fileSize` bytes at `dataOffset + fileOffset` directly into the target and validate the FNV-1a checksum.
@@ -86,7 +98,7 @@ Reading a range near the end of a large compressed asset reads one frame per blo
 
 ## Accessor methods
 
-All getters read directly from `m_header` or `m_indexEntries` and are cheap:
+All getters read directly from the header or the index entries and are cheap:
 
 ```cpp
 archive.GetVersion();       // uint64_t

@@ -102,13 +102,17 @@ namespace StaticForge::Internal {
 
         /**
          * @brief Decompresses directly into an existing buffer.
+         *
+         * Does not change the object, so it can be used from several threads at once.
+         *
          * @param data Input compressed data
          * @param size Input size in bytes
          * @param out Output buffer
          * @param outSize Original size, the output must have exactly this size
+         * @param errorOut Receives the error on failure (optional)
          * @return true on success
          */
-        bool DecompressTo(const std::byte* data, size_t size, std::byte* out, size_t outSize);
+        bool DecompressTo(const std::byte* data, size_t size, std::byte* out, size_t outSize, std::string* errorOut) const;
 
         /**
          * @brief Checks whether no errors occurred.
@@ -169,6 +173,7 @@ namespace StaticForge::Internal {
         /// Writes 64-bit value (LE).
         void WriteU64(std::vector<std::byte>& out, uint64_t v) const;
 
+        /// Read values (LE), false if the data is too short.
         bool ReadU16(const std::byte* data, size_t size, size_t& off,
             uint16_t& out) const;
         bool ReadU64(const std::byte* data, size_t size, size_t& off,
