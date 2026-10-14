@@ -204,6 +204,16 @@ namespace StaticForge {
 			return false;
 		}
 
+		if (m_srcPaths.empty()) {
+			*errorOut = "No source path set";
+			return false;
+		}
+
+		if (m_outputPath.empty()) {
+			*errorOut = "No output path set";
+			return false;
+		}
+
 		// check src paths
 		for (const auto& p : m_srcPaths) {
 			if (!std::filesystem::exists(p, ec)) {

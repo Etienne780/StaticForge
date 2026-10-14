@@ -98,6 +98,13 @@ TEST_CASE("Builder/Output and source paths") {
 
 	StaticForgeBuilder noSrc{ "main", {}, dir / "created" };
 	CHECK(!noSrc.Build());
+	CHECK_MSG(noSrc.GetError().find("No source path set") != std::string::npos, noSrc.GetError());
+
+	StaticForgeBuilder noOut{ "main", { dir / "src" } };
+	noOut.SetCreateOutputDir(true);
+	CHECK(!noOut.Build());
+	CHECK_MSG(noOut.GetError().find("No output path set") != std::string::npos, noOut.GetError());
+	CHECK(!fs::exists("main.sfpak"));
 }
 
 TEST_CASE("Builder/Archive names") {

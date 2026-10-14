@@ -24,6 +24,8 @@ if (!builder.Build()) {
 }
 ```
 
+At least one source path and an output path are required, `Build()` fails with an error otherwise.
+
 ## Multiple source paths
 
 ```cpp
