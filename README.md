@@ -89,7 +89,7 @@ Your Game / Application
 
 - **Fast lookups** - Filenames are stored as 64-bit FNV-1a hashes, enabling O(1) access via hash maps
 - **Alignment-friendly** - Data blocks are padded to 4096 bytes for direct memory-mapped access
-- **Checksum validation** - Each file's integrity is verified when loaded
+- **Checksum validation** - Each file's integrity is verified when loaded, or for the whole archive at once with `VerifyAll()` / `--verify`
 - **Optional compression** - Block-wise LZ77 compression, decompressed automatically when loading
 - **Meta file support** - Split assets across multiple archives using `.sfpak.meta` files
 - **Robust loading** - Damaged or truncated archives are rejected with an error instead of crashing
@@ -159,6 +159,7 @@ The format is not backward compatible: the reader only loads archives of its own
 | `--mkdir`       | Create output directory if missing                   | `false` |
 | `--info`        | Display header/index info of an archive              | —       |
 | `--extract`     | Extract archive(s) into `<output>/<archive name>/`   | —       |
+| `--verify`      | Check archive(s) for damaged files                   | —       |
 | `--verbose`     | Enable detailed console output                       | `false` |
 | `--store-names` | Store original file paths in the archives            | `false` |
 | `--compress`    | Compress files larger than 4096 bytes                | `false` |

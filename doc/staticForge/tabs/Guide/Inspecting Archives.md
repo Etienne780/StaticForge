@@ -5,7 +5,7 @@ name: Inspecting Archives
 
 # Inspecting Archives
 
-Use `--info` to display header and index information of one or more existing `.sfpak` files, and `--extract` to turn an archive back into normal files.
+Use `--info` to display header and index information of one or more existing `.sfpak` files, `--verify` to check them for damage, and `--extract` to turn an archive back into normal files.
 
 ## Basic info
 
@@ -57,6 +57,24 @@ Index entries:
   [0] name: textures/background.png, hash: 0254d0414b3d0eaf, offset: 0, size: 200000
   [1] name: textures/ui.png, hash: a6cf994350b589ad, offset: 200704, size: 3
 ```
+
+## Verifying archives
+
+`--verify` checks the checksums of all files in one or more archives:
+
+```bash
+StaticForgeTool --verify "./build/textures.sfpak, ./build/main.sfpak"
+```
+
+Output:
+
+```
+[DAMAGED] ./build/textures.sfpak:
+[Error]: Asset 'textures/ui.png' is damaged (checksum mismatch)
+[OK]      ./build/main.sfpak (12 files)
+```
+
+All archives are checked, also if one of them is damaged. The exit code is not `0` if any archive is damaged or can't be loaded, so `--verify` can be used in build or install scripts. Without stored names a damaged file is reported by its hash.
 
 ## Extracting archives
 

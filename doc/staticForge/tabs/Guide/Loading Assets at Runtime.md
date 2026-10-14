@@ -39,6 +39,35 @@ if (!archive.LoadAsset("textures/background.png", &data)) {
 
 > **Important:** The asset path must exactly match the path relative to the source root, it is case sensitive and UTF-8 encoded. Backslashes are converted to forward slashes, so `textures\background.png` works too.
 
+## Checking assets without loading
+
+`Contains` checks whether an asset exists, `GetAssetSize` returns its original (uncompressed) size. Neither loads any data or adds errors:
+
+```cpp
+if (archive.Contains("textures/background.png")) {
+    // ...
+}
+
+uint64_t size = 0;
+if (archive.GetAssetSize("textures/background.png", &size)) {
+    buffer.reserve(size);
+}
+```
+
+## Verifying the archive at startup
+
+`VerifyAll` checks the checksum of every asset. Use it e.g. at startup to detect a damaged or partly replaced installation and show a clear message instead of failing later while loading:
+
+```cpp
+if (!archive.VerifyAll()) {
+    // one error per damaged asset, e.g. "Asset 'textures/ui.png' is damaged (checksum mismatch)"
+    std::cerr << archive.TakeError() << std::endl;
+    // e.g. ask the user to reinstall or verify the game files
+}
+```
+
+The data is read in 1 MB chunks, so large assets are not loaded into memory completely. Verifying reads the whole archive once, so for very large archives it takes as long as reading all files.
+
 ## Loading all files
 
 `LoadAssetAt` loads an asset by its index, which is useful to iterate over the whole archive, also if it stores no names:

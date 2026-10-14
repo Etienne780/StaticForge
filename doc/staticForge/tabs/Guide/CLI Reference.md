@@ -17,6 +17,7 @@ Quick reference for all `StaticForgeTool` arguments.
 | `--mkdir`       | `--p`   | Create the output directory if it does not exist                             | bool     | false   | no    |
 | `--info`        | `--i`   | Display header and index info of a `.sfpak` file (can be repeated)           | filepath | —       | yes   |
 | `--extract`     | `--x`   | Extract `.sfpak` file(s) into `<output>/<archive name>/` (can be repeated)   | filepath | —       | yes   |
+| `--verify`      | `--vf`  | Check the checksums of all files in `.sfpak` file(s) (can be repeated)       | filepath | —       | yes   |
 | `--verbose`     | `--v`   | Enable debug/verbose console output                                          | bool     | false   | no    |
 | `--store-names` | `--sn`  | Store original filenames in all archives for debug inspection and extraction | bool     | false   | no    |
 | `--compress`    | `--c`   | Compress files larger than 4096 bytes before storing them in the archive     | bool     | false   | no    |
@@ -54,6 +55,7 @@ Exactly one mode must be active per invocation. Modes are determined by which ar
 | pack    | `--source` and `--output`     | `--name`, `--mkdir`, `--verbose`, `--store-names`, `--compress`, `--compress-*` |
 | extract | `--extract` and `--output`    | `--mkdir`, `--verbose`                                                      |
 | info    | `--info`                      | `--verbose`                                                                 |
+| verify  | `--verify`                    | `--verbose`                                                                 |
 | help    | `--help`                      | —                                                                           |
 
 Combining arguments from multiple modes (e.g. `--source` together with `--info`) is an error.

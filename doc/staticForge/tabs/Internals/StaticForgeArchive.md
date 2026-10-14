@@ -82,7 +82,16 @@ archive.GetFileOffset(i);   // uint64_t — 0 if i is invalid
 archive.GetFileSize(i);     // uint64_t — 0 if i is invalid
 archive.GetFilePadding(i);  // uint64_t — 0 if i is invalid
 archive.GetName(i);         // std::string — empty if name table not present or i is invalid
+
+archive.Contains(key);              // bool — asset exists
+archive.GetAssetSize(key, &size);   // bool — false if the asset doesn't exist, size is the original size
 ```
+
+`Contains` and `GetAssetSize` only use the index in memory, they don't read the file and don't add errors.
+
+## VerifyAll
+
+`VerifyAll` opens the file stream if needed and, for every index entry, reads the stored bytes (`compressedFileSize` for compressed entries, otherwise `fileSize`) in 1 MB chunks while computing the FNV-1a checksum. A mismatch or missing data adds one error per asset (`Asset '<name>' is damaged (...)`, or the hash if no names are stored). All entries are checked, the function returns `false` if any of them is damaged. Nothing is decompressed.
 
 ## Managing the file stream
 
