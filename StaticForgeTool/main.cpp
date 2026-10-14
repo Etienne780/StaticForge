@@ -37,6 +37,9 @@ int main(int argc, char** argv) {
 	case ConfigMode::EXTRACT:
 		action = Actions::Extract;
 		break;
+	case ConfigMode::VERIFY:
+		action = Actions::Verify;
+		break;
 	case ConfigMode::UNKNOWN:
 	default:
 		std::cout << "Invalid config" << std::endl;

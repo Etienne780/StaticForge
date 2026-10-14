@@ -1,5 +1,7 @@
 #include <iostream>
 #include <algorithm>
+#include <sstream>
+#include <iomanip>
 #include "StaticForgeArchive.h"
 #include "Internal/InternalHelpers.h"
 #include "Internal/MmapFile.h"
@@ -61,6 +63,64 @@ namespace StaticForge {
 		}
 
 		return true;
+	}
+
+	bool StaticForgeArchive::Contains(const std::string& key) const {
+		uint64_t k = Internal::HashFilename(Internal::NormalizeFilepathSlashes(key));
+		return m_hashNameToEntry.count(k) != 0;
+	}
+
+	bool StaticForgeArchive::GetAssetSize(const std::string& key, uint64_t* outSize) const {
+		uint64_t k = Internal::HashFilename(Internal::NormalizeFilepathSlashes(key));
+		auto it = m_hashNameToEntry.find(k);
+		if (it == m_hashNameToEntry.end() || it->second >= m_indexEntries.size())
+			return false;
+
+		*outSize = m_indexEntries[it->second].fileSize;
+		return true;
+	}
+
+	bool StaticForgeArchive::VerifyAll() {
+		if (!IsFileStreamOpen() && !OpenFileStream()) {
+			AddError("Failed to verify, archive file '" + m_path.u8string() + "' could not be opened");
+			return false;
+		}
+
+		// read in chunks, so large assets don't have to be loaded completely
+		constexpr size_t chunkSize = 1024 * 1024;
+		std::vector<char> buffer(chunkSize);
+
+		bool allValid = true;
+		for (size_t i = 0; i < m_indexEntries.size(); i++) {
+			const auto& entry = m_indexEntries[i];
+			const uint64_t storedSize = entry.compressedFileSize != 0 ? entry.compressedFileSize : entry.fileSize;
+
+			m_stream.clear();
+			m_stream.seekg(static_cast<std::streamoff>(m_header.dataOffset + entry.fileOffset), std::ios::beg);
+
+			uint32_t checksum = 2166136261u;
+			uint64_t remaining = storedSize;
+			while (remaining > 0 && m_stream) {
+				size_t readSize = static_cast<size_t>(std::min<uint64_t>(remaining, chunkSize));
+				m_stream.read(buffer.data(), static_cast<std::streamsize>(readSize));
+				checksum = Internal::FNV1a(buffer.data(), static_cast<size_t>(m_stream.gcount()), checksum);
+				remaining -= static_cast<uint64_t>(m_stream.gcount());
+			}
+
+			if (remaining == 0 && checksum == entry.checksum)
+				continue;
+
+			allValid = false;
+			std::string name = GetName(i);
+			if (name.empty()) {
+				std::ostringstream hash;
+				hash << std::hex << std::setw(16) << std::setfill('0') << entry.hashName;
+				name = "hash " + hash.str();
+			}
+			AddError("Asset '" + name + "' is damaged (" + (remaining != 0 ? "data is missing" : "checksum mismatch") + ")");
+		}
+
+		return allValid;
 	}
 
 	bool StaticForgeArchive::OpenMapped() {

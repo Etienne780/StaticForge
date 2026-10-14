@@ -46,6 +46,10 @@ const std::vector<std::filesystem::path>& Config::GetExtractPaths() const {
 	return m_extractPaths;
 }
 
+const std::vector<std::filesystem::path>& Config::GetVerifyPaths() const {
+	return m_verifyPaths;
+}
+
 const std::string Config::GetArchiveName() const {
 	return m_archiveName;
 }
@@ -208,6 +212,11 @@ void* Config::GetOutput(const ConsoleArgument* arg) {
 		return static_cast<void*>(&m_extractPaths.back());
 	}
 
+	if (argName == ArgName::VERIFY) {
+		m_verifyPaths.emplace_back("");
+		return static_cast<void*>(&m_verifyPaths.back());
+	}
+
 	if (argName == ArgName::VERBOSE) {
 		return static_cast<void*>(&m_verbosePrint);
 	}
@@ -270,8 +279,9 @@ void Config::CalculateCurrentMode() {
 	bool hasInfo = !m_infoPaths.empty();
 	bool hasPack = !m_srcAbsolPaths.empty();
 	bool hasExtract = !m_extractPaths.empty();
+	bool hasVerify = !m_verifyPaths.empty();
 
-	m_activeModeCount = (hasHelp ? 1 : 0) + (hasInfo ? 1 : 0) + (hasPack ? 1 : 0) + (hasExtract ? 1 : 0);
+	m_activeModeCount = (hasHelp ? 1 : 0) + (hasInfo ? 1 : 0) + (hasPack ? 1 : 0) + (hasExtract ? 1 : 0) + (hasVerify ? 1 : 0);
 
 	if (m_activeModeCount > 1) {
 		m_mode = ConfigMode::UNKNOWN;
@@ -289,10 +299,13 @@ void Config::CalculateCurrentMode() {
 	else if (hasExtract) {
 		m_mode = ConfigMode::EXTRACT;
 	}
+	else if (hasVerify) {
+		m_mode = ConfigMode::VERIFY;
+	}
 }
 void Config::ValidateConfig() {
 	if (m_activeModeCount > 1) {
-		AddError("Multiple modes selected. Choose exactly one: pack (--source + --output), extract (--extract + --output), --info, or --help");
+		AddError("Multiple modes selected. Choose exactly one: pack (--source + --output), extract (--extract + --output), --info, --verify or --help");
 		return;
 	}
 	if (m_activeModeCount == 0) {
@@ -367,6 +380,22 @@ void Config::ValidateConfig() {
 		if (m_compressBlockSize || m_compressTableSize || m_compressMinMatch)
 			AddError("compression settings cannot be used with --extract");
 		// --mkdir, --verbose
+		break;
+
+	case ConfigMode::VERIFY:
+		if (!m_outputAbsolPath.empty())
+			AddError("--output cannot be used with --verify");
+		if (m_createOutputDir)
+			AddError("--mkdir cannot be used with --verify");
+		if (m_archiveName != "main")
+			AddError("--name cannot be used with --verify");
+		if (m_storeNames)
+			AddError("--store-names cannot be used with --verify");
+		if (m_compress)
+			AddError("--compress cannot be used with --verify");
+		if (m_compressBlockSize || m_compressTableSize || m_compressMinMatch)
+			AddError("compression settings cannot be used with --verify");
+		// --verbose
 		break;
 
 	case ConfigMode::UNKNOWN:

@@ -14,6 +14,7 @@ enum class ConfigMode {
 	INFO,
 	PACK,
 	EXTRACT,
+	VERIFY,
 };
 
 class Config  {
@@ -30,6 +31,7 @@ public:
 	std::filesystem::path GetOutputPath() const;
 	const std::vector<std::filesystem::path>& GetInfoPaths() const;
 	const std::vector<std::filesystem::path>& GetExtractPaths() const;
+	const std::vector<std::filesystem::path>& GetVerifyPaths() const;
 
 	const std::string GetArchiveName() const;
 	bool GetCreateOutputDir() const;
@@ -53,6 +55,7 @@ private:
 	std::filesystem::path m_outputAbsolPath;
 	std::vector<std::filesystem::path> m_infoPaths;
 	std::vector<std::filesystem::path> m_extractPaths;
+	std::vector<std::filesystem::path> m_verifyPaths;
 
 	std::string m_archiveName = "main";
 	bool m_createOutputDir = false;

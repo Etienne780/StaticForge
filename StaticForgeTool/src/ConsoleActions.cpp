@@ -204,4 +204,30 @@ namespace Actions {
         return true;
     }
 
+    bool Verify(const Config& config) {
+        bool allValid = true;
+
+        // checks all archives, also if one of them is damaged
+        for (const auto& archivePath : config.GetVerifyPaths()) {
+            StaticForge::StaticForgeArchive archive;
+            StaticForge::StaticForgeReader reader;
+            if (!reader.Load(archivePath, &archive)) {
+                std::cout << "[DAMAGED] " << archivePath.u8string() << ": " << reader.GetError() << std::endl;
+                allValid = false;
+                continue;
+            }
+
+            if (!archive.VerifyAll()) {
+                std::cout << "[DAMAGED] " << archivePath.u8string() << ":" << std::endl << archive.TakeError() << std::endl;
+                allValid = false;
+                continue;
+            }
+
+            std::cout << "[OK]      " << archivePath.u8string() << " (" << archive.GetFileCount()
+                << (archive.GetFileCount() == 1 ? " file" : " files") << ")" << std::endl;
+        }
+
+        return allValid;
+    }
+
 }

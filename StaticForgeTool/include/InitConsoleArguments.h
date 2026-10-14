@@ -71,6 +71,10 @@ inline void InitConsoleArguments() {
 	extractArg.SetEvaluationFunction(filepathParser);
 	extractArg.SetAllowMultiple(true);
 
+	auto& verifyArg = CAM::RegisterConsoleArgument(ArgName::VERIFY, ArgName::VERIFY_SHORTNAME, ConsoleArgType::Filepath);
+	verifyArg.SetEvaluationFunction(filepathParser);
+	verifyArg.SetAllowMultiple(true);
+
 	auto& verboseArg = CAM::RegisterConsoleArgument(ArgName::VERBOSE, ArgName::VERBOSE_SHORTNAME, ConsoleArgType::Bool);
 	verboseArg.SetEvaluationFunction(boolParser);
 

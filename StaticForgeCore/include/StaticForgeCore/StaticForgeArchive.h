@@ -92,6 +92,32 @@ namespace StaticForge {
 		bool LoadAssetAt(size_t fileIndex, std::vector<std::byte>* outData);
 
 		/**
+		 * @brief Checks whether the archive contains an asset.
+		 *
+		 * @param key Asset path/key inside the archive.
+		 * @return true if the asset exists.
+		 */
+		bool Contains(const std::string& key) const;
+
+		/**
+		 * @brief Returns the size of an asset without loading it.
+		 *
+		 * @param key Asset path/key inside the archive.
+		 * @param outSize Receives the original (uncompressed) size in bytes.
+		 * @return true if the asset exists.
+		 */
+		bool GetAssetSize(const std::string& key, uint64_t* outSize) const;
+
+		/**
+		 * @brief Checks the checksum of every asset, e.g. to detect a damaged installation at startup.
+		 *
+		 * Adds an error for every damaged asset.
+		 *
+		 * @return true if all assets are valid.
+		 */
+		bool VerifyAll();
+
+		/**
 		 * @brief Opens the archive using memory mapping.
 		 *
 		 * @return true if mapping succeeded.

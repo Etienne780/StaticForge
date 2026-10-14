@@ -12,4 +12,6 @@ namespace Actions {
 
 	bool Extract(const Config& config);
 
+	bool Verify(const Config& config);
+
 }
