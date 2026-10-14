@@ -104,6 +104,8 @@ namespace Actions {
             builder.SetCompressionTableSizeLog2(*config.GetCompressTableSize());
         if (config.GetCompressMinMatch())
             builder.SetCompressionMinMatchLength(*config.GetCompressMinMatch());
+        if (config.GetCompressMinSaving())
+            builder.SetCompressionMinSaving(*config.GetCompressMinSaving());
 
         if (!builder.Build()) {
             std::cout << "Build failed: " << builder.GetError() << std::endl;

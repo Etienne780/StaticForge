@@ -147,6 +147,16 @@ namespace StaticForge {
 		 */
 		StaticForgeBuilder& SetCompressionMinMatchLength(uint64_t length);
 
+		/**
+		 * @brief Sets how many percent smaller a block or file has to get, otherwise it is stored uncompressed.
+		 *
+		 * Must be between MIN_COMPRESSION_MIN_SAVING and MAX_COMPRESSION_MIN_SAVING.
+		 *
+		 * @param percent Minimum saving in percent (default DEFAULT_COMPRESSION_MIN_SAVING).
+		 * @return Reference to the builder instance.
+		 */
+		StaticForgeBuilder& SetCompressionMinSaving(uint64_t percent);
+
 	private:
 		/**
 		 * @brief Internal archive build data container.
@@ -158,6 +168,7 @@ namespace StaticForge {
 			uint64_t compressionBlockSize = DEFAULT_COMPRESSION_BLOCK_SIZE;
 			uint32_t compressionTableSizeLog2 = DEFAULT_COMPRESSION_TABLE_SIZE_LOG2;
 			uint32_t compressionMinMatchLength = DEFAULT_COMPRESSION_MIN_MATCH_LENGTH;
+			uint32_t compressionMinSaving = DEFAULT_COMPRESSION_MIN_SAVING;
 			std::vector<Internal::StaticForgeFileEntry> files;
 
 			uint64_t totalArchiveSize = 0;
@@ -180,6 +191,7 @@ namespace StaticForge {
 		std::optional<uint64_t> m_compressionBlockSize;
 		std::optional<uint64_t> m_compressionTableSizeLog2;
 		std::optional<uint64_t> m_compressionMinMatchLength;
+		std::optional<uint64_t> m_compressionMinSaving;
 
 		std::unordered_map<std::string, ArchiveGroup> m_archiveGroups;
 		std::unique_ptr<Internal::LZ4Compression> m_compressor;
@@ -196,6 +208,7 @@ namespace StaticForge {
 			const std::optional<uint64_t>& blockSize,
 			const std::optional<uint64_t>& tableSizeLog2,
 			const std::optional<uint64_t>& minMatchLength,
+			const std::optional<uint64_t>& minSaving,
 			std::string* errorOut
 		) const;
 

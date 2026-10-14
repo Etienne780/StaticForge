@@ -86,6 +86,10 @@ const std::optional<uint64_t>& Config::GetCompressMinMatch() const {
 	return m_compressMinMatch;
 }
 
+const std::optional<uint64_t>& Config::GetCompressMinSaving() const {
+	return m_compressMinSaving;
+}
+
 const std::string& Config::GetError() const {
 	return m_error;
 }
@@ -241,6 +245,10 @@ void* Config::GetOutput(const ConsoleArgument* arg) {
 		return static_cast<void*>(&m_compressMinMatch);
 	}
 
+	if (argName == ArgName::COMPRESS_MIN_SAVING) {
+		return static_cast<void*>(&m_compressMinSaving);
+	}
+
 	return nullptr;
 }
 
@@ -334,7 +342,7 @@ void Config::ValidateConfig() {
 			AddError("Cannot set store name while printing help");
 		if (m_compress)
 			AddError("Cannot set compress while printing help");
-		if (m_compressBlockSize || m_compressTableSize || m_compressMinMatch)
+		if (m_compressBlockSize || m_compressTableSize || m_compressMinMatch || m_compressMinSaving)
 			AddError("Cannot set compression settings while printing help");
 		if (!m_extractPaths.empty())
 			AddError("Cannot set extract path while printing help");
@@ -359,6 +367,8 @@ void Config::ValidateConfig() {
 			AddError("--compress-table-size cannot be used with --info");
 		if (m_compressMinMatch)
 			AddError("--compress-min-match cannot be used with --info");
+		if (m_compressMinSaving)
+			AddError("--compress-min-saving cannot be used with --info");
 		// --verbose
 		break;
 
@@ -377,7 +387,7 @@ void Config::ValidateConfig() {
 			AddError("--store-names cannot be used with --extract");
 		if (m_compress)
 			AddError("--compress cannot be used with --extract");
-		if (m_compressBlockSize || m_compressTableSize || m_compressMinMatch)
+		if (m_compressBlockSize || m_compressTableSize || m_compressMinMatch || m_compressMinSaving)
 			AddError("compression settings cannot be used with --extract");
 		// --mkdir, --verbose
 		break;
@@ -393,7 +403,7 @@ void Config::ValidateConfig() {
 			AddError("--store-names cannot be used with --verify");
 		if (m_compress)
 			AddError("--compress cannot be used with --verify");
-		if (m_compressBlockSize || m_compressTableSize || m_compressMinMatch)
+		if (m_compressBlockSize || m_compressTableSize || m_compressMinMatch || m_compressMinSaving)
 			AddError("compression settings cannot be used with --verify");
 		// --verbose
 		break;

@@ -51,7 +51,7 @@ The loading logic (`LoadEntry`, `LoadEntryRange`, `DecompressBlocks`, `VerifyEnt
 3. Call `LoadEntry`, which is shared by all full loads (vector or buffer, stream or mapped):
 - Clear the stream state, so a previous failed read does not break this one.
 - If `compressedFileSize == 0` (uncompressed): read `fileSize` bytes at `dataOffset + fileOffset` directly into the target and validate the FNV-1a checksum.
-- If `compressedFileSize != 0` (compressed): read `compressedFileSize` bytes, validate the checksum, then decompress block by block (`DecompressBlocks`). Each block is prefixed with `[uint32_t compressedSize][uint32_t originalSize]` and decompressed independently, directly into the target.
+- If `compressedFileSize != 0` (compressed): read `compressedFileSize` bytes, validate the checksum, then decompress block by block (`DecompressBlocks`). Each block is prefixed with `[uint32_t compressedSize][uint32_t originalSize]` and decompressed independently, directly into the target. A block with `compressedSize == originalSize` is stored raw and only copied.
 4. With a vector, the block sizes are checked before the vector is resized to `fileSize`, so a damaged size in the index can't cause a huge allocation. The vector is only changed on success.
 
 `LoadAssetAt(index, ...)` skips steps 1 and 2 and loads the entry at the given index directly.

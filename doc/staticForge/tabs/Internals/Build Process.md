@@ -71,11 +71,15 @@ When compression is enabled for an archive group (via the meta file or the globa
 - The file is read in blocks of the compression block size (default 64 KB) and each block is compressed independently.
 - Each compressed block is prefixed with a framing header: `[uint32_t compressedSize][uint32_t originalSize]` (little-endian).
 - The raw compressed bytes follow immediately after the framing header.
+- A block that doesn't get at least `compress-min-saving` percent smaller (default 5 %) is stored raw instead. It is marked by `compressedSize == originalSize`; a compressed block never has this size, because it would not be small enough.
+- If the whole file (framing headers included) doesn't get at least `compress-min-saving` percent smaller, the builder seeks back to the start of the file in the archive and writes it again uncompressed (`compressedFileSize = 0`). Only files that don't compress well are read twice. Because the compressed attempt can be a few bytes longer, the archive is cut to its real size with `std::filesystem::resize_file` after writing.
 - `compressedFileSize` in the index entry is set to the total number of bytes written for the file, **including** the framing headers. A value of `0` means the entry is stored uncompressed.
 
 The per-block approach means the decompressor can process one block at a time.
 
 The FNV-1a checksum covers the framing headers and compressed block data as written, so integrity verification happens before decompression.
+
+The name table string data uses the same rule: if it doesn't get small enough, it is stored raw and `stringDataCompressedSize == stringDataSize`.
 
 ### Compressor
 

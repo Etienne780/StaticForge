@@ -32,6 +32,11 @@ namespace StaticForge {
 	constexpr uint32_t MIN_COMPRESSION_MIN_MATCH_LENGTH = 4;
 	constexpr uint32_t MAX_COMPRESSION_MIN_MATCH_LENGTH = 0xFFFF;
 
+	// a block or file is only stored compressed if it gets at least this many percent smaller
+	constexpr uint32_t DEFAULT_COMPRESSION_MIN_SAVING = 5;
+	constexpr uint32_t MIN_COMPRESSION_MIN_SAVING = 0;
+	constexpr uint32_t MAX_COMPRESSION_MIN_SAVING = 99;
+
 	// stream pool of StaticForgeConcurrentArchive, 0 = std::thread::hardware_concurrency()
 	constexpr size_t DEFAULT_POOL_SIZE = 0;
 	// used if hardware_concurrency() is unknown
@@ -69,6 +74,7 @@ namespace StaticForge {
 			std::optional<uint64_t> compressionBlockSize;
 			std::optional<uint64_t> compressionTableSizeLog2;
 			std::optional<uint64_t> compressionMinMatchLength;
+			std::optional<uint64_t> compressionMinSaving;
 		};
 
 		// Order of the elements is important for the reading

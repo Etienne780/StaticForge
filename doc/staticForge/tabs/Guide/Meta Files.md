@@ -40,6 +40,7 @@ Meta files are read as UTF-8, values can contain any Unicode characters (e.g. `a
 | `compress-block-size` | int      | no       | Block size in bytes used for compression (1024 - 67108864, default 65536)   |
 | `compress-table-size` | int      | no       | Compressor match table size as power of two (8 - 24, default 16)            |
 | `compress-min-match`  | int      | no       | Shortest repeated sequence stored as a reference (4 - 65535, default 8)     |
+| `compress-min-saving` | int      | no       | Percent a block or file must get smaller to be stored compressed (0 - 99, default 5) |
 
 Bool values are `true` or `false` (case insensitive). Int values are plain decimal numbers without units (`65536`, not `64k`).
 
@@ -53,6 +54,7 @@ compress = true;
 compress-block-size = 65536;
 compress-table-size = 16;
 compress-min-match = 8;
+compress-min-saving = 5;
 ```
 
 ## Archive names
@@ -101,4 +103,4 @@ Files that are not covered by any meta file are packed into the archive name set
 Values set on the command line win over the meta file:
 
 - `--store-names` and `--compress` force the option on for **all** archives, even those whose meta file sets it to `false`. The meta value only takes effect when the CLI flag is not set.
-- `--compress-block-size`, `--compress-table-size` and `--compress-min-match` replace the meta file value for all archives. Without the CLI argument the meta value is used, without both the default.
+- `--compress-block-size`, `--compress-table-size`, `--compress-min-match` and `--compress-min-saving` replace the meta file value for all archives. Without the CLI argument the meta value is used, without both the default.

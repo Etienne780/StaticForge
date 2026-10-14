@@ -319,12 +319,19 @@ namespace StaticForge {
 			return false;
 		}
 
-		const Internal::LZ4Compression decompressor(Internal::IsLittleEndian(), !Internal::LZ4_STORE_HEADER);
-		std::vector<std::byte> stringData(static_cast<size_t>(h.stringDataSize));
-		std::string decompressError;
-		if (!decompressor.DecompressTo(compressed.data(), compressed.size(), stringData.data(), stringData.size(), &decompressError)) {
-			*errorOut = "Failed to decompress name table string data: " + decompressError;
-			return false;
+		// compressed size == size marks string data that is stored raw
+		std::vector<std::byte> stringData;
+		if (h.stringDataCompressedSize == h.stringDataSize) {
+			stringData = std::move(compressed);
+		}
+		else {
+			const Internal::LZ4Compression decompressor(Internal::IsLittleEndian(), !Internal::LZ4_STORE_HEADER);
+			stringData.resize(static_cast<size_t>(h.stringDataSize));
+			std::string decompressError;
+			if (!decompressor.DecompressTo(compressed.data(), compressed.size(), stringData.data(), stringData.size(), &decompressError)) {
+				*errorOut = "Failed to decompress name table string data: " + decompressError;
+				return false;
+			}
 		}
 
 		stream.seekg(static_cast<std::streamoff>(h.entryOffset));

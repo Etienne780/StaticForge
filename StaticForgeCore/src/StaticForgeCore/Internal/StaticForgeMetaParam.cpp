@@ -24,6 +24,7 @@ namespace StaticForge::Internal {
 		AddParam(MetaParams::COMPRESS_BLOCK_SIZE, MType::UInt);
 		AddParam(MetaParams::COMPRESS_TABLE_SIZE, MType::UInt);
 		AddParam(MetaParams::COMPRESS_MIN_MATCH, MType::UInt);
+		AddParam(MetaParams::COMPRESS_MIN_SAVING, MType::UInt);
 	}
 
 	const std::unordered_map<std::string, StaticForgeMetaParam>& GetAllMetaParams() {

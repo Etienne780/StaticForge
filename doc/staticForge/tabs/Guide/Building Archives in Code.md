@@ -68,6 +68,7 @@ builder
 | `SetCompressionBlockSize(size)`       | `--compress-block-size`  | Compression block size in bytes (default `DEFAULT_COMPRESSION_BLOCK_SIZE`) |
 | `SetCompressionTableSizeLog2(size)`   | `--compress-table-size`  | Match table size as power of two (default `DEFAULT_COMPRESSION_TABLE_SIZE_LOG2`) |
 | `SetCompressionMinMatchLength(length)`| `--compress-min-match`   | Shortest match stored as reference (default `DEFAULT_COMPRESSION_MIN_MATCH_LENGTH`) |
+| `SetCompressionMinSaving(percent)`    | `--compress-min-saving`  | Minimum saving in percent, otherwise stored raw (default `DEFAULT_COMPRESSION_MIN_SAVING`) |
 
 The valid ranges of the compression settings are the `MIN_COMPRESSION_*` and `MAX_COMPRESSION_*` constants in `StaticForgeTypes.h`. Invalid values make `Build()` fail with an error. Compression settings that are set on the builder override the values of meta files, settings that are not set fall back to the meta file value and then to the default.
 

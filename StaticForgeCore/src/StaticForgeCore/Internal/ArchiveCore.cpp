@@ -138,8 +138,13 @@ namespace StaticForge::Internal {
 					target = blockBuffer.data();
 				}
 
+				// compressed size == original size marks a block that is stored raw
 				std::string error;
-				if (!GetDecompressor().DecompressTo(payload, compSize32, target, origSize32, &error)) {
+				if (compSize32 == origSize32) {
+					if (origSize32 > 0)
+						std::memcpy(target, payload, origSize32);
+				}
+				else if (!GetDecompressor().DecompressTo(payload, compSize32, target, origSize32, &error)) {
 					*errorOut = "Decompression failed at block (pos=" + std::to_string(pos) + "): " + error;
 					return false;
 				}

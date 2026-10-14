@@ -29,7 +29,7 @@ namespace StaticForge {
 		Reset();
 
 		std::string error;
-		if (!CheckCompressionSettings(m_compressionBlockSize, m_compressionTableSizeLog2, m_compressionMinMatchLength, &error)) {
+		if (!CheckCompressionSettings(m_compressionBlockSize, m_compressionTableSizeLog2, m_compressionMinMatchLength, m_compressionMinSaving, &error)) {
 			AddError("CheckCompressionSettings: " + error);
 			return false;
 		}
@@ -107,6 +107,11 @@ namespace StaticForge {
 		return *this;
 	}
 
+	StaticForgeBuilder& StaticForgeBuilder::SetCompressionMinSaving(uint64_t percent) {
+		m_compressionMinSaving = percent;
+		return *this;
+	}
+
 	void StaticForgeBuilder::Reset() {
 		ClearErrors();
 		m_archiveGroups.clear();
@@ -116,6 +121,7 @@ namespace StaticForge {
 		const std::optional<uint64_t>& blockSize,
 		const std::optional<uint64_t>& tableSizeLog2,
 		const std::optional<uint64_t>& minMatchLength,
+		const std::optional<uint64_t>& minSaving,
 		std::string* errorOut
 	) const {
 		auto inRange = [errorOut](const std::string& name, const std::optional<uint64_t>& value, uint64_t min, uint64_t max) {
@@ -129,7 +135,8 @@ namespace StaticForge {
 
 		return inRange("Compression block size", blockSize, MIN_COMPRESSION_BLOCK_SIZE, MAX_COMPRESSION_BLOCK_SIZE)
 			&& inRange("Compression table size", tableSizeLog2, MIN_COMPRESSION_TABLE_SIZE_LOG2, MAX_COMPRESSION_TABLE_SIZE_LOG2)
-			&& inRange("Compression min match length", minMatchLength, MIN_COMPRESSION_MIN_MATCH_LENGTH, MAX_COMPRESSION_MIN_MATCH_LENGTH);
+			&& inRange("Compression min match length", minMatchLength, MIN_COMPRESSION_MIN_MATCH_LENGTH, MAX_COMPRESSION_MIN_MATCH_LENGTH)
+			&& inRange("Compression min saving", minSaving, MIN_COMPRESSION_MIN_SAVING, MAX_COMPRESSION_MIN_SAVING);
 	}
 
 	void StaticForgeBuilder::ApplyCompressionSettings(ArchiveGroup& archive, const Internal::StaticForgeMetaData& meta) const {
@@ -141,6 +148,15 @@ namespace StaticForge {
 
 		archive.compressionMinMatchLength = static_cast<uint32_t>(m_compressionMinMatchLength.value_or(
 			meta.compressionMinMatchLength.value_or(DEFAULT_COMPRESSION_MIN_MATCH_LENGTH)));
+
+		archive.compressionMinSaving = static_cast<uint32_t>(m_compressionMinSaving.value_or(
+			meta.compressionMinSaving.value_or(DEFAULT_COMPRESSION_MIN_SAVING)));
+	}
+
+	// a block or file is only stored compressed if it gets at least minSaving percent smaller
+	static bool IsWorthCompressing(uint64_t originalSize, uint64_t compressedSize, uint32_t minSaving) {
+		return compressedSize < originalSize
+			&& (originalSize - compressedSize) * 100 >= originalSize * minSaving;
 	}
 
 	// the archive name becomes a file name, so it must not point to another directory
@@ -152,20 +168,29 @@ namespace StaticForge {
 			&& name.find('\\') == std::string::npos;
 	}
 
+	// the path as given, with the absolute path in brackets if it differs
+	static std::string PathWithAbsolute(const StaticForgePath& path) {
+		std::error_code ec;
+		const StaticForgePath absolute = std::filesystem::absolute(path, ec).lexically_normal();
+		if (ec || absolute == path)
+			return path.u8string();
+		return path.u8string() + " (" + absolute.u8string() + ")";
+	}
+
 	bool StaticForgeBuilder::CheckFilepaths(std::string* errorOut) {
 		if (m_isDebugActive) {
 			std::cout << Internal::CONSOLE_SEPERATOR << std::endl;
 			std::cout << "Validating file paths" << std::endl;
 			std::cout << Internal::CONSOLE_SEPERATOR << std::endl;
-			std::cout << "output path: " << m_outputPath.u8string() << std::endl;
-			
+			std::cout << "output path: " << PathWithAbsolute(m_outputPath) << std::endl;
+
 			if (m_srcPaths.size() <= 1) {
-				std::cout << "source path: " << (m_srcPaths.empty() ? std::string() : m_srcPaths[0].u8string()) << std::endl;
+				std::cout << "source path: " << (m_srcPaths.empty() ? std::string() : PathWithAbsolute(m_srcPaths[0])) << std::endl;
 			}
 			else {
 				std::cout << "source paths: " << std::endl;
 				for (const auto& p : m_srcPaths) {
-					std::cout << "- " << p.u8string() << std::endl;
+					std::cout << "- " << PathWithAbsolute(p) << std::endl;
 				}
 			}
 
@@ -284,7 +309,7 @@ namespace StaticForge {
 				}
 
 				std::string compressionError;
-				if (!CheckCompressionSettings(metaData.compressionBlockSize, metaData.compressionTableSizeLog2, metaData.compressionMinMatchLength, &compressionError)) {
+				if (!CheckCompressionSettings(metaData.compressionBlockSize, metaData.compressionTableSizeLog2, metaData.compressionMinMatchLength, metaData.compressionMinSaving, &compressionError)) {
 					*errorOut = "Meta file '" + fullPath.u8string() + "': " + compressionError;
 					return false;
 				}
@@ -328,6 +353,7 @@ namespace StaticForge {
 					std::cout << "  - compress-block-size: " << optToStr(metaData.compressionBlockSize) << "\n";
 					std::cout << "  - compress-table-size: " << optToStr(metaData.compressionTableSizeLog2) << "\n";
 					std::cout << "  - compress-min-match: " << optToStr(metaData.compressionMinMatchLength) << "\n";
+					std::cout << "  - compress-min-saving: " << optToStr(metaData.compressionMinSaving) << "\n";
 					std::cout << std::endl;
 				}
 			}
@@ -529,7 +555,20 @@ namespace StaticForge {
 				}
 			}
 
+			const uint64_t archiveEnd = archive.storeNames
+				? static_cast<uint64_t>(stream.tellp())
+				: archive.nameTableStart; // end of the data
 			stream.close();
+
+			// a file written again uncompressed can leave old bytes behind the end of the archive
+			std::error_code ec;
+			const uint64_t fileSize = std::filesystem::file_size(outputPath, ec);
+			if (!ec && fileSize > archiveEnd)
+				std::filesystem::resize_file(outputPath, archiveEnd, ec);
+			if (ec) {
+				*errorOut = "Failed to set the size of archive '" + outputPath.u8string() + "': " + ec.message();
+				return false;
+			}
 		}
 
 		return true;
@@ -634,6 +673,12 @@ namespace StaticForge {
 		if (!m_compressor->IsValid()) {
 			*errorOut = "Failed to compress name table string data: " + m_compressor->GetError();
 			return false;
+		}
+
+		// stored raw if it doesn't get small enough, marked by compressed size == size
+		if (!IsWorthCompressing(stringData.size(), archive.nameStringDataCompressed.size(), archive.compressionMinSaving)) {
+			const auto* raw = reinterpret_cast<const std::byte*>(stringData.data());
+			archive.nameStringDataCompressed.assign(raw, raw + stringData.size());
 		}
 
 		if (m_isDebugActive) {
@@ -788,7 +833,8 @@ namespace StaticForge {
 		if (m_isDebugActive && archive.compress) {
 			std::cout << "compression: block size " << archive.compressionBlockSize
 				<< ", table size 2^" << archive.compressionTableSizeLog2
-				<< ", min match length " << archive.compressionMinMatchLength << std::endl;
+				<< ", min match length " << archive.compressionMinMatchLength
+				<< ", min saving " << archive.compressionMinSaving << "%" << std::endl;
 		}
 
 		// write padding
@@ -817,9 +863,10 @@ namespace StaticForge {
 				return false;
 			}
 
-			const bool useCompression = archive.compress 
+			bool useCompression = archive.compress
 				&& f.fileSize > blockSize;
 
+			const uint64_t fileStart = archive.dataStart + totalOffset;
 			uint32_t checksum = 2166136261u;
 			uint64_t written = 0;
 
@@ -832,12 +879,16 @@ namespace StaticForge {
 
 				if (useCompression) {
 					auto compressData = m_compressor->Compress(buffer.data(), bytesRead);
-					uint64_t dataSize = static_cast<uint64_t>(compressData.size());
 
 					if (!m_compressor->IsValid()) {
 						*errorOut = "Failed to write compressed data block '" + f.filepath.u8string() + "':\n   " + m_compressor->GetError();
 						return false;
 					}
+
+					// a block that doesn't get small enough is stored raw, marked by compressed size == original size
+					const bool storeRaw = !IsWorthCompressing(static_cast<uint64_t>(bytesRead), compressData.size(), archive.compressionMinSaving);
+					const char* blockData = storeRaw ? buffer.data() : reinterpret_cast<const char*>(compressData.data());
+					const uint64_t dataSize = storeRaw ? static_cast<uint64_t>(bytesRead) : static_cast<uint64_t>(compressData.size());
 
 					// Framing: [uint32_t compressedBlockSize][uint32_t originalBlockSize][data], little endian like the rest of the file
 					uint32_t compSize32 = static_cast<uint32_t>(dataSize);
@@ -849,11 +900,11 @@ namespace StaticForge {
 
 					checksum = Internal::FNV1a(reinterpret_cast<const char*>(&compSize32), sizeof(uint32_t), checksum);
 					checksum = Internal::FNV1a(reinterpret_cast<const char*>(&origSize32), sizeof(uint32_t), checksum);
-					checksum = Internal::FNV1a(compressData.data(), dataSize, checksum);
+					checksum = Internal::FNV1a(blockData, dataSize, checksum);
 
 					stream.write(reinterpret_cast<const char*>(&compSize32), sizeof(uint32_t));
 					stream.write(reinterpret_cast<const char*>(&origSize32), sizeof(uint32_t));
-					stream.write(reinterpret_cast<const char*>(compressData.data()), dataSize);
+					stream.write(blockData, dataSize);
 
 					written += sizeof(uint32_t) * 2 + dataSize;
 				}
@@ -871,7 +922,38 @@ namespace StaticForge {
 				if (stream.fail()) {
 					*errorOut = "Failed to write data block '" + f.filepath.u8string() + "'";
 					return false;
-				}				
+				}
+			}
+
+			// if the whole file doesn't get small enough, it is written again uncompressed at the same position
+			if (useCompression && !IsWorthCompressing(f.fileSize, written, archive.compressionMinSaving)) {
+				useCompression = false;
+				checksum = 2166136261u;
+				written = 0;
+
+				stream.seekp(static_cast<std::streamoff>(fileStart));
+				fileStream.clear();
+				fileStream.seekg(0);
+				if (stream.fail() || fileStream.fail()) {
+					*errorOut = "Failed to seek for writing '" + f.filepath.u8string() + "' uncompressed";
+					return false;
+				}
+
+				while (fileStream) {
+					fileStream.read(buffer.data(), static_cast<std::streamsize>(readSize));
+					std::streamsize bytesRead = fileStream.gcount();
+					if (bytesRead <= 0)
+						break;
+
+					checksum = Internal::FNV1a(buffer.data(), bytesRead, checksum);
+					stream.write(buffer.data(), bytesRead);
+					written += bytesRead;
+
+					if (stream.fail()) {
+						*errorOut = "Failed to write data block '" + f.filepath.u8string() + "'";
+						return false;
+					}
+				}
 			}
 
 			if (written != f.fileSize && !useCompression) {

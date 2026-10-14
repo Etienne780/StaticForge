@@ -93,7 +93,7 @@ Your Game / Application
 - **Fast lookups** - Filenames are stored as 64-bit FNV-1a hashes, enabling O(1) access via hash maps
 - **Alignment-friendly** - Data blocks are padded to 4096 bytes for direct memory-mapped access
 - **Checksum validation** - Each file's integrity is verified when loaded, or for the whole archive at once with `VerifyAll()` / `--verify`
-- **Optional compression** - Block-wise LZ77 compression, decompressed automatically when loading
+- **Optional compression** - Block-wise LZ77 compression, decompressed automatically when loading. Data that doesn't compress well (e.g. JPG, OGG) is stored uncompressed automatically
 - **Flexible loading** - Load into a vector or an existing buffer, load only a part of an asset, stream-based or memory-mapped
 - **Multi-threading** - `StaticForgeConcurrentArchive` loads from several threads at once with a pool of file streams
 - **Meta file support** - Split assets across multiple archives using `.sfpak.meta` files, and load them together with an archive set
@@ -170,7 +170,7 @@ The format is not backward compatible: the reader only loads archives of its own
 | `--compress`    | Compress files larger than 4096 bytes                | `false` |
 | `--help`        | Show help message                                    | —       |
 
-Bool arguments can be used without a value (`--mkdir` is the same as `--mkdir true`). The compression can be tuned with `--compress-block-size`, `--compress-table-size` and `--compress-min-match`. See the documentation for all details.
+Bool arguments can be used without a value (`--mkdir` is the same as `--mkdir true`). The compression can be tuned with `--compress-block-size`, `--compress-table-size`, `--compress-min-match` and `--compress-min-saving`. See the documentation for all details.
 
 ---
 

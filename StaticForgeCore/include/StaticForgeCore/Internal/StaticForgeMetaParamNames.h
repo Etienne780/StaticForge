@@ -9,6 +9,7 @@
 	compress-block-size: block size in bytes used for compression, type=int, can be set
 	compress-table-size: compressor match table size as power of two, type=int, can be set
 	compress-min-match: shortest match the compressor stores as reference, type=int, can be set
+	compress-min-saving: percent a block or file has to get smaller to be stored compressed, type=int, can be set
 */
 
 namespace StaticForge::Internal::MetaParams {
@@ -20,5 +21,6 @@ namespace StaticForge::Internal::MetaParams {
 	const std::string_view COMPRESS_BLOCK_SIZE = "compress-block-size";
 	const std::string_view COMPRESS_TABLE_SIZE = "compress-table-size";
 	const std::string_view COMPRESS_MIN_MATCH = "compress-min-match";
+	const std::string_view COMPRESS_MIN_SAVING = "compress-min-saving";
 
 }

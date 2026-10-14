@@ -95,4 +95,7 @@ inline void InitConsoleArguments() {
 	auto& compressMinMatchArg = CAM::RegisterConsoleArgument(ArgName::COMPRESS_MIN_MATCH, ArgName::COMPRESS_MIN_MATCH_SHORTNAME, ConsoleArgType::Int);
 	compressMinMatchArg.SetEvaluationFunction(uintParser);
 
+	auto& compressMinSavingArg = CAM::RegisterConsoleArgument(ArgName::COMPRESS_MIN_SAVING, ArgName::COMPRESS_MIN_SAVING_SHORTNAME, ConsoleArgType::Int);
+	compressMinSavingArg.SetEvaluationFunction(uintParser);
+
 }

@@ -96,6 +96,7 @@ Unknown identifier 'archiv'. Did you mean 'archive'?
 | `compress-block-size` | uint     | no       | Compression block size in bytes                                             |
 | `compress-table-size` | uint     | no       | Compressor match table size as power of two                                 |
 | `compress-min-match`  | uint     | no       | Shortest match the compressor stores as reference                           |
+| `compress-min-saving` | uint     | no       | Percent a block or file must get smaller to be stored compressed            |
 
 ## Value parsing
 
@@ -105,4 +106,4 @@ Unknown identifier 'archiv'. Did you mean 'archive'?
 
 **`store-names`, `compress`** — the single `Identifier` token after `=` is compared case-insensitively. Only `true` and `false` are valid, anything else is a parse error.
 
-**`compress-block-size`, `compress-table-size`, `compress-min-match`** — parsed with `std::from_chars` as an unsigned decimal number. The whole value has to be a number (`64k` or `-5` are errors). The builder checks the value against the valid range.
+**`compress-block-size`, `compress-table-size`, `compress-min-match`, `compress-min-saving`** — parsed with `std::from_chars` as an unsigned decimal number. The whole value has to be a number (`64k` or `-5` are errors). The builder checks the value against the valid range.

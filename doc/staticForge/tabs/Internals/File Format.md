@@ -66,10 +66,10 @@ Each chunk has the following layout:
 ```
 [ compressedSize : uint32_t ]  size of the compressed payload that follows
 [ originalSize   : uint32_t ]  size of the decompressed output for this chunk
-[ payload        : bytes    ]  compressedSize bytes of compressed data
+[ payload        : bytes    ]  compressedSize bytes of compressed data, or the raw bytes if compressedSize == originalSize
 ```
 
-Chunks are produced by splitting the original file into pieces of the compression block size (default 64 KB, at most `MAX_COMPRESSION_BLOCK_SIZE`) and compressing each piece independently. The decompressor reads chunks sequentially until all `compressedFileSize` bytes are consumed. Because each chunk carries its own original size, the reader does not need to know the block size that was used for packing.
+Chunks are produced by splitting the original file into pieces of the compression block size (default 64 KB, at most `MAX_COMPRESSION_BLOCK_SIZE`) and compressing each piece independently. The decompressor reads chunks sequentially until all `compressedFileSize` bytes are consumed. Because each chunk carries its own original size, the reader does not need to know the block size that was used for packing. A chunk with `compressedSize == originalSize` is stored raw (it didn't get small enough when packing) and is copied instead of decompressed.
 
 The FNV-1a checksum covers all chunk bytes as written on disk — framing headers included — so integrity is verified before any decompression takes place.
 
@@ -98,9 +98,9 @@ One 16-byte entry per file, stored contiguously starting at `entryOffset`, in th
 
 ## Name Table String Data
 
-UTF-8 path strings packed end-to-end with no separators. The whole block is always compressed as one piece with the same compression as the file data (without framing header), because paths usually share long prefixes and compress very well (often to 20 - 50 %).
+UTF-8 path strings packed end-to-end with no separators. The whole block is compressed as one piece with the same compression as the file data (without framing header), because paths usually share long prefixes and compress very well (often to 20 - 50 %). If it doesn't get small enough (e.g. only a few short names), it is stored raw and `stringDataCompressedSize == stringDataSize`.
 
-To read a filename, read `stringDataCompressedSize` bytes at `stringDataOffset`, decompress them to `stringDataSize` bytes, then take `nameLength` bytes at `nameOffset`. Paths use `/` as separator and are relative to the source folder.
+To read a filename, read `stringDataCompressedSize` bytes at `stringDataOffset`, decompress them to `stringDataSize` bytes (or use them directly if both sizes are equal), then take `nameLength` bytes at `nameOffset`. Paths use `/` as separator and are relative to the source folder.
 
 ## Alignment
 

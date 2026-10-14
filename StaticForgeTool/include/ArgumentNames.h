@@ -31,6 +31,7 @@ Compression settings (only used with --compress, override the values of .sfpak.m
 | compress-block-size | cbs   | Size in bytes of the blocks a file is split into for compression | int  | 65536   | 1024 - 64MB |
 | compress-table-size | cts   | Match table size as power of two (entries = 2^value)             | int  | 16      | 8 - 24      |
 | compress-min-match  | cmm   | Shortest repeated sequence that is stored as a reference         | int  | 8       | 4 - 65535   |
+| compress-min-saving | cms   | Percent a block/file must get smaller, otherwise stored raw      | int  | 5       | 0 - 99      |
 |---------------------|-------|------------------------------------------------------------------|------|---------|-------------|
 
 )""";
@@ -78,5 +79,8 @@ namespace ArgName {
 
 	const std::string_view COMPRESS_MIN_MATCH = "compress-min-match";
 	const std::string_view COMPRESS_MIN_MATCH_SHORTNAME = "cmm";
+
+	const std::string_view COMPRESS_MIN_SAVING = "compress-min-saving";
+	const std::string_view COMPRESS_MIN_SAVING_SHORTNAME = "cms";
 	
 }

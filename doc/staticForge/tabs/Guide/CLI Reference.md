@@ -36,8 +36,11 @@ Only used together with compression (`--compress` or `compress = true;` in a met
 | `--compress-block-size` | `--cbs` | Size in bytes of the blocks a file is split into for compression  | `65536` | 1024 - 67108864  |
 | `--compress-table-size` | `--cts` | Match table size as power of two (entries = 2^value)              | `16`    | 8 - 24           |
 | `--compress-min-match`  | `--cmm` | Shortest repeated sequence that is stored as a reference          | `8`     | 4 - 65535        |
+| `--compress-min-saving` | `--cms` | Percent a block or file must get smaller, otherwise it is stored uncompressed | `5` | 0 - 99 |
 
 Larger blocks compress better, because a block can only reference data inside of itself. Above 64 KB the gain is very small.
+
+`--compress-min-saving` avoids compression that isn't worth the time it takes to decompress: a block is only stored compressed if it gets at least this many percent smaller, otherwise it is stored raw. The same applies to the whole file, a file that doesn't get small enough is stored completely uncompressed. With `0` every saved byte counts.
 
 ## Values
 

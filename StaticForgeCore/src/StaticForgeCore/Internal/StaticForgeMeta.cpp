@@ -362,6 +362,10 @@ namespace StaticForge::Internal {
 			return static_cast<void*>(&m_metaData.compressionMinMatchLength);
 		}
 
+		if (name == MetaParams::COMPRESS_MIN_SAVING) {
+			return static_cast<void*>(&m_metaData.compressionMinSaving);
+		}
+
 		return nullptr;
 	}
 
