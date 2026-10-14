@@ -16,7 +16,7 @@ At runtime, `StaticForgeArchive::LoadAsset` hashes the key string you pass in an
 **Implications:**
 - Lookups are O(1) via `std::unordered_map`.
 - Without a name table the archive cannot list filenames - only validate whether a known key exists. `--info --verbose` and `--extract` then show the hash instead (16 hex digits).
-- Hash collisions between two different paths in the same archive are detected at build time and cause an error. With 64 bit they are practically impossible (even with 100 000 files the probability is below one in a billion).
+- Hash collisions between two different paths of one build are detected at build time and cause an error. With 64 bit they are practically impossible (even with 100 000 files the probability is below one in a billion).
 
 ## Data checksum
 

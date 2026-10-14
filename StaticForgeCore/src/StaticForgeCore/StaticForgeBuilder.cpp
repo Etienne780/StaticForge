@@ -339,6 +339,14 @@ namespace StaticForge {
 
 		m_archiveGroups.reserve(dirToArchiveMeta.size());
 
+		// a path may only exist once across all archives of a build
+		struct SeenFile {
+			std::string relativePath;
+			std::string archiveName;
+			StaticForgePath fullPath;
+		};
+		std::unordered_map<uint64_t, SeenFile> seenHashes;
+
 		// adds files to archive groups
 		for (size_t srcIndex = 0; srcIndex < m_srcPaths.size(); srcIndex++) {
 			const StaticForgePath& src = m_srcPaths[srcIndex];
@@ -383,12 +391,21 @@ namespace StaticForge {
 
 				std::string relpathStr = Internal::NormalizeFilepathSlashes(relativePath.u8string());
 				uint64_t h = Internal::HashFilename(relpathStr);
-				if (archive.seenHashes.count(h)) {
-					*errorOut = "Hash collision: '" + relpathStr +
-						"' collides with '" + archive.seenHashes[h] + "'";
+				auto seen = seenHashes.find(h);
+				if (seen != seenHashes.end()) {
+					const SeenFile& other = seen->second;
+					if (other.relativePath != relpathStr) {
+						*errorOut = "Hash collision: '" + relpathStr +
+							"' collides with '" + other.relativePath + "'";
+					}
+					else {
+						*errorOut = "Duplicate path '" + relpathStr + "': '" +
+							other.fullPath.u8string() + "' (archive '" + other.archiveName + "') and '" +
+							fullPath.u8string() + "' (archive '" + archive.name + "')";
+					}
 					return false;
 				}
-				archive.seenHashes[h] = relpathStr;
+				seenHashes[h] = { relpathStr, archive.name, fullPath };
 
 				Internal::StaticForgeFileEntry f{};
 				f.filepath = fullPath;

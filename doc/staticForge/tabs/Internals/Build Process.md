@@ -33,7 +33,8 @@ Iterates all non-meta files, computes their relative path, hashes it with 64-bit
 
 For each file the builder also:
 - Skips files whose name ends with one of the excluded extensions (case insensitive).
-- Detects hash collisions between files in the same group and reports them as errors.
+- Reports an error if the same relative path occurs more than once in the build, also if the files go into different archives (e.g. two `--source` folders that both contain `textures/hero.png`). It can't be decided which of the files is the right one.
+- Reports an error on hash collisions between different paths.
 - Applies the overrides when an archive group is created:
   - `store-names` and `compress`: if the global flag is set, it is forced on even when the meta file sets it to `false`.
   - compression settings: builder value → meta file value → default.
