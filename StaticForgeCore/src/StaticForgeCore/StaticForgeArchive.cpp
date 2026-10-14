@@ -33,15 +33,14 @@ namespace StaticForge {
 	}
 
 	bool StaticForgeArchive::LoadAsset(const std::string& key, std::vector<std::byte>* outData) {
-		uint64_t k = Internal::HashFilename(Internal::NormalizeFilepathSlashes(key));
-		auto* entry = GetIndexEntry(k);
+		auto* entry = GetIndexEntry(key);
 		if (!entry) {
 			AddError("Failed to load asset, entry with key '" + key + "' not found");
 			return false;
 		}
 
 		std::string error;
-		if (!LoadEntry(entry, outData, &error)) {
+		if (!LoadEntry(*entry, false, outData, nullptr, 0, &error)) {
 			AddError("Failed to load asset '" + key + "': " + error);
 			return false;
 		}
@@ -57,8 +56,72 @@ namespace StaticForge {
 		}
 
 		std::string error;
-		if (!LoadEntry(&m_indexEntries[fileIndex], outData, &error)) {
+		if (!LoadEntry(m_indexEntries[fileIndex], false, outData, nullptr, 0, &error)) {
 			AddError("Failed to load asset at index '" + std::to_string(fileIndex) + "': " + error);
+			return false;
+		}
+
+		return true;
+	}
+
+	bool StaticForgeArchive::LoadAsset(const std::string& key, std::byte* buffer, uint64_t bufferSize) {
+		auto* entry = GetIndexEntry(key);
+		if (!entry) {
+			AddError("Failed to load asset, entry with key '" + key + "' not found");
+			return false;
+		}
+
+		std::string error;
+		if (!LoadEntry(*entry, false, nullptr, buffer, bufferSize, &error)) {
+			AddError("Failed to load asset '" + key + "': " + error);
+			return false;
+		}
+
+		return true;
+	}
+
+	bool StaticForgeArchive::LoadAssetAt(size_t fileIndex, std::byte* buffer, uint64_t bufferSize) {
+		if (fileIndex >= m_indexEntries.size()) {
+			AddError("Failed to load asset, index '" + std::to_string(fileIndex) + "' is out of range (file count "
+				+ std::to_string(m_indexEntries.size()) + ")");
+			return false;
+		}
+
+		std::string error;
+		if (!LoadEntry(m_indexEntries[fileIndex], false, nullptr, buffer, bufferSize, &error)) {
+			AddError("Failed to load asset at index '" + std::to_string(fileIndex) + "': " + error);
+			return false;
+		}
+
+		return true;
+	}
+
+	bool StaticForgeArchive::LoadAssetRange(const std::string& key, uint64_t offset, uint64_t size, std::byte* buffer) {
+		auto* entry = GetIndexEntry(key);
+		if (!entry) {
+			AddError("Failed to load asset range, entry with key '" + key + "' not found");
+			return false;
+		}
+
+		std::string error;
+		if (!LoadEntryRange(*entry, false, offset, size, buffer, &error)) {
+			AddError("Failed to load range of asset '" + key + "': " + error);
+			return false;
+		}
+
+		return true;
+	}
+
+	bool StaticForgeArchive::LoadAssetRangeAt(size_t fileIndex, uint64_t offset, uint64_t size, std::byte* buffer) {
+		if (fileIndex >= m_indexEntries.size()) {
+			AddError("Failed to load asset range, index '" + std::to_string(fileIndex) + "' is out of range (file count "
+				+ std::to_string(m_indexEntries.size()) + ")");
+			return false;
+		}
+
+		std::string error;
+		if (!LoadEntryRange(m_indexEntries[fileIndex], false, offset, size, buffer, &error)) {
+			AddError("Failed to load range of asset at index '" + std::to_string(fileIndex) + "': " + error);
 			return false;
 		}
 
@@ -146,8 +209,7 @@ namespace StaticForge {
 			return {};
 		}
 
-		uint64_t k = Internal::HashFilename(Internal::NormalizeFilepathSlashes(key));
-		auto* entry = GetIndexEntry(k);
+		auto* entry = GetIndexEntry(key);
 		if (!entry) {
 			AddError("Failed to get asset mapped, entry with key '" + key + "' not found");
 			return {};
@@ -176,21 +238,47 @@ namespace StaticForge {
 	}
 	
 	bool StaticForgeArchive::LoadAssetMapped(const std::string& key, std::vector<std::byte>* outData) {
-		if (!IsMapped()) {
-			AddError("Failed to get asset mapped for key '" + key + "', archive is not mapped (use OpenMapped() before this call)");
-			return false;
-		}
-		
-		uint64_t k = Internal::HashFilename(Internal::NormalizeFilepathSlashes(key));
-		auto* entry = GetIndexEntry(k);
+		auto* entry = GetIndexEntry(key);
 		if (!entry) {
 			AddError("Failed to load asset mapped, entry with key '" + key + "' not found");
 			return false;
 		}
 
 		std::string error;
-		if (!LoadEntryMapped(entry, outData, &error)) {
+		if (!LoadEntry(*entry, true, outData, nullptr, 0, &error)) {
 			AddError("Failed to load asset mapped '" + key + "': " + error);
+			return false;
+		}
+
+		return true;
+	}
+
+	bool StaticForgeArchive::LoadAssetMapped(const std::string& key, std::byte* buffer, uint64_t bufferSize) {
+		auto* entry = GetIndexEntry(key);
+		if (!entry) {
+			AddError("Failed to load asset mapped, entry with key '" + key + "' not found");
+			return false;
+		}
+
+		std::string error;
+		if (!LoadEntry(*entry, true, nullptr, buffer, bufferSize, &error)) {
+			AddError("Failed to load asset mapped '" + key + "': " + error);
+			return false;
+		}
+
+		return true;
+	}
+
+	bool StaticForgeArchive::LoadAssetRangeMapped(const std::string& key, uint64_t offset, uint64_t size, std::byte* buffer) {
+		auto* entry = GetIndexEntry(key);
+		if (!entry) {
+			AddError("Failed to load asset range mapped, entry with key '" + key + "' not found");
+			return false;
+		}
+
+		std::string error;
+		if (!LoadEntryRange(*entry, true, offset, size, buffer, &error)) {
+			AddError("Failed to load range of asset mapped '" + key + "': " + error);
 			return false;
 		}
 
@@ -254,132 +342,292 @@ namespace StaticForge {
 	}
 
 	bool StaticForgeArchive::LoadEntry(
-		Internal::StaticForgeIndexEntry* entry,
-		std::vector<std::byte>* outData,
+		const Internal::StaticForgeIndexEntry& entry,
+		bool mapped,
+		std::vector<std::byte>* outVector,
+		std::byte* outBuffer,
+		uint64_t bufferSize,
 		std::string* errorOut
 	) {
-		if (!IsFileStreamOpen()) {
-			if (!OpenFileStream()) {
-				*errorOut = "Failed to open archive file at '" + m_path.u8string() + "'";
+		if (!PrepareSource(mapped, errorOut))
+			return false;
+
+		const bool isCompressed = entry.compressedFileSize != 0;
+		if (mapped && isCompressed) {
+			*errorOut = "Entry is compressed - memory-mapped loading is not supported for compressed assets";
+			return false;
+		}
+
+		if (!outVector) {
+			if (bufferSize < entry.fileSize) {
+				*errorOut = "Buffer is too small (asset size " + std::to_string(entry.fileSize)
+					+ ", buffer size " + std::to_string(bufferSize) + ")";
+				return false;
+			}
+			if (!outBuffer && entry.fileSize > 0) {
+				*errorOut = "Buffer is null";
 				return false;
 			}
 		}
 
-		const bool isCompressed = entry->compressedFileSize != 0;
-		const uint64_t readSize = isCompressed ? entry->compressedFileSize : entry->fileSize;
-		const uint64_t start = m_header.dataOffset + entry->fileOffset;
+		const uint64_t storedSize = isCompressed ? entry.compressedFileSize : entry.fileSize;
 
-		std::vector<std::byte> raw(readSize);
+		// outVector is only changed on success
+		std::vector<std::byte> local;
 
-		// prevents a previous failed load from breaking all following loads
-		m_stream.clear();
-		m_stream.seekg(static_cast<std::streamoff>(start), std::ios::beg);
-		if (!m_stream) {
-			*errorOut = "Failed to seek at offset " + std::to_string(start);
-			return false;
+		// uncompressed data from the stream is read directly into the target
+		if (!isCompressed && !mapped) {
+			std::byte* dst = outBuffer;
+			if (outVector) {
+				local.resize(static_cast<size_t>(storedSize));
+				dst = local.data();
+			}
+
+			if (!ReadStream(m_header.dataOffset + entry.fileOffset, storedSize, dst, errorOut))
+				return false;
+			if (!VerifyChecksum(dst, storedSize, entry.checksum, errorOut))
+				return false;
+
+			if (outVector)
+				*outVector = std::move(local);
+			return true;
 		}
 
-		m_stream.read(reinterpret_cast<char*>(raw.data()), static_cast<std::streamsize>(readSize));
-		if (!m_stream) {
-			*errorOut = "Failed to read " + std::to_string(readSize) + " bytes at offset " + std::to_string(start);
+		std::vector<std::byte> temp;
+		const std::byte* stored = ReadStored(entry, mapped, 0, storedSize, &temp, errorOut);
+		if (!stored)
 			return false;
-		}
 
-		if (!VerifyChecksum(raw.data(), readSize, entry->checksum, errorOut))
+		if (!VerifyChecksum(stored, storedSize, entry.checksum, errorOut))
 			return false;
+
+		// fileSize comes from the archive, so check the blocks before allocating it
+		if (isCompressed && outVector && !DecompressBlocks(entry, mapped, stored, 0, entry.fileSize, nullptr, errorOut))
+			return false;
+
+		std::byte* dst = outBuffer;
+		if (outVector) {
+			local.resize(static_cast<size_t>(entry.fileSize));
+			dst = local.data();
+		}
 
 		if (isCompressed) {
-			std::vector<std::byte> allDecompressed;
-			// fileSize comes from the archive, so only reserve what the block sizes allow
-			allDecompressed.reserve(static_cast<size_t>(std::min<uint64_t>(entry->fileSize, MAX_COMPRESSION_BLOCK_SIZE)));
+			if (!DecompressBlocks(entry, mapped, stored, 0, entry.fileSize, dst, errorOut))
+				return false;
+		}
+		else if (entry.fileSize > 0) {
+			std::memcpy(dst, stored, static_cast<size_t>(entry.fileSize));
+		}
 
-			size_t pos = 0;
-			while (pos < raw.size()) {
-				// read Framing-Header
-				if (pos + sizeof(uint32_t) * 2 > raw.size()) {
-					*errorOut = "Compressed block framing error at pos " + std::to_string(pos);
+		if (outVector)
+			*outVector = std::move(local);
+		return true;
+	}
+
+	bool StaticForgeArchive::LoadEntryRange(
+		const Internal::StaticForgeIndexEntry& entry,
+		bool mapped,
+		uint64_t offset,
+		uint64_t size,
+		std::byte* outBuffer,
+		std::string* errorOut
+	) {
+		if (!PrepareSource(mapped, errorOut))
+			return false;
+
+		const bool isCompressed = entry.compressedFileSize != 0;
+		if (mapped && isCompressed) {
+			*errorOut = "Entry is compressed - memory-mapped loading is not supported for compressed assets";
+			return false;
+		}
+
+		if (offset > entry.fileSize || size > entry.fileSize - offset) {
+			*errorOut = "Range (offset " + std::to_string(offset) + ", size " + std::to_string(size)
+				+ ") is outside of the asset (size " + std::to_string(entry.fileSize) + ")";
+			return false;
+		}
+
+		if (size == 0)
+			return true;
+
+		if (!outBuffer) {
+			*errorOut = "Buffer is null";
+			return false;
+		}
+
+		if (isCompressed)
+			return DecompressBlocks(entry, mapped, nullptr, offset, size, outBuffer, errorOut);
+
+		if (!mapped)
+			return ReadStream(m_header.dataOffset + entry.fileOffset + offset, size, outBuffer, errorOut);
+
+		std::vector<std::byte> unused;
+		const std::byte* src = ReadStored(entry, true, offset, size, &unused, errorOut);
+		if (!src)
+			return false;
+
+		std::memcpy(outBuffer, src, static_cast<size_t>(size));
+		return true;
+	}
+
+	bool StaticForgeArchive::PrepareSource(bool mapped, std::string* errorOut) {
+		if (mapped) {
+			if (!IsMapped()) {
+				*errorOut = "Archive is not mapped (use OpenMapped() before this call)";
+				return false;
+			}
+			return true;
+		}
+
+		if (!IsFileStreamOpen() && !OpenFileStream()) {
+			*errorOut = "Failed to open archive file at '" + m_path.u8string() + "'";
+			return false;
+		}
+		return true;
+	}
+
+	bool StaticForgeArchive::ReadStream(uint64_t absOffset, uint64_t size, std::byte* dst, std::string* errorOut) {
+		// prevents a previous failed load from breaking all following loads
+		m_stream.clear();
+		m_stream.seekg(static_cast<std::streamoff>(absOffset), std::ios::beg);
+		if (!m_stream) {
+			*errorOut = "Failed to seek at offset " + std::to_string(absOffset);
+			return false;
+		}
+
+		if (size == 0)
+			return true;
+
+		m_stream.read(reinterpret_cast<char*>(dst), static_cast<std::streamsize>(size));
+		if (!m_stream) {
+			*errorOut = "Failed to read " + std::to_string(size) + " bytes at offset " + std::to_string(absOffset);
+			return false;
+		}
+		return true;
+	}
+
+	const std::byte* StaticForgeArchive::ReadStored(
+		const Internal::StaticForgeIndexEntry& entry,
+		bool mapped,
+		uint64_t pos,
+		uint64_t size,
+		std::vector<std::byte>* temp,
+		std::string* errorOut
+	) {
+		const uint64_t absOffset = m_header.dataOffset + entry.fileOffset + pos;
+
+		if (mapped) {
+			const auto* src = reinterpret_cast<const std::byte*>(m_mmap->At(absOffset, size));
+			if (!src) {
+				*errorOut = "Entry is out of bounds"
+					+ std::string(" (offset=") + std::to_string(absOffset)
+					+ ", size=" + std::to_string(size)
+					+ ", map size=" + std::to_string(m_mmap->Size()) + ")";
+			}
+			return src;
+		}
+
+		temp->resize(static_cast<size_t>(size));
+		if (!ReadStream(absOffset, size, temp->data(), errorOut))
+			return nullptr;
+
+		// never null on success, also if size is 0
+		static const std::byte empty{};
+		return temp->empty() ? &empty : temp->data();
+	}
+
+	bool StaticForgeArchive::DecompressBlocks(
+		const Internal::StaticForgeIndexEntry& entry,
+		bool mapped,
+		const std::byte* stored,
+		uint64_t rangeStart,
+		uint64_t rangeSize,
+		std::byte* dst,
+		std::string* errorOut
+	) {
+		constexpr uint64_t frameSize = sizeof(uint32_t) * 2;
+		const uint64_t storedSize = entry.compressedFileSize;
+		const uint64_t rangeEnd = rangeStart + rangeSize;
+
+		std::vector<std::byte> temp;
+		std::vector<std::byte> blockBuffer;
+
+		uint64_t pos = 0;    // position in the stored data
+		uint64_t outPos = 0; // position in the original data
+		while (outPos < rangeEnd) {
+			if (storedSize - pos < frameSize) {
+				*errorOut = "Compressed block framing error at pos " + std::to_string(pos);
+				return false;
+			}
+
+			// frame: [u32 compressed size][u32 original size]
+			const std::byte* frame = stored ? stored + pos : ReadStored(entry, mapped, pos, frameSize, &temp, errorOut);
+			if (!frame)
+				return false;
+
+			uint32_t compSize32 = 0;
+			uint32_t origSize32 = 0;
+			std::memcpy(&compSize32, frame, sizeof(uint32_t));
+			std::memcpy(&origSize32, frame + sizeof(uint32_t), sizeof(uint32_t));
+			if (!Internal::IsLittleEndian()) {
+				compSize32 = Internal::SwapEndian(compSize32);
+				origSize32 = Internal::SwapEndian(origSize32);
+			}
+			pos += frameSize;
+
+			if (compSize32 > storedSize - pos) {
+				*errorOut = "Compressed block overflows data at pos " + std::to_string(pos);
+				return false;
+			}
+
+			if (origSize32 > MAX_COMPRESSION_BLOCK_SIZE || origSize32 > entry.fileSize - outPos) {
+				*errorOut = "Compressed block at pos " + std::to_string(pos) + " has an invalid size (archive is corrupted)";
+				return false;
+			}
+
+			const uint64_t blockEnd = outPos + origSize32;
+
+			// only the blocks inside of the range are decompressed
+			if (dst && blockEnd > rangeStart) {
+				const std::byte* payload = stored ? stored + pos : ReadStored(entry, mapped, pos, compSize32, &temp, errorOut);
+				if (!payload)
 					return false;
+
+				const uint64_t copyStart = std::max(rangeStart, outPos);
+				const uint64_t copyEnd = std::min(rangeEnd, blockEnd);
+
+				// a block that is only partly inside of the range is decompressed into blockBuffer first
+				const bool wholeBlock = copyStart == outPos && copyEnd == blockEnd;
+				std::byte* target = nullptr;
+				if (wholeBlock) {
+					target = dst + (outPos - rangeStart);
+				}
+				else {
+					blockBuffer.resize(origSize32);
+					target = blockBuffer.data();
 				}
 
-				uint32_t compSize32 = 0;
-				uint32_t origSize32 = 0;
-				std::memcpy(&compSize32, raw.data() + pos, sizeof(uint32_t));
-				std::memcpy(&origSize32, raw.data() + pos + sizeof(uint32_t), sizeof(uint32_t));
-				if (!Internal::IsLittleEndian()) {
-					compSize32 = Internal::SwapEndian(compSize32);
-					origSize32 = Internal::SwapEndian(origSize32);
-				}
-				pos += sizeof(uint32_t) * 2;
-
-				if (pos + compSize32 > raw.size()) {
-					*errorOut = "Compressed block overflows data at pos " + std::to_string(pos);
-					return false;
-				}
-
-				if (origSize32 > MAX_COMPRESSION_BLOCK_SIZE || allDecompressed.size() + origSize32 > entry->fileSize) {
-					*errorOut = "Compressed block at pos " + std::to_string(pos) + " has an invalid size (archive is corrupted)";
-					return false;
-				}
-
-				auto block = m_compressor->Decompress(
-					raw.data() + pos,
-					static_cast<size_t>(compSize32),
-					static_cast<size_t>(origSize32)
-				);
-				pos += compSize32;
-
-				if (!m_compressor->IsValid()) {
+				if (!m_compressor->DecompressTo(payload, compSize32, target, origSize32)) {
 					*errorOut = "Decompression failed at block (pos=" + std::to_string(pos) + "): "
 						+ m_compressor->GetError();
 					return false;
 				}
 
-				allDecompressed.insert(allDecompressed.end(), block.begin(), block.end());
+				if (!wholeBlock) {
+					std::memcpy(dst + (copyStart - rangeStart), blockBuffer.data() + (copyStart - outPos),
+						static_cast<size_t>(copyEnd - copyStart));
+				}
 			}
 
-			if (allDecompressed.size() != entry->fileSize) {
-				*errorOut = "Decompressed size mismatch (expected "
-					+ std::to_string(entry->fileSize) + ", got "
-					+ std::to_string(allDecompressed.size()) + ")";
-				return false;
-			}
-
-			*outData = std::move(allDecompressed);
-		}
-		else {
-			*outData = std::move(raw);
+			pos += compSize32;
+			outPos = blockEnd;
 		}
 
 		return true;
 	}
 
-	bool StaticForgeArchive::LoadEntryMapped(
-		Internal::StaticForgeIndexEntry* entry,
-		std::vector<std::byte>* outData,
-		std::string* errorOut
-	) {
-		if (entry->compressedFileSize != 0) {
-			*errorOut = "Entry is compressed - memory-mapped loading is not supported for compressed assets";
-			return false;
-		}
-
-		const uint64_t storedSize = entry->fileSize;
-		const uint64_t absOffset = m_header.dataOffset + entry->fileOffset;
-
-		const auto* src = reinterpret_cast<const std::byte*>(m_mmap->At(absOffset, storedSize));
-		if (!src) {
-			*errorOut = "Entry is out of bounds"
-				+ std::string(" (offset=") + std::to_string(absOffset)
-				+ ", size=" + std::to_string(storedSize)
-				+ ", map size=" + std::to_string(m_mmap->Size()) + ")";
-			return false;
-		}
-
-		if (!VerifyChecksum(src, storedSize, entry->checksum, errorOut))
-			return false;
-
-		(*outData).assign(src, src + storedSize);
-		return true;
+	Internal::StaticForgeIndexEntry* StaticForgeArchive::GetIndexEntry(const std::string& key) {
+		return GetIndexEntry(Internal::HashFilename(Internal::NormalizeFilepathSlashes(key)));
 	}
 
 	Internal::StaticForgeIndexEntry* StaticForgeArchive::GetIndexEntry(uint64_t hash) {

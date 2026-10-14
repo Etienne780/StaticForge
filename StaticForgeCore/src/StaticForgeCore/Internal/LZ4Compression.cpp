@@ -134,15 +134,11 @@ namespace StaticForge::Internal {
             return {};
         }
 
-        size_t off = 0;
-
-        uint64_t originalSize = 0;
+        uint64_t originalSize = oriSize;
         if (m_storeHeader) {
+            size_t off = 0;
             if (!ReadU64(data, size, off, originalSize))
                 return {};
-        }
-        else {
-            originalSize = oriSize;
         }
 
         if (originalSize > (1ULL << 32)) {
@@ -151,81 +147,121 @@ namespace StaticForge::Internal {
             return {};
         }
 
-        std::vector<std::byte> result;
-        result.reserve(static_cast<size_t>(originalSize));
+        std::vector<std::byte> result(static_cast<size_t>(originalSize));
+        if (!DecompressTo(data, size, result.data(), result.size()))
+            return {};
 
-        while (off < size) {
+        return result;
+    }
+
+    bool LZ4Compression::DecompressTo(const std::byte* data, size_t size, std::byte* out, size_t outSize) {
+        m_errors.clear();
+
+        if ((data == nullptr && size > 0) || (out == nullptr && outSize > 0)) {
+            AddError("Decompress: pointer is null with non-zero size");
+            return false;
+        }
+
+        size_t off = 0;
+        if (m_storeHeader) {
+            uint64_t storedSize = 0;
+            if (!ReadU64(data, size, off, storedSize))
+                return false;
+
+            if (storedSize != outSize) {
+                AddError("Decompress: stored size (" + std::to_string(storedSize) +
+                    ") does not match output size (" + std::to_string(outSize) + ")");
+                return false;
+            }
+        }
+
+        size_t written = 0;
+        bool end = false;
+        while (off < size && !end) {
             uint8_t blockType = static_cast<uint8_t>(data[off++]);
 
             switch (blockType) {
             case BLOCK_END:
-                off = size;// end loop
+                end = true;
                 break;
             case BLOCK_LITERAL: {
                 uint16_t len = 0;
                 if (!ReadU16(data, size, off, len))
-                    return {};
+                    return false;
 
                 if (off + len > size) {
                     AddError("Decompress: literal block overflows input (need " +
                         std::to_string(len) + " bytes, " +
                         std::to_string(size - off) + " available)");
-                    return {};
+                    return false;
                 }
 
-                for (uint16_t i = 0; i < len; ++i)
-                    result.push_back(data[off++]);
-                
+                if (len > outSize - written) {
+                    AddError("Decompress: output is larger than expected (" + std::to_string(outSize) + " bytes)");
+                    return false;
+                }
+
+                std::memcpy(out + written, data + off, len);
+                off += len;
+                written += len;
                 break;
             }
             case BLOCK_MATCH: {
                 uint16_t distance = 0;
                 uint16_t matchLen = 0;
 
-                if (!ReadU16(data, size, off, distance)) 
-                    return {};
-                if (!ReadU16(data, size, off, matchLen))  
-                    return {};
+                if (!ReadU16(data, size, off, distance))
+                    return false;
+                if (!ReadU16(data, size, off, matchLen))
+                    return false;
 
                 if (distance == 0) {
                     AddError("Decompress: zero-distance match (invalid back-reference)");
-                    return {};
+                    return false;
                 }
 
-                if (static_cast<uint64_t>(distance) > result.size()) {
+                if (distance > written) {
                     AddError("Decompress: match distance (" + std::to_string(distance) +
                         ") exceeds output so far (" +
-                        std::to_string(result.size()) + ")");
-                    return {};
+                        std::to_string(written) + ")");
+                    return false;
                 }
-                
+
                 if (matchLen < MIN_MATCH) {
                     AddError("Decompress: match length " + std::to_string(matchLen) +
                         " is below minimum (" + std::to_string(MIN_MATCH) + ")");
-                    return {};
+                    return false;
                 }
-                uint64_t copyStart = result.size() - distance;
+
+                if (matchLen > outSize - written) {
+                    AddError("Decompress: output is larger than expected (" + std::to_string(outSize) + " bytes)");
+                    return false;
+                }
+
+                // byte by byte, source and destination can overlap
+                const size_t copyStart = written - distance;
                 for (uint16_t i = 0; i < matchLen; ++i)
-                    result.push_back(result[copyStart + i]);
+                    out[written + i] = out[copyStart + i];
+                written += matchLen;
                 break;
             }
             default: {
                 char buf[32];
                 std::snprintf(buf, sizeof(buf), "0x%02X", blockType);
                 AddError(std::string("Decompress: unknown block type ") + buf);
-                return {};
+                return false;
             }
             }
-        }
-   
-        if (result.size() != originalSize) {
-            AddError("Decompress: output size mismatch (expected " +
-                std::to_string(originalSize) + ", got " +
-                std::to_string(result.size()) + ")");
-            return {};
         }
 
-        return result;
+        if (written != outSize) {
+            AddError("Decompress: output size mismatch (expected " +
+                std::to_string(outSize) + ", got " +
+                std::to_string(written) + ")");
+            return false;
+        }
+
+        return true;
     }
 
     bool LZ4Compression::IsValid() const {

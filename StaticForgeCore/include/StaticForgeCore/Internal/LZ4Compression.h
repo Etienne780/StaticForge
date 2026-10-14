@@ -101,6 +101,16 @@ namespace StaticForge::Internal {
         std::vector<std::byte> Decompress(const std::byte* data, size_t size, size_t originalSize = 0);
 
         /**
+         * @brief Decompresses directly into an existing buffer.
+         * @param data Input compressed data
+         * @param size Input size in bytes
+         * @param out Output buffer
+         * @param outSize Original size, the output must have exactly this size
+         * @return true on success
+         */
+        bool DecompressTo(const std::byte* data, size_t size, std::byte* out, size_t outSize);
+
+        /**
          * @brief Checks whether no errors occurred.
          */
         bool IsValid() const;
