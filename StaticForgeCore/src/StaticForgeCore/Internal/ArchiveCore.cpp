@@ -277,6 +277,23 @@ namespace StaticForge::Internal {
 		return true;
 	}
 
+	const std::byte* GetEntryMapped(const ArchiveData& data, const StaticForgeIndexEntry& entry, const MmapFile& mmap,
+		std::string* errorOut) {
+		if (entry.compressedFileSize != 0) {
+			*errorOut = "asset is compressed - use LoadAssetMapped() instead";
+			return nullptr;
+		}
+
+		const uint64_t absOffset = data.header.dataOffset + entry.fileOffset;
+		const auto* src = reinterpret_cast<const std::byte*>(mmap.At(absOffset, entry.fileSize));
+		if (!src) {
+			*errorOut = "entry is out of bounds (offset=" + std::to_string(absOffset)
+				+ ", size=" + std::to_string(entry.fileSize)
+				+ ", map size=" + std::to_string(mmap.Size()) + ")";
+		}
+		return src;
+	}
+
 	bool VerifyEntry(const ArchiveData& data, const StaticForgeIndexEntry& entry, std::ifstream& stream,
 		std::vector<char>* chunkBuffer, std::string* reasonOut) {
 		const uint64_t storedSize = entry.compressedFileSize != 0 ? entry.compressedFileSize : entry.fileSize;

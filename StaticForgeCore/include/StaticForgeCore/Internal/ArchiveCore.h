@@ -58,6 +58,12 @@ namespace StaticForge::Internal {
 		uint64_t offset, uint64_t size, std::byte* outBuffer, std::string* errorOut);
 
 	/**
+	 * @brief Returns a pointer to the data of an uncompressed entry inside of the mapping, or nullptr on error.
+	 */
+	const std::byte* GetEntryMapped(const ArchiveData& data, const StaticForgeIndexEntry& entry, const MmapFile& mmap,
+		std::string* errorOut);
+
+	/**
 	 * @brief Checks the checksum of an entry, the stream is read in chunks of chunkBuffer's size.
 	 *
 	 * @param reasonOut Receives why the entry is damaged.

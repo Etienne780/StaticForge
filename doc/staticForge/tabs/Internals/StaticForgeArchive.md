@@ -191,4 +191,17 @@ Mapped loads use `m_mmap` directly and don't touch the pool. `m_mmap` itself is 
 
 ### Errors
 
-Every function takes an optional `std::string* errorOut`. `Report()` writes the error there, or adds it to the list of the calling thread: `std::unordered_map<std::thread::id, ThreadErrors>` protected by `errorMutex`. Each thread gets a number when it reports its first error. The number is kept when its errors are cleared, so the same thread keeps the same number. The format of a thread's list is the same as `ErrorSupport` (`[Error]: ` for the first line, `>        ` for the following ones). `GetAllErrors()` sorts the threads by number and prefixes every line with `[Thread <n>] `.
+Every function takes an optional `std::string* errorOut`. `Report()` writes the error there, or adds it to the list of the calling thread in `Internal::ThreadErrors` (`Internal/ThreadErrors.h`): a `std::unordered_map<std::thread::id, ...>` protected by a mutex. Each thread gets a number when it reports its first error. The number is kept when its errors are cleared, so the same thread keeps the same number. The format of a thread's list is the same as `ErrorSupport` (`[Error]: ` for the first line, `>        ` for the following ones). `GetAllErrors()` sorts the threads by number and prefixes every line with `[Thread <n>] `.
+
+## Archive sets
+
+`StaticForgeArchiveSet` and `StaticForgeConcurrentArchiveSet` share `Internal::ArchiveSetIndex<Archive>` (`Internal/ArchiveSetIndex.h`):
+
+- A list of slots: the archive pointer and the `shared_ptr` to the `ArchiveData` the archive had when it was added.
+- A lookup `asset hash -> (slot, entry index)`, so finding an asset stays O(1) for any number of archives.
+- `Add` checks all hashes of the new archive against the lookup before anything is added. A hash that already exists means the same path (or a hash collision) in two archives and is an error.
+- `Remove` rebuilds the lookup, because the slot indices change.
+
+The sets are friends of their archive class and call the private `LoadEntry`/`LoadEntryRange`/`VerifyAllInto` with an error string, so errors end up in the set and not in the archive. Before each load the set compares the archive's current `m_data` with the stored one. If the archive was loaded again in the meantime, the stored entry belongs to the old file and an error is reported instead.
+
+The sets only keep pointers and never touch the archives in their destructor. `StaticForgeArchiveSet` derives from `ErrorSupport`, `StaticForgeConcurrentArchiveSet` uses `Internal::ThreadErrors` like the concurrent archive. Its lookup is only read while loading, so loads need no lock; `Add`, `Remove` and `Clear` change it and must not run at the same time.

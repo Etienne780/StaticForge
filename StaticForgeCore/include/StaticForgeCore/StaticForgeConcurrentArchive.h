@@ -36,6 +36,7 @@ namespace StaticForge {
 	class StaticForgeConcurrentArchive {
 		friend class StaticForgeReader;
 		friend class StaticForgeArchive;
+		friend class StaticForgeConcurrentArchiveSet;
 	public:
 		/**
 		 * @brief Creates an empty archive object, load it with StaticForgeReader::Load().
@@ -313,6 +314,11 @@ namespace StaticForge {
 		 */
 		bool LoadEntryRange(const Internal::StaticForgeIndexEntry& entry, bool mapped,
 			uint64_t offset, uint64_t size, std::byte* outBuffer, std::string* errorOut);
+
+		/**
+		 * @brief Checks all checksums, adds one message per damaged asset to errorsOut.
+		 */
+		bool VerifyAllInto(std::vector<std::string>* errorsOut);
 
 		/**
 		 * @brief Adds an already opened stream to the pool as a free stream.

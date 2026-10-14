@@ -80,6 +80,36 @@ if (!archive.GetAllErrors().empty())
 
 Errors without `errorOut` stay collected until they are taken or cleared, also if the thread has ended.
 
+## Loading from several archives
+
+If the assets are split into several archives (e.g. with meta files), `StaticForgeArchiveSet` loads from all of them as if they were one archive:
+
+```cpp
+struct GameAssets {
+    StaticForge::StaticForgeArchive textures, audio;
+    StaticForge::StaticForgeArchiveSet set; // declared last, so it is destroyed first
+};
+
+GameAssets assets;
+reader.Load("./build/textures.sfpak", &assets.textures);
+reader.Load("./build/audio.sfpak", &assets.audio);
+
+if (!assets.set.Add(&assets.textures) || !assets.set.Add(&assets.audio))
+    std::cerr << assets.set.TakeError() << std::endl;
+
+std::vector<std::byte> data;
+if (!assets.set.LoadAsset("audio/music.ogg", &data))
+    std::cerr << assets.set.TakeError() << std::endl;
+```
+
+- The set doesn't own the archives, it only keeps pointers. An archive must not be destroyed while the set uses it, call `Remove()` or `Clear()` first, or declare the set after the archives like above.
+- An asset path may only exist in one archive. `Add()` fails if the new archive contains a path that an added archive has too, and nothing is added. The packer reports the same case already when building.
+- The set has the loading functions by key (vector, buffer, range, mapped), `Contains`, `GetAssetSize`, `FindArchive` (the archive that contains an asset) and `VerifyAll`. Mapped functions need the archive that contains the asset to be mapped.
+- Errors are collected in the set, the archives stay untouched.
+- If an added archive is loaded again with `reader.Load`, the set reports an error for its assets. Remove it and add it again.
+
+`StaticForgeConcurrentArchiveSet` does the same for `StaticForgeConcurrentArchive` and can be used from several threads. Errors work like in the concurrent archive (`errorOut` or collected per thread). Only `Add`, `Remove` and `Clear` must not be called while other threads load assets.
+
 ## Loading a file by path
 
 Pass the **relative path** of the file exactly as it appeared under the source directory:

@@ -38,6 +38,7 @@ namespace StaticForge {
 	class StaticForgeArchive : public ErrorSupport {
 		friend class StaticForgeReader;
 		friend class StaticForgeConcurrentArchive;
+		friend class StaticForgeArchiveSet;
 	public:
 		/**
 		 * @brief Creates an empty archive object.
@@ -322,6 +323,11 @@ namespace StaticForge {
 		 */
 		bool LoadEntryRange(const Internal::StaticForgeIndexEntry& entry, bool mapped,
 			uint64_t offset, uint64_t size, std::byte* outBuffer, std::string* errorOut);
+
+		/**
+		 * @brief Checks all checksums, adds one message per damaged asset to errorsOut.
+		 */
+		bool VerifyAllInto(std::vector<std::string>* errorsOut);
 
 		/**
 		 * @brief Closes all open resources and clears the loaded archive data.

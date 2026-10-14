@@ -145,8 +145,18 @@ namespace StaticForge {
 	}
 
 	bool StaticForgeArchive::VerifyAll() {
+		std::vector<std::string> errors;
+		if (VerifyAllInto(&errors))
+			return true;
+
+		for (const auto& error : errors)
+			AddError(error);
+		return false;
+	}
+
+	bool StaticForgeArchive::VerifyAllInto(std::vector<std::string>* errorsOut) {
 		if (!IsFileStreamOpen() && !OpenFileStream()) {
-			AddError("Failed to verify, archive file '" + Data().path.u8string() + "' could not be opened");
+			errorsOut->push_back("Failed to verify, archive file '" + Data().path.u8string() + "' could not be opened");
 			return false;
 		}
 
@@ -161,7 +171,7 @@ namespace StaticForge {
 				continue;
 
 			allValid = false;
-			AddError("Asset '" + data.GetDisplayName(i) + "' is damaged (" + reason + ")");
+			errorsOut->push_back("Asset '" + data.GetDisplayName(i) + "' is damaged (" + reason + ")");
 		}
 
 		return allValid;
@@ -204,25 +214,16 @@ namespace StaticForge {
 			return {};
 		}
 
-		if (entry->compressedFileSize != 0) {
-			AddError("Failed to get asset mapped for key '" + key
-				+ "', asset is compressed - use LoadAssetMapped() instead");
-			return {};
-		}
-
-		const uint64_t absOffset = Data().header.dataOffset + entry->fileOffset;
-		const auto* src = reinterpret_cast<const std::byte*>(m_mmap->At(absOffset, entry->fileSize));
+		std::string error;
+		const std::byte* src = Internal::GetEntryMapped(Data(), *entry, *m_mmap, &error);
 		if (!src) {
-			AddError("Entry with key '" + key + "' is out of bounds"
-				+ " (offset=" + std::to_string(absOffset)
-				+ ", size=" + std::to_string(entry->fileSize)
-				+ ", map size=" + std::to_string(m_mmap->Size()) + ")");
+			AddError("Failed to get asset mapped for key '" + key + "': " + error);
 			return {};
 		}
 
 		AssetView view{};
 		view.data = src;
-		view.size = entry->fileSize;
+		view.size = static_cast<size_t>(entry->fileSize);
 		return view;
 	}
 

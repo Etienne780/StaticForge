@@ -2,12 +2,12 @@
 #include <condition_variable>
 #include <atomic>
 #include <thread>
-#include <unordered_map>
 #include <algorithm>
 
 #include "StaticForgeConcurrentArchive.h"
 #include "Internal/ArchiveCore.h"
 #include "Internal/MmapFile.h"
+#include "Internal/ThreadErrors.h"
 
 namespace StaticForge {
 
@@ -20,11 +20,6 @@ namespace StaticForge {
 	}
 
 	struct StaticForgeConcurrentArchive::State {
-		struct ThreadErrors {
-			size_t number = 0;
-			std::vector<std::string> errors;
-		};
-
 		// stream pool, the counters are atomic so they can be read without the lock
 		std::mutex poolMutex;
 		std::condition_variable poolCondition;
@@ -33,10 +28,7 @@ namespace StaticForge {
 		std::atomic<size_t> activeCount{ 0 };
 		std::atomic<size_t> openCount{ 0 };
 
-		// errors per thread
-		std::mutex errorMutex;
-		std::unordered_map<std::thread::id, ThreadErrors> errors;
-		size_t nextThreadNumber = 1;
+		Internal::ThreadErrors errors;
 
 		// takes a free stream, opens a new one if the pool isn't full, or waits
 		std::unique_ptr<std::ifstream> Acquire(const StaticForgePath& path, std::string* errorOut) {
@@ -310,10 +302,29 @@ namespace StaticForge {
 	}
 
 	bool StaticForgeConcurrentArchive::VerifyAll(std::string* errorOut) {
+		std::vector<std::string> errors;
+		if (VerifyAllInto(&errors))
+			return true;
+
+		// errorOut gets one line per damaged asset
+		if (errorOut) {
+			std::string allErrors;
+			for (const auto& error : errors)
+				allErrors += (allErrors.empty() ? "" : "\n") + error;
+			*errorOut = allErrors;
+		}
+		else {
+			for (const auto& error : errors)
+				Report(error, nullptr);
+		}
+		return false;
+	}
+
+	bool StaticForgeConcurrentArchive::VerifyAllInto(std::vector<std::string>* errorsOut) {
 		std::string error;
 		auto stream = m_state->Acquire(Data().path, &error);
 		if (!stream) {
-			Report("Failed to verify: " + error, errorOut);
+			errorsOut->push_back("Failed to verify: " + error);
 			return false;
 		}
 		State::Lease lease(*m_state, std::move(stream));
@@ -323,24 +334,14 @@ namespace StaticForge {
 
 		const auto& data = Data();
 		bool allValid = true;
-		std::string allErrors;
 		for (size_t i = 0; i < data.indexEntries.size(); i++) {
 			std::string reason;
 			if (Internal::VerifyEntry(data, data.indexEntries[i], *lease.Get(), &buffer, &reason))
 				continue;
 
 			allValid = false;
-			const std::string message = "Asset '" + data.GetDisplayName(i) + "' is damaged (" + reason + ")";
-
-			// errorOut gets one line per damaged asset
-			if (errorOut)
-				allErrors += (allErrors.empty() ? "" : "\n") + message;
-			else
-				Report(message, nullptr);
+			errorsOut->push_back("Asset '" + data.GetDisplayName(i) + "' is damaged (" + reason + ")");
 		}
-
-		if (errorOut && !allValid)
-			*errorOut = allErrors;
 
 		return allValid;
 	}
@@ -382,25 +383,16 @@ namespace StaticForge {
 			return {};
 		}
 
-		if (entry->compressedFileSize != 0) {
-			Report("Failed to get asset mapped for key '" + key
-				+ "', asset is compressed - use LoadAssetMapped() instead", errorOut);
-			return {};
-		}
-
-		const uint64_t absOffset = Data().header.dataOffset + entry->fileOffset;
-		const auto* src = reinterpret_cast<const std::byte*>(m_mmap->At(absOffset, entry->fileSize));
+		std::string error;
+		const std::byte* src = Internal::GetEntryMapped(Data(), *entry, *m_mmap, &error);
 		if (!src) {
-			Report("Entry with key '" + key + "' is out of bounds"
-				+ " (offset=" + std::to_string(absOffset)
-				+ ", size=" + std::to_string(entry->fileSize)
-				+ ", map size=" + std::to_string(m_mmap->Size()) + ")", errorOut);
+			Report("Failed to get asset mapped for key '" + key + "': " + error, errorOut);
 			return {};
 		}
 
 		AssetView view{};
 		view.data = src;
-		view.size = entry->fileSize;
+		view.size = static_cast<size_t>(entry->fileSize);
 		return view;
 	}
 
@@ -514,76 +506,31 @@ namespace StaticForge {
 	}
 
 	bool StaticForgeConcurrentArchive::IsValid() const {
-		std::lock_guard<std::mutex> lock(m_state->errorMutex);
-		auto it = m_state->errors.find(std::this_thread::get_id());
-		return it == m_state->errors.end() || it->second.errors.empty();
-	}
-
-	static std::string JoinLines(const std::vector<std::string>& lines, const std::string& prefix) {
-		std::string result;
-		for (size_t i = 0; i < lines.size(); i++) {
-			result += prefix + lines[i];
-			if (i + 1 < lines.size())
-				result += '\n';
-		}
-		return result;
+		return m_state->errors.IsValid();
 	}
 
 	std::string StaticForgeConcurrentArchive::GetError() const {
-		std::lock_guard<std::mutex> lock(m_state->errorMutex);
-		auto it = m_state->errors.find(std::this_thread::get_id());
-		return it == m_state->errors.end() ? std::string() : JoinLines(it->second.errors, "");
+		return m_state->errors.Get();
 	}
 
 	std::string StaticForgeConcurrentArchive::TakeError() {
-		std::lock_guard<std::mutex> lock(m_state->errorMutex);
-		auto it = m_state->errors.find(std::this_thread::get_id());
-		if (it == m_state->errors.end())
-			return {};
-
-		std::string result = JoinLines(it->second.errors, "");
-		it->second.errors.clear();
-		return result;
+		return m_state->errors.Take();
 	}
 
 	void StaticForgeConcurrentArchive::ClearErrors() {
-		std::lock_guard<std::mutex> lock(m_state->errorMutex);
-		auto it = m_state->errors.find(std::this_thread::get_id());
-		if (it != m_state->errors.end())
-			it->second.errors.clear();
+		m_state->errors.Clear();
 	}
 
 	std::string StaticForgeConcurrentArchive::GetAllErrors() const {
-		std::lock_guard<std::mutex> lock(m_state->errorMutex);
-
-		// sorted by thread number
-		std::vector<const State::ThreadErrors*> threads;
-		for (const auto& [id, thread] : m_state->errors) {
-			if (!thread.errors.empty())
-				threads.push_back(&thread);
-		}
-		std::sort(threads.begin(), threads.end(), [](auto* a, auto* b) { return a->number < b->number; });
-
-		std::string result;
-		for (const auto* thread : threads) {
-			if (!result.empty())
-				result += '\n';
-			result += JoinLines(thread->errors, "[Thread " + std::to_string(thread->number) + "] ");
-		}
-		return result;
+		return m_state->errors.GetAll();
 	}
 
 	std::string StaticForgeConcurrentArchive::TakeAllErrors() {
-		std::string result = GetAllErrors();
-		ClearAllErrors();
-		return result;
+		return m_state->errors.TakeAll();
 	}
 
 	void StaticForgeConcurrentArchive::ClearAllErrors() {
-		std::lock_guard<std::mutex> lock(m_state->errorMutex);
-		// the thread numbers are kept, so a thread keeps its number
-		for (auto& [id, thread] : m_state->errors)
-			thread.errors.clear();
+		m_state->errors.ClearAll();
 	}
 
 	const Internal::ArchiveData& StaticForgeConcurrentArchive::Data() const {
@@ -592,18 +539,10 @@ namespace StaticForge {
 	}
 
 	void StaticForgeConcurrentArchive::Report(const std::string& error, std::string* errorOut) const {
-		if (errorOut) {
+		if (errorOut)
 			*errorOut = error;
-			return;
-		}
-
-		std::lock_guard<std::mutex> lock(m_state->errorMutex);
-		auto& thread = m_state->errors[std::this_thread::get_id()];
-		if (thread.number == 0)
-			thread.number = m_state->nextThreadNumber++;
-
-		// same format as ErrorSupport
-		thread.errors.push_back((thread.errors.empty() ? "[Error]: " : ">        ") + error);
+		else
+			m_state->errors.Add(error);
 	}
 
 	bool StaticForgeConcurrentArchive::LoadEntry(

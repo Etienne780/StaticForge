@@ -78,12 +78,14 @@ StaticForgeTool
             ├── StaticForgeReader    (read archives)
             ├── StaticForgeArchive   (runtime handle)
             ├── StaticForgeConcurrentArchive (runtime handle for several threads)
+            ├── StaticForgeArchiveSet / StaticForgeConcurrentArchiveSet (several archives as one)
             └── Internal helpers     (hashing, meta parsing, compression)
 
 Your Game / Application
     └── StaticForgeCore
             ├── StaticForgeReader
-            └── StaticForgeArchive / StaticForgeConcurrentArchive
+            ├── StaticForgeArchive / StaticForgeConcurrentArchive
+            └── StaticForgeArchiveSet / StaticForgeConcurrentArchiveSet (optional)
 ```
 
 ### Key Features
@@ -94,7 +96,7 @@ Your Game / Application
 - **Optional compression** - Block-wise LZ77 compression, decompressed automatically when loading
 - **Flexible loading** - Load into a vector or an existing buffer, load only a part of an asset, stream-based or memory-mapped
 - **Multi-threading** - `StaticForgeConcurrentArchive` loads from several threads at once with a pool of file streams
-- **Meta file support** - Split assets across multiple archives using `.sfpak.meta` files
+- **Meta file support** - Split assets across multiple archives using `.sfpak.meta` files, and load them together with an archive set
 - **Robust loading** - Damaged or truncated archives are rejected with an error instead of crashing
 - **Unicode** - File names, paths and archive names can contain any Unicode characters
 - **Cross-platform** - Written in C++17 with a little-endian format; archives are identical on Windows and Linux

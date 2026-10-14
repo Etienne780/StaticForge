@@ -16,6 +16,7 @@ The core static library. Contains all format logic and is linked by both the too
 - `StaticForgeReader` - reads and validates `.sfpak` files
 - `StaticForgeArchive` - runtime handle for an open archive
 - `StaticForgeConcurrentArchive` - runtime handle that can be used from several threads at once
+- `StaticForgeArchiveSet` / `StaticForgeConcurrentArchiveSet` - load from several archives as if they were one
 - Meta file parsing (`StaticForgeMeta`)
 - Archive core (`Internal/ArchiveCore`): the loaded archive data, shared between archive objects, and the asset loading logic
 - Internal helpers: hashing, alignment, endian handling, compression, memory mapping, error support
@@ -37,12 +38,14 @@ StaticForgeTool
             ├── StaticForgeReader
             ├── StaticForgeArchive
             ├── StaticForgeConcurrentArchive
-            └── Internal (archive core, helpers, meta, hashing, compression, mmap)
+            ├── StaticForgeArchiveSet / StaticForgeConcurrentArchiveSet
+            └── Internal (archive core, set index, thread errors, helpers, meta, hashing, compression, mmap)
 
 Your Game / Application
     └── StaticForgeCore
             ├── StaticForgeReader
-            └── StaticForgeArchive / StaticForgeConcurrentArchive
+            ├── StaticForgeArchive / StaticForgeConcurrentArchive
+            └── StaticForgeArchiveSet / StaticForgeConcurrentArchiveSet (optional)
 ```
 
 The tool-side classes (`StaticForgeBuilder`, meta parsing) are compiled into Core but an application that only reads archives still links the same library - there is currently no separate runtime-only build target.

@@ -1,6 +1,8 @@
 #pragma once
 #include "StaticForgeArchive.h"
 #include "StaticForgeConcurrentArchive.h"
+#include "StaticForgeArchiveSet.h"
+#include "StaticForgeConcurrentArchiveSet.h"
 #include "StaticForgeBuilder.h"
 #include "StaticForgeReader.h"
 #include "StaticForgeTypes.h"
