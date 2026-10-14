@@ -51,6 +51,13 @@ jobs:
             /v:minimal
 
 
+      - name: Run tests Windows
+        if: matrix.name == 'windows'
+        shell: pwsh
+        run: |
+          .\build\bin\StaticForgeTests\windows-x86_64\Distribution\StaticForgeTests.exe
+
+
       # --------------------------------------------------------
       # Linux build
       # --------------------------------------------------------
@@ -75,6 +82,13 @@ jobs:
         shell: bash
         run: |
           make config=distribution
+
+
+      - name: Run tests Linux
+        if: matrix.name == 'linux'
+        shell: bash
+        run: |
+          ./build/bin/StaticForgeTests/linux-x86_64/Distribution/StaticForgeTests
 
 
       # --------------------------------------------------------

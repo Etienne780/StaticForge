@@ -1,0 +1,64 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            name: windows
+          - os: ubuntu-latest
+            name: linux
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+
+      # --------------------------------------------------------
+      # Windows
+      # --------------------------------------------------------
+      - name: Setup MSBuild
+        if: matrix.name == 'windows'
+        uses: microsoft/setup-msbuild@v2
+
+
+      - name: Build Windows
+        if: matrix.name == 'windows'
+        shell: pwsh
+        run: |
+          .\vendor\premake5\premake5.exe vs2022
+          msbuild Project.sln /p:Configuration=Release /p:Platform=x64 /m /v:minimal
+
+
+      - name: Run tests Windows
+        if: matrix.name == 'windows'
+        shell: pwsh
+        run: |
+          .\build\bin\StaticForgeTests\windows-x86_64\Release\StaticForgeTests.exe
+
+
+      # --------------------------------------------------------
+      # Linux
+      # --------------------------------------------------------
+      - name: Build Linux
+        if: matrix.name == 'linux'
+        shell: bash
+        run: |
+          chmod +x vendor/premake5/premake5
+          ./vendor/premake5/premake5 gmake
+          make config=release -j4
+
+
+      - name: Run tests Linux
+        if: matrix.name == 'linux'
+        shell: bash
+        run: |
+          ./build/bin/StaticForgeTests/linux-x86_64/Release/StaticForgeTests

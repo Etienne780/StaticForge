@@ -29,6 +29,10 @@ The CLI executable. Wraps `StaticForgeCore` with argument parsing and five modes
 
 `Utf8Console` makes the tool work with Unicode on Windows: it reads the command line arguments as UTF-8 and switches the console output to UTF-8 while the tool runs. On other platforms the arguments already are UTF-8.
 
+## StaticForgeTests
+
+A console application with the tests of the library, built with its own small test framework (`TEST_CASE`, `CHECK`, `REQUIRE`). Slow tests are marked with `STRESS_TEST` and only run with `--stress`. The tests also use the internal headers, e.g. to test the compressor directly. The normal tests run in the CI on every push (`.github/workflows/tests.yml`) and before every release.
+
 ## Dependency graph
 
 ```

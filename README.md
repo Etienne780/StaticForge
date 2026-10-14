@@ -213,6 +213,20 @@ make config=release
 
 The binaries are written to `build/bin/` and the library to `build/lib/`.
 
+### Tests
+
+The `StaticForgeTests` project is a console application that tests the library (builder, reader, archives, compression, meta files, multi-threading and damaged archives). It is built together with the other projects and runs in the CI on Windows and Linux.
+
+```bash
+StaticForgeTests                  # all normal tests, a few seconds
+StaticForgeTests Archive Reader   # only tests whose name contains one of the filters
+StaticForgeTests --stress         # also the slow stress tests (large files, many files, fuzzing)
+StaticForgeTests --list           # list the tests
+StaticForgeTests --keep           # keep the temporary files
+```
+
+The test files are written to a new folder in the system temp folder, which is removed at the end.
+
 ---
 
 ## Contributing
