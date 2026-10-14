@@ -100,6 +100,21 @@ TEST_CASE("Meta/Syntax errors") {
 	}
 }
 
+TEST_CASE("Meta/Error messages name the line") {
+	TempDir dir;
+	const std::vector<std::pair<std::string, std::string>> cases = {
+		{ "archive = a;\ncompress = ;", "Missing value for 'compress' at line: 2" },
+		{ "archive = a;\n\ncompress = 5;", "of 'compress' at line: 3" },
+		{ "archive = a;\nunknown = 1;", "Unknown identifier 'unknown' at line: 2" },
+	};
+
+	for (const auto& [content, expected] : cases) {
+		StaticForgeMeta meta;
+		CHECK(!LoadMeta(dir, content, &meta));
+		CHECK_MSG(meta.GetError().find(expected) != std::string::npos, meta.GetError());
+	}
+}
+
 TEST_CASE("Meta/Unknown parameter gets a suggestion") {
 	TempDir dir;
 	StaticForgeMeta meta;

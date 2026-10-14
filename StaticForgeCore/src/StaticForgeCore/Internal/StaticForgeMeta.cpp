@@ -137,25 +137,36 @@ namespace StaticForge::Internal {
 		const std::vector<const Internal::MetaToken*>& values,
 		std::string* errorOut
 	) {
-		if (!first || first->content.empty() || values.empty())
+		if (!first || first->content.empty()) {
+			*errorOut = "Expected identifier";
 			return false;
+		}
+
+		const std::string position = " at line: " + std::to_string(first->line) + ", column: " + std::to_string(first->column);
+
+		if (values.empty()) {
+			*errorOut = "Missing value for '" + std::string(first->content) + "'" + position;
+			return false;
+		}
 
 		const auto& metaParams = GetAllMetaParams();
-		
+
 		std::string n = std::string(first->content);
 		auto it = metaParams.find(n);
 		if (it == metaParams.end()) {
 			std::string suggestion = "";
 			bool found = TryGetIdentifierSuggestions(n, &suggestion);
 
-			*errorOut = "Unknown identifier '" + n + (found ? "'. " + suggestion : "'");
+			*errorOut = "Unknown identifier '" + n + "'" + position + (found ? ". " + suggestion : "");
 			return false;
 		}
 
 		// validate values
 		for (const auto& v : values) {
-			if (v->content.empty())
+			if (v->content.empty()) {
+				*errorOut = "Empty value for '" + n + "'" + position;
 				return false;
+			}
 		}
 
 		void* output = GetOutput(n);
@@ -166,7 +177,7 @@ namespace StaticForge::Internal {
 
 		auto& param = it->second;
 		if (!ParseValue(param.type, param.subType, values, output)) {
-			*errorOut = "Failed to parse value '" + BuildString(values) + "'";
+			*errorOut = "Failed to parse value '" + BuildString(values) + "' of '" + n + "'" + position;
 			return false;
 		}
 

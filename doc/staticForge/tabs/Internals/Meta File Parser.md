@@ -75,14 +75,19 @@ For list values (e.g. `exclude`) the value section is instead:
 Identifier  Separator  Identifier  Separator  ...  Identifier  Delimiter
 ```
 
-Any deviation — wrong token type, unexpected `EndOfFile`, missing `Delimiter` — is a parse error. Errors about the statement structure include the line and column of the offending token.
+Any deviation — wrong token type, unexpected `EndOfFile`, missing `Delimiter` — is a parse error. Errors include the line and column of the offending token, also a missing or invalid value:
+
+```
+Missing value for 'compress' at line: 2, column: 1
+Failed to parse value '5' of 'compress' at line: 2, column: 1
+```
 
 ## Error suggestions
 
 If a key is not recognised, the parser compares it with every known key. Separators (`-`, `_`, space) and case are ignored, and the names are compared character by character. If the lengths differ by at most 3 and at most 3 characters are different, a suggestion is appended to the error:
 
 ```
-Unknown identifier 'archiv'. Did you mean 'archive'?
+Unknown identifier 'archiv' at line: 1, column: 1. Did you mean 'archive'?
 ```
 
 ## Supported parameters
