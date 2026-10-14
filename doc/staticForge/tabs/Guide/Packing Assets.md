@@ -57,7 +57,7 @@ Add `--compress` to compress every file larger than 4096 bytes:
 StaticForgeTool --source ./assets --output ./build --compress
 ```
 
-Compressed assets are decompressed automatically by `LoadAsset`, but they can't be accessed with the memory-mapped API. The compression can be tuned with `--compress-block-size`, `--compress-table-size` and `--compress-min-match`, see *CLI Reference*. The defaults are the most efficient values for typical game assets.
+Compressed assets are decompressed automatically by `LoadAsset` and `LoadAssetMapped`, only the zero-copy view `GetAssetMapped` is not possible for them. The compression can be tuned with `--compress-block-size`, `--compress-table-size` and `--compress-min-match`, see *CLI Reference*. The defaults are the most efficient values for typical game assets.
 
 Already compressed formats (PNG, JPG, OGG, ...) barely get smaller, text and uncompressed data (shaders, scripts, JSON, meshes) compress well.
 

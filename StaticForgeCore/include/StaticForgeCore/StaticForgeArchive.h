@@ -178,6 +178,8 @@ namespace StaticForge {
 		/**
 		 * @brief Returns a non-owning view of an asset in mapped mode.
 		 *
+		 * Not possible for compressed assets, use LoadAssetMapped() for them.
+		 *
 		 * @param key Asset path/key.
 		 * @return View into mapped memory (invalid if unmapped or key missing).
 		 */

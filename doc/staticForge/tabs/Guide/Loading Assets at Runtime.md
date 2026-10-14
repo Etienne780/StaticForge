@@ -167,11 +167,13 @@ bool mapped = archive.IsMapped();
 
 `GetAssetMapped` returns a non-owning `AssetView` directly into mapped memory — no allocation or copy needed. The view becomes invalid as soon as `CloseMapped` is called. For an empty file the view has `size == 0` and a valid (non-null) `data` pointer.
 
-> **Important:** Memory-mapped access is **not supported for compressed assets**. Calling `GetAssetMapped` or `LoadAssetMapped` on a compressed entry will return an error. Use `LoadAsset` (stream-based) instead, which handles decompression automatically.
+`LoadAssetMapped` and `LoadAssetRangeMapped` also work for compressed assets, they decompress directly from the mapped memory.
+
+> **Important:** `GetAssetMapped` is **not possible for compressed assets**, because only the compressed data is in memory. It returns an empty view with an error. Use `LoadAssetMapped` instead.
 
 ## Compression
 
-Assets can be stored compressed inside an archive. This is transparent when using the stream-based API — `LoadAsset` detects compressed entries and decompresses them automatically before returning the data:
+Assets can be stored compressed inside an archive. This is transparent for all functions except `GetAssetMapped` — `LoadAsset` detects compressed entries and decompresses them automatically before returning the data:
 
 ```cpp
 // Works for both compressed and uncompressed assets
@@ -188,9 +190,9 @@ Internally, compressed files are split into blocks (64 KB by default, configurab
 | `LoadAsset`          | ✅            | ✅ (auto-decompress) |
 | `LoadAssetAt`        | ✅            | ✅ (auto-decompress) |
 | `LoadAssetRange`     | ✅            | ✅ (needed blocks)   |
-| `LoadAssetMapped`    | ✅            | ❌ not supported     |
-| `LoadAssetRangeMapped` | ✅          | ❌ not supported     |
-| `GetAssetMapped`     | ✅            | ❌ not supported     |
+| `LoadAssetMapped`    | ✅            | ✅ (auto-decompress) |
+| `LoadAssetRangeMapped` | ✅          | ✅ (needed blocks)   |
+| `GetAssetMapped`     | ✅            | ❌ not possible      |
 
 ## Error handling
 
@@ -199,7 +201,7 @@ Internally, compressed files are split into blocks (64 KB by default, configurab
 ```cpp
 if (!archive.LoadAsset("audio/music.ogg", &data)) {
     // possible reasons: key not found, seek failure, checksum mismatch,
-    // decompression failure, or compressed asset accessed via mmap
+    // decompression failure, or buffer too small
     std::cerr << archive.TakeError() << std::endl;
 }
 ```

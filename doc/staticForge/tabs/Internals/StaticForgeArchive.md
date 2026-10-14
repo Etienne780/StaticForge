@@ -59,10 +59,11 @@ Reading a range near the end of a large compressed asset reads one frame per blo
 
 1. Verify the archive is memory-mapped (`IsMapped()`).
 2. Hash the key and look up the index entry.
-3. **Reject compressed entries** — if `compressedFileSize != 0`, add an error and return `false` / empty view. Use `LoadAsset` instead for compressed assets.
-4. Get the pointer with `MmapFile::At(offset, size)`, which returns `nullptr` if the range `[dataOffset + fileOffset, fileSize]` is not inside the mapped file. An empty range at the end of the file is valid.
-5. `GetAssetMapped` returns a non-owning `AssetView` pointing directly into mapped memory — no copy.  
-   `LoadAssetMapped` validates the checksum first, then copies the bytes into `outData`.
+3. Get the pointer with `MmapFile::At(offset, size)`, which returns `nullptr` if the range `[dataOffset + fileOffset, storedSize]` is not inside the mapped file. An empty range at the end of the file is valid.
+4. `GetAssetMapped` returns a non-owning `AssetView` pointing directly into mapped memory — no copy. Compressed entries are rejected, because their original data is not in memory.  
+   `LoadAssetMapped` uses the same `LoadEntry` as the stream version, only the stored bytes come from the mapping instead of the stream. It validates the checksum, then copies the bytes or decompresses them directly from the mapping into the target.
+
+`LoadAssetRangeMapped` works like `LoadAssetRange`, the block frames are read directly from the mapping.
 
 > The `AssetView` is only valid while the archive remains mapped. Call `CloseMapped` only after you are done with all views.
 
@@ -75,12 +76,13 @@ Reading a range near the end of a large compressed asset reads one frame per blo
 | `LoadAsset` / `LoadAssetAt` (vector) | ✅      | ✅         | ✅           | ✅        |
 | `LoadAsset` / `LoadAssetAt` (buffer) | ✅      | ❌ ¹       | ✅           | ✅        |
 | `LoadAssetRange` / `LoadAssetRangeAt` | ✅     | ❌ ¹       | ✅           | ❌        |
-| `LoadAssetMapped` (vector)       | ❌          | ✅         | ✅           | ✅        |
-| `LoadAssetMapped` (buffer)       | ❌          | ❌         | ✅           | ✅        |
-| `LoadAssetRangeMapped`           | ❌          | ❌         | ✅           | ❌        |
+| `LoadAssetMapped` (vector)       | ✅          | ✅         | ✅           | ✅        |
+| `LoadAssetMapped` (buffer)       | ✅          | ❌         | ✅           | ✅        |
+| `LoadAssetRangeMapped`           | ✅          | ❌ ²       | ✅           | ❌        |
 | `GetAssetMapped`                 | ❌          | ❌         | ❌           | ❌        |
 
-¹ No allocation for uncompressed assets. For compressed assets a temporary buffer for the stored data (full load) or for one block (range) is used.
+¹ No allocation for uncompressed assets. For compressed assets a temporary buffer for the stored data (full load) or for one block (range) is used.  
+² For compressed assets a temporary buffer for a block that is only partly inside of the range.
 
 ## Accessor methods
 
@@ -141,6 +143,11 @@ if (!archive.LoadAsset("audio/music.ogg", &data)) {
 }
 
 if (!archive.LoadAssetMapped("textures/ui.png", &data)) {
+    // additional possible reason: archive is not mapped
+    std::cerr << archive.TakeError() << std::endl;
+}
+
+if (archive.GetAssetMapped("textures/ui.png").data == nullptr) {
     // additional possible reason: entry is compressed
     std::cerr << archive.TakeError() << std::endl;
 }

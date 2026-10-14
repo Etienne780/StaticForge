@@ -217,7 +217,7 @@ namespace StaticForge {
 
 		if (entry->compressedFileSize != 0) {
 			AddError("Failed to get asset mapped for key '" + key
-				+ "', asset is compressed - use LoadAsset() instead");
+				+ "', asset is compressed - use LoadAssetMapped() instead");
 			return {};
 		}
 
@@ -353,10 +353,6 @@ namespace StaticForge {
 			return false;
 
 		const bool isCompressed = entry.compressedFileSize != 0;
-		if (mapped && isCompressed) {
-			*errorOut = "Entry is compressed - memory-mapped loading is not supported for compressed assets";
-			return false;
-		}
 
 		if (!outVector) {
 			if (bufferSize < entry.fileSize) {
@@ -436,10 +432,6 @@ namespace StaticForge {
 			return false;
 
 		const bool isCompressed = entry.compressedFileSize != 0;
-		if (mapped && isCompressed) {
-			*errorOut = "Entry is compressed - memory-mapped loading is not supported for compressed assets";
-			return false;
-		}
 
 		if (offset > entry.fileSize || size > entry.fileSize - offset) {
 			*errorOut = "Range (offset " + std::to_string(offset) + ", size " + std::to_string(size)
