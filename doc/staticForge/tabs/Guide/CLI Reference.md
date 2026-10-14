@@ -48,6 +48,7 @@ Larger blocks compress better, because a block can only reference data inside of
 - **int** arguments must be plain decimal numbers (`65536`, not `64k`).
 - All other arguments require a value.
 - Arguments and paths can contain any Unicode characters.
+- Paths with spaces must be quoted: `--source "C:\Program Files\Game\assets"`. On Windows a path in quotes must not end with `\` (`"C:\assets\"`), because `\"` is read as a quote character.
 
 ## Modes
 
