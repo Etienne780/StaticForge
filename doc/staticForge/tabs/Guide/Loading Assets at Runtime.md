@@ -54,6 +54,49 @@ if (archive.GetAssetSize("textures/background.png", &size)) {
 }
 ```
 
+## Loading into an existing buffer
+
+Instead of a `std::vector`, an asset can be loaded into any existing memory, e.g. a reused buffer or a GPU upload buffer. The buffer must hold at least the asset size:
+
+```cpp
+uint64_t size = 0;
+if (archive.GetAssetSize("textures/background.png", &size)) {
+    std::byte* buffer = AllocateUploadBuffer(size);
+    if (!archive.LoadAsset("textures/background.png", buffer, size)) {
+        std::cerr << archive.TakeError() << std::endl;
+    }
+}
+```
+
+If the buffer is too small, nothing is loaded and an error is added. The checksum is validated like with the vector version.
+
+## Loading a part of an asset
+
+`LoadAssetRange` loads only `size` bytes starting at `offset`, e.g. to stream audio or to read the header of a file:
+
+```cpp
+std::byte chunk[64 * 1024];
+uint64_t offset = 0;
+uint64_t total = 0;
+archive.GetAssetSize("audio/music.ogg", &total);
+
+while (offset < total) {
+    uint64_t size = std::min<uint64_t>(sizeof(chunk), total - offset);
+    if (!archive.LoadAssetRange("audio/music.ogg", offset, size, chunk)) {
+        std::cerr << archive.TakeError() << std::endl;
+        break;
+    }
+    // use chunk
+    offset += size;
+}
+```
+
+- `offset` and `size` refer to the original (uncompressed) data, the range must be inside of the asset.
+- For compressed assets only the blocks that contain the range are decompressed.
+- The checksum is **not** validated, because it covers the whole asset. Use `VerifyAll` (see below) to check the archive at startup.
+
+`LoadAssetAt` and `LoadAssetRangeAt` do the same by index.
+
 ## Verifying the archive at startup
 
 `VerifyAll` checks the checksum of every asset. Use it e.g. at startup to detect a damaged or partly replaced installation and show a clear message instead of failing later while loading:
@@ -116,6 +159,8 @@ if (!archive.LoadAssetMapped("textures/background.png", &data)) {
     std::cerr << archive.TakeError() << std::endl;
 }
 
+// Also available: LoadAssetMapped(key, buffer, bufferSize) and LoadAssetRangeMapped(key, offset, size, buffer)
+
 archive.CloseMapped();
 bool mapped = archive.IsMapped();
 ```
@@ -142,7 +187,9 @@ Internally, compressed files are split into blocks (64 KB by default, configurab
 |----------------------|:------------:|:-------------------:|
 | `LoadAsset`          | ✅            | ✅ (auto-decompress) |
 | `LoadAssetAt`        | ✅            | ✅ (auto-decompress) |
+| `LoadAssetRange`     | ✅            | ✅ (needed blocks)   |
 | `LoadAssetMapped`    | ✅            | ❌ not supported     |
+| `LoadAssetRangeMapped` | ✅          | ❌ not supported     |
 | `GetAssetMapped`     | ✅            | ❌ not supported     |
 
 ## Error handling

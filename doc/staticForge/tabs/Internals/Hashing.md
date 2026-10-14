@@ -22,7 +22,7 @@ At runtime, `StaticForgeArchive::LoadAsset` hashes the key string you pass in an
 
 During packing, each file's bytes as written to disk are fed through **32-bit FNV-1a** with the initial value `2166136261` to produce a `uint32_t` checksum. This is written into the index entry.
 
-When loading, `StaticForgeArchive::LoadEntry` recomputes the checksum over the read bytes and compares it to the stored value. A mismatch causes `LoadAsset` to return `false` with an error message.
+When loading, `StaticForgeArchive::LoadEntry` recomputes the checksum over the read bytes and compares it to the stored value. A mismatch causes `LoadAsset` to return `false` with an error message. Partial loads (`LoadAssetRange`) don't validate the checksum, because it covers the whole stored data.
 
 The checksum detects accidental damage. It is not a cryptographic signature and does not protect against intentional changes.
 

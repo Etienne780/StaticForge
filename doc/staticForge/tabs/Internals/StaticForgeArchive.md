@@ -36,13 +36,24 @@ An archive object can be loaded again with `StaticForgeReader::Load`. The reader
 
 1. Normalize the slashes of the key and hash it with `HashFilename` (64-bit FNV-1a).
 2. Look up the hash in `m_hashNameToEntry` to find the index position.
-3. Call `LoadEntry`:
+3. Call `LoadEntry`, which is shared by all full loads (vector or buffer, stream or mapped):
 - Clear the stream state, so a previous failed read does not break this one.
-- If `compressedFileSize == 0` (uncompressed): seek to `dataOffset + fileOffset`, read `fileSize` bytes, validate the FNV-1a checksum, return the raw bytes.
-- If `compressedFileSize != 0` (compressed): seek to `dataOffset + fileOffset`, read `compressedFileSize` bytes, validate the checksum, then decompress block by block. Each block is prefixed with `[uint32_t compressedSize][uint32_t originalSize]` and decompressed independently until all bytes are consumed. The reassembled output must equal `fileSize` bytes.
-4. Return the decompressed (or raw) bytes in `outData`.
+- If `compressedFileSize == 0` (uncompressed): read `fileSize` bytes at `dataOffset + fileOffset` directly into the target and validate the FNV-1a checksum.
+- If `compressedFileSize != 0` (compressed): read `compressedFileSize` bytes, validate the checksum, then decompress block by block (`DecompressBlocks`). Each block is prefixed with `[uint32_t compressedSize][uint32_t originalSize]` and decompressed independently, directly into the target.
+4. With a vector, the block sizes are checked before the vector is resized to `fileSize`, so a damaged size in the index can't cause a huge allocation. The vector is only changed on success.
 
-`LoadAssetAt(index, &data)` skips steps 1 and 2 and loads the entry at the given index directly.
+`LoadAssetAt(index, ...)` skips steps 1 and 2 and loads the entry at the given index directly.
+
+The buffer variants (`LoadAsset(key, buffer, bufferSize)`, ...) fail with an error if `bufferSize` is smaller than `fileSize`. Only `fileSize` bytes are written.
+
+## LoadAssetRange flow
+
+`LoadEntryRange` checks that `[offset, offset + size)` is inside of `fileSize` (overflow safe). The checksum is **not** validated, because it covers the whole stored data.
+
+- Uncompressed: read `size` bytes at `dataOffset + fileOffset + offset`.
+- Compressed: `DecompressBlocks` walks the block frames. Blocks before the range are skipped by reading only their 8 byte frame. Blocks completely inside of the range are decompressed directly into the buffer; the first and last block, if only partly inside, are decompressed into a temporary block buffer and the needed part is copied. The walk stops after the last block of the range.
+
+Reading a range near the end of a large compressed asset reads one frame per block before it, which is small compared to decompressing them.
 
 ## LoadAssetMapped / GetAssetMapped flow
 
@@ -59,12 +70,17 @@ An archive object can be loaded again with `StaticForgeReader::Load`. The reader
 
 ## Access method comparison
 
-| Method            | Compressed | Allocates | Copies data |
-|-------------------|:----------:|:---------:|:-----------:|
-| `LoadAsset`       | ✅          | ✅         | ✅           |
-| `LoadAssetAt`     | ✅          | ✅         | ✅           |
-| `LoadAssetMapped` | ❌          | ✅         | ✅           |
-| `GetAssetMapped`  | ❌          | ❌         | ❌           |
+| Method                           | Compressed | Allocates | Copies data | Checksum |
+|----------------------------------|:----------:|:---------:|:-----------:|:--------:|
+| `LoadAsset` / `LoadAssetAt` (vector) | ✅      | ✅         | ✅           | ✅        |
+| `LoadAsset` / `LoadAssetAt` (buffer) | ✅      | ❌ ¹       | ✅           | ✅        |
+| `LoadAssetRange` / `LoadAssetRangeAt` | ✅     | ❌ ¹       | ✅           | ❌        |
+| `LoadAssetMapped` (vector)       | ❌          | ✅         | ✅           | ✅        |
+| `LoadAssetMapped` (buffer)       | ❌          | ❌         | ✅           | ✅        |
+| `LoadAssetRangeMapped`           | ❌          | ❌         | ✅           | ❌        |
+| `GetAssetMapped`                 | ❌          | ❌         | ❌           | ❌        |
+
+¹ No allocation for uncompressed assets. For compressed assets a temporary buffer for the stored data (full load) or for one block (range) is used.
 
 ## Accessor methods
 
