@@ -10,8 +10,7 @@ namespace StaticForge {
 	};
 
 	StaticForgeArchiveSet::StaticForgeArchiveSet()
-		: ErrorSupport(HAS_HEADER)
-		, m_impl(std::make_unique<Impl>()) {
+		: m_impl(std::make_unique<Impl>()) {
 	}
 
 	StaticForgeArchiveSet::~StaticForgeArchiveSet() = default;
@@ -107,7 +106,7 @@ namespace StaticForge {
 			return {};
 
 		if (!archive->IsMapped()) {
-			AddError("Failed to get asset mapped for key '" + key + "', archive '" + archive->GetPath().u8string() + "' is not mapped");
+			AddError("Failed to get asset mapped for key '" + key + "', archive '" + archive->GetPath().generic_u8string() + "' is not mapped");
 			return {};
 		}
 
@@ -175,7 +174,7 @@ namespace StaticForge {
 
 			allValid = false;
 			for (const auto& error : errors)
-				AddError("Archive '" + slot.archive->GetPath().u8string() + "': " + error);
+				AddError("Archive '" + slot.archive->GetPath().generic_u8string() + "': " + error);
 		}
 		return allValid;
 	}
@@ -194,7 +193,7 @@ namespace StaticForge {
 
 		// the entry belongs to the data the archive had when it was added
 		if (location.archive->m_data.get() != location.data) {
-			AddError("Failed to " + action + " '" + key + "': archive '" + location.data->path.u8string()
+			AddError("Failed to " + action + " '" + key + "': archive '" + location.data->path.generic_u8string()
 				+ "' was loaded again after it was added to the set, remove and add it again");
 			return false;
 		}

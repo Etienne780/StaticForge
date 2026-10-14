@@ -4,8 +4,7 @@
 
 namespace StaticForge {
 
-	StaticForgeArchive::StaticForgeArchive()
-		: ErrorSupport(HAS_HEADER) {
+	StaticForgeArchive::StaticForgeArchive() {
 	}
 
 	StaticForgeArchive::~StaticForgeArchive() {
@@ -156,7 +155,7 @@ namespace StaticForge {
 
 	bool StaticForgeArchive::VerifyAllInto(std::vector<std::string>* errorsOut) {
 		if (!IsFileStreamOpen() && !OpenFileStream()) {
-			errorsOut->push_back("Failed to verify, archive file '" + Data().path.u8string() + "' could not be opened");
+			errorsOut->push_back("Failed to verify, archive file '" + Data().path.generic_u8string() + "' could not be opened");
 			return false;
 		}
 
@@ -352,7 +351,7 @@ namespace StaticForge {
 		}
 
 		if (!IsFileStreamOpen() && !OpenFileStream()) {
-			*errorOut = "Failed to open archive file at '" + Data().path.u8string() + "'";
+			*errorOut = "Failed to open archive file at '" + Data().path.generic_u8string() + "'";
 			return false;
 		}
 		sourceOut->stream = &m_stream;

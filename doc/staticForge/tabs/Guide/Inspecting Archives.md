@@ -69,9 +69,16 @@ StaticForgeTool --verify "./build/textures.sfpak, ./build/main.sfpak"
 Output:
 
 ```
-[DAMAGED] ./build/textures.sfpak:
-[Error]: Asset 'textures/ui.png' is damaged (checksum mismatch)
-[OK]      ./build/main.sfpak (12 files)
+[Error] ./build/textures.sfpak: Asset 'textures/ui.png' is damaged (checksum mismatch)
+[OK]    ./build/main.sfpak (12 files)
+```
+
+Several damaged files of one archive are listed below it:
+
+```
+[Error] ./build/levels.sfpak:
+  - Asset 'levels/level_01.map' is damaged (checksum mismatch)
+  - Asset 'levels/level_02.map' is damaged (checksum mismatch)
 ```
 
 All archives are checked, also if one of them is damaged. The exit code is not `0` if any archive is damaged or can't be loaded, so `--verify` can be used in build or install scripts. Without stored names a damaged file is reported by its hash.

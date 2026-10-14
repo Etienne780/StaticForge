@@ -4,8 +4,6 @@
 
 namespace StaticForge {
 
-    constexpr bool HAS_HEADER = true;
-
     /**
      * @brief Base class that provides simple error collection and validation support.
      *
@@ -13,12 +11,7 @@ namespace StaticForge {
      */
     class ErrorSupport {
     public:
-        /**
-         * @brief Creates a new ErrorSupport instance.
-         *
-         * @param hasHeader Indicates whether the associated data contains a valid header.
-         */
-        ErrorSupport(bool hasHeader);
+        ErrorSupport() = default;
 
         /**
          * @brief Virtual destructor.
@@ -35,7 +28,7 @@ namespace StaticForge {
         /**
          * @brief Returns all collected error messages as a single string.
          *
-         * @return Combined error message string.
+         * @return Error messages, one per line.
          */
         std::string GetError() const;
 
@@ -60,7 +53,6 @@ namespace StaticForge {
         void AddError(const std::string& error);
 
     private:
-        bool m_hasHeader = false;
         std::vector<std::string> m_errors;
     };
 

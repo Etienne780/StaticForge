@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
 	Config config{ console.GetArguments(argc, argv) };
 
 	if (!config.IsValid()) {
-		std::cout << config.GetError() << std::endl;
+		Actions::PrintError("Invalid arguments", config.GetError());
 		return EXIT_FAILURE;
 	}
 
@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
 		break;
 	case ConfigMode::UNKNOWN:
 	default:
-		std::cout << "Invalid config" << std::endl;
+		Actions::PrintError("", "Invalid config");
 		return EXIT_FAILURE;
 	}
 
@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
 		}
 	}
 	catch (const std::exception& e) {
-		std::cout << "[Error]: Unexpected error: " << e.what() << std::endl;
+		Actions::PrintError("Unexpected error", e.what());
 		return EXIT_FAILURE;
 	}
 

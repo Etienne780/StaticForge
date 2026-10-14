@@ -189,7 +189,7 @@ TEST_CASE("Concurrent/Errors per thread and errorOut") {
 
 	for (int t = 0; t < threadCount; t += 2) {
 		CHECK_MSG(CountLines(own[t]) == 2 && own[t].find("missing_" + std::to_string(t) + "_a") != std::string::npos, own[t]);
-		CHECK_MSG(own[t].rfind("[Error]: ", 0) == 0, own[t]);
+		CHECK_MSG(own[t].find("[Thread ") == std::string::npos && own[t].find("[Error]") == std::string::npos, own[t]);
 		for (int o = 0; o < threadCount; o++)
 			if (o != t) CHECK_MSG(own[t].find("missing_" + std::to_string(o) + "_") == std::string::npos, own[t]);
 	}

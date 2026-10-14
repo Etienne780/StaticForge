@@ -14,8 +14,7 @@ namespace StaticForge {
 		return Internal::SafeAddU64(offset, size, &end) && end <= fileSize;
 	}
 
-	StaticForgeReader::StaticForgeReader()
-		: ErrorSupport(HAS_HEADER) {
+	StaticForgeReader::StaticForgeReader() {
 	}
 
 	bool StaticForgeReader::Load(
@@ -79,14 +78,14 @@ namespace StaticForge {
 	bool StaticForgeReader::CheckFile(const StaticForgePath& path, uint64_t* fileSizeOut) {
 		std::string error;
 		if (!ValidatePackPath(path, &error)) {
-			AddError("ValidatePackPath: " + error);
+			AddError(error);
 			return false;
 		}
 
 		std::error_code ec;
 		*fileSizeOut = std::filesystem::file_size(path, ec);
 		if (ec) {
-			AddError("Failed to get file size of '" + path.u8string() + "': " + ec.message());
+			AddError("Failed to get file size of '" + path.generic_u8string() + "': " + ec.message());
 			return false;
 		}
 		return true;
@@ -107,18 +106,18 @@ namespace StaticForge {
 
 		std::string error;
 		if (!ReadHeader(*streamOut, dataOut, fileSize, &error)) {
-			AddError("ReadHeader: " + error);
+			AddError(error);
 			return false;
 		}
 
 		if (!ReadIndex(*streamOut, dataOut, fileSize, &error)) {
-			AddError("ReadIndex: " + error);
+			AddError(error);
 			return false;
 		}
 
 		if (dataOut->header.nameTableHeaderOffset != 0) {
 			if (!ReadNameTable(*streamOut, dataOut, fileSize, &error)) {
-				AddError("ReadNameTable: " + error);
+				AddError(error);
 				return false;
 			}
 		}
@@ -128,19 +127,19 @@ namespace StaticForge {
 
 	bool StaticForgeReader::ValidatePackPath(const StaticForgePath& path, std::string* errorOut) {
 		if (!path.has_extension()) {
-			*errorOut = "path musst be a path to a '" + std::string(PACK_FILE_EXTENSION) + "' file";
+			*errorOut = "Path must point to a '" + std::string(PACK_FILE_EXTENSION) + "' file";
 			return false;
 		}
 
 		StaticForgePath extension = path.extension();
 		if (extension != PACK_FILE_EXTENSION) {
-			*errorOut = "Invalid extension '" + extension.u8string() + "' musst be '" + std::string(PACK_FILE_EXTENSION) + "'";
+			*errorOut = "Invalid extension '" + extension.generic_u8string() + "', must be '" + std::string(PACK_FILE_EXTENSION) + "'";
 			return false;
 		}
 
 		std::error_code ec;
 		if (!std::filesystem::is_regular_file(path, ec)) {
-			*errorOut = "Archive '" + path.u8string() + "' does not exist or is not a file!";
+			*errorOut = "File does not exist or is not a regular file";
 			return false;
 		}
 

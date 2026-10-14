@@ -48,7 +48,7 @@ namespace StaticForge::Internal {
 
 			for (const auto& slot : m_slots) {
 				if (slot.archive == archive) {
-					*errorOut = "Archive '" + data->path.u8string() + "' was already added";
+					*errorOut = "Archive '" + data->path.generic_u8string() + "' was already added";
 					return false;
 				}
 			}
@@ -60,8 +60,8 @@ namespace StaticForge::Internal {
 					continue;
 
 				const auto& other = m_slots[it->second.first];
-				*errorOut = "Asset '" + data->GetDisplayName(i) + "' of archive '" + data->path.u8string()
-					+ "' already exists in archive '" + other.data->path.u8string() + "'";
+				*errorOut = "Asset '" + data->GetDisplayName(i) + "' of archive '" + data->path.generic_u8string()
+					+ "' already exists in archive '" + other.data->path.generic_u8string() + "'";
 				return false;
 			}
 

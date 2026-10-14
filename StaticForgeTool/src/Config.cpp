@@ -11,12 +11,12 @@ Config::Config(const std::vector<std::string>& args) {
 		return;
 	}
 
-	for (size_t i = 0; i < args.size(); i++) {
+	// all arguments are checked, so every wrong argument is reported at once
+	for (size_t i = 0; i < args.size(); i++)
 		ProcessArgument(&i, args);
 
-		if (!IsValid())
-			return;
-	}
+	if (!IsValid())
+		return;
 
 	CalculateCurrentMode();
 	ValidateConfig();
@@ -437,7 +437,7 @@ std::string Config::TrimStr(const std::string& str) {
 }
 
 void Config::AddError(const std::string& error) {
-	m_error.append("[Error]: ");
+	if (!m_error.empty())
+		m_error.push_back('\n');
 	m_error.append(error);
-	m_error.push_back('\n');
 }

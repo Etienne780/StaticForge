@@ -2,11 +2,10 @@
 
 namespace StaticForge::Internal {
 
-	MetaTokenizer::MetaTokenizer(const StaticForgePath& path) 
-		: ErrorSupport(!HAS_HEADER){
+	MetaTokenizer::MetaTokenizer(const StaticForgePath& path) {
 		std::ifstream fileStream(path, std::ios::binary | std::ios::ate);
 		if (!fileStream.is_open()) {
-			AddError("Failed to open file: " + path.u8string());
+			AddError("Failed to open file: " + path.generic_u8string());
 			return;
 		}
 

@@ -162,7 +162,7 @@ namespace StaticForge::Internal {
     bool LZ4Compression::DecompressTo(const std::byte* data, size_t size, std::byte* out, size_t outSize, std::string* errorOut) const {
         auto fail = [errorOut](const std::string& message) {
             if (errorOut)
-                *errorOut = "Decompress: " + message;
+                *errorOut = "Decompression failed: " + message;
             return false;
         };
 
@@ -286,10 +286,7 @@ namespace StaticForge::Internal {
     }
 
     void LZ4Compression::AddError(const std::string& message) const {
-        constexpr const char* header = "[Error]: ";
-        constexpr const char* indent = ">        ";
-        const char* prefix = m_errors.empty() ? header : indent;
-        m_errors.emplace_back(std::string(prefix) + message);
+        m_errors.emplace_back(message);
     }
 
     void LZ4Compression::EmitLiterals(std::vector<std::byte>& out,

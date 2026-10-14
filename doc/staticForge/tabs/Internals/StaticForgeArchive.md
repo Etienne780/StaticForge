@@ -191,7 +191,7 @@ Mapped loads use `m_mmap` directly and don't touch the pool. `m_mmap` itself is 
 
 ### Errors
 
-Every function takes an optional `std::string* errorOut`. `Report()` writes the error there, or adds it to the list of the calling thread in `Internal::ThreadErrors` (`Internal/ThreadErrors.h`): a `std::unordered_map<std::thread::id, ...>` protected by a mutex. Each thread gets a number when it reports its first error. The number is kept when its errors are cleared, so the same thread keeps the same number. The format of a thread's list is the same as `ErrorSupport` (`[Error]: ` for the first line, `>        ` for the following ones). `GetAllErrors()` sorts the threads by number and prefixes every line with `[Thread <n>] `.
+Every function takes an optional `std::string* errorOut`. `Report()` writes the error there, or adds it to the list of the calling thread in `Internal::ThreadErrors` (`Internal/ThreadErrors.h`): a `std::unordered_map<std::thread::id, ...>` protected by a mutex. Each thread gets a number when it reports its first error. The number is kept when its errors are cleared, so the same thread keeps the same number. The format of a thread's list is the same as `ErrorSupport`: one message per line. `GetAllErrors()` sorts the threads by number and prefixes every line with `[Thread <n>] `.
 
 ## Archive sets
 

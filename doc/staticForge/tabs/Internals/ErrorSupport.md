@@ -5,8 +5,8 @@ name: ErrorSupport
 
 # ErrorSupport
 
-`ErrorSupport` is the base class for `StaticForgeBuilder`, `StaticForgeReader`, and `StaticForgeArchive`.  
-It provides a simple error collection system with optional formatted prefixes.
+`ErrorSupport` is the base class for `StaticForgeBuilder`, `StaticForgeReader`, `StaticForgeArchive` and `StaticForgeArchiveSet`.  
+It provides a simple error collection system.
 
 ## API
 
@@ -17,32 +17,16 @@ std::string TakeError();         // returns all stored errors and clears them
 void ClearErrors();              // clears all stored errors
 ```
 
-## Header mode
+## Format
 
-The constructor takes a boolean `hasHeader`.
-
-When enabled, the first error is prefixed with:
+`GetError()` returns one message per line:
 
 ```txt
-[Error]:
+Failed to load asset, entry with key 'missing1' not found
+Failed to load asset, entry with key 'missing2' not found
 ```
 
-Additional errors are indented for readability.
-
-Example:
-
-```txt
-[Error]: Failed to load asset, entry with key 'missing1' not found
->        Failed to load asset, entry with key 'missing2' not found
-```
-
-`HAS_HEADER` is a constant with the value `true` and is used by:
-
-- `StaticForgeBuilder`
-- `StaticForgeReader`
-- `StaticForgeArchive`
-
-Internal helper classes such as `StaticForgeMeta` disable this mode and emit raw messages without formatting.
+Formatting is left to the application. The CLI tool, for example, prints a single error as `[Error] <message>` and several errors as a list. Paths in messages always use `/` as separator.
 
 ## Error accumulation
 

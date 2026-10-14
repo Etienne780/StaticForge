@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <sstream>
 #include <iomanip>
+#include <vector>
 #include <StaticForgeCore/StaticForge.h>
 #include "Config.h"
 #include "ArgumentNames.h"
@@ -28,6 +29,30 @@ namespace Actions {
         return true;
     }
 
+    void PrintError(const std::string& context, const std::string& error) {
+        std::vector<std::string> lines;
+        std::istringstream stream(error);
+        for (std::string line; std::getline(stream, line);) {
+            if (!line.empty())
+                lines.push_back(line);
+        }
+
+        std::cout << "[Error] " << context;
+        if (lines.empty()) {
+            std::cout << std::endl;
+            return;
+        }
+
+        if (lines.size() == 1) {
+            std::cout << (context.empty() ? "" : ": ") << lines[0] << std::endl;
+            return;
+        }
+
+        std::cout << ":" << std::endl;
+        for (const auto& line : lines)
+            std::cout << "  - " << line << std::endl;
+    }
+
     bool Help(const Config&) {
         std::cout << HELP_MESSAGE << std::endl;
         return true;
@@ -36,7 +61,7 @@ namespace Actions {
     bool Info(const Config& config) {
         const auto& infoPaths = config.GetInfoPaths();
         if (infoPaths.empty()) {
-            std::cout << "No info path specified." << std::endl;
+            PrintError("", "No info path specified");
             return false;
         }
 
@@ -44,12 +69,12 @@ namespace Actions {
             StaticForge::StaticForgeArchive archive;
             StaticForge::StaticForgeReader reader;
             if (!reader.Load(p, &archive)) {
-                std::cout << "Failed to load archive: " << reader.GetError() << std::endl;
+                PrintError("Failed to load archive '" + p.generic_u8string() + "'", reader.GetError());
                 return false;
             }
 
             if (infoPaths.size() > 1) {
-                std::cout << "Archive: " << p.u8string() << std::endl;
+                std::cout << "Archive: " << p.generic_u8string() << std::endl;
             }
             else {
                 std::cout << "Archive: " << p.filename().u8string() << std::endl;
@@ -108,7 +133,7 @@ namespace Actions {
             builder.SetCompressionMinSaving(*config.GetCompressMinSaving());
 
         if (!builder.Build()) {
-            std::cout << "Build failed: " << builder.GetError() << std::endl;
+            PrintError("Build failed", builder.GetError());
             return false;
         }
 
@@ -125,12 +150,12 @@ namespace Actions {
         std::error_code ec;
         if (!fs::exists(outputPath, ec)) {
             if (!config.GetCreateOutputDir()) {
-                std::cout << "Output path '" << outputPath.u8string() << "' does not exist (use --mkdir true to create it)" << std::endl;
+                PrintError("", "Output path '" + outputPath.generic_u8string() + "' does not exist (use --mkdir to create it)");
                 return false;
             }
 
             if (!fs::create_directories(outputPath, ec) || ec) {
-                std::cout << "Failed to create output directory '" << outputPath.u8string() << "'" << std::endl;
+                PrintError("", "Failed to create output directory '" + outputPath.generic_u8string() + "'" + (ec ? ": " + ec.message() : std::string()));
                 return false;
             }
         }
@@ -139,7 +164,7 @@ namespace Actions {
             StaticForge::StaticForgeArchive archive;
             StaticForge::StaticForgeReader reader;
             if (!reader.Load(archivePath, &archive)) {
-                std::cout << "Failed to load archive '" << archivePath.u8string() << "': " << reader.GetError() << std::endl;
+                PrintError("Failed to load archive '" + archivePath.generic_u8string() + "'", reader.GetError());
                 return false;
             }
 
@@ -157,21 +182,21 @@ namespace Actions {
                     : fs::path(HashToHex(archive.GetHashName(i)) + ".bin");
 
                 if (!IsSafeRelativePath(relative)) {
-                    std::cout << "Invalid file name '" << relative.u8string() << "' in archive '"
-                        << archivePath.u8string() << "' (must be a relative path inside the archive)" << std::endl;
+                    PrintError("", "Invalid file name '" + relative.generic_u8string() + "' in archive '"
+                        + archivePath.generic_u8string() + "' (must be a relative path inside the archive)");
                     return false;
                 }
 
                 fs::path target = (archiveDir / relative).make_preferred();
                 if (fs::exists(target, ec)) {
-                    std::cout << "File '" << target.u8string() << "' already exists, nothing was extracted" << std::endl;
+                    PrintError("", "File '" + target.generic_u8string() + "' already exists, nothing was extracted");
                     return false;
                 }
 
                 targets.push_back(std::move(target));
             }
 
-            std::cout << "Extracting '" << archivePath.u8string() << "' (" << count << (count == 1 ? " file" : " files")
+            std::cout << "Extracting '" << archivePath.generic_u8string() << "' (" << count << (count == 1 ? " file" : " files")
                 << (storesNames ? "" : ", no names stored, files are named by hash") << ")" << std::endl;
 
             std::vector<std::byte> data;
@@ -180,27 +205,27 @@ namespace Actions {
 
                 fs::create_directories(target.parent_path(), ec);
                 if (ec) {
-                    std::cout << "Failed to create directory '" << target.parent_path().u8string() << "': " << ec.message() << std::endl;
+                    PrintError("", "Failed to create directory '" + target.parent_path().generic_u8string() + "': " + ec.message());
                     return false;
                 }
 
                 if (!archive.LoadAssetAt(i, &data)) {
-                    std::cout << "Failed to load file '" << target.u8string() << "': " << archive.TakeError() << std::endl;
+                    PrintError("Failed to load file '" + target.generic_u8string() + "'", archive.TakeError());
                     return false;
                 }
 
                 std::ofstream file(target, std::ios::binary | std::ios::trunc);
                 file.write(reinterpret_cast<const char*>(data.data()), static_cast<std::streamsize>(data.size()));
                 if (!file) {
-                    std::cout << "Failed to write file '" << target.u8string() << "'" << std::endl;
+                    PrintError("", "Failed to write file '" + target.generic_u8string() + "'");
                     return false;
                 }
 
                 if (verbose)
-                    std::cout << "  " << target.u8string() << " (" << data.size() << " bytes)" << std::endl;
+                    std::cout << "  " << target.generic_u8string() << " (" << data.size() << " bytes)" << std::endl;
             }
 
-            std::cout << "Extracted to '" << archiveDir.u8string() << "'" << std::endl;
+            std::cout << "Extracted to '" << archiveDir.generic_u8string() << "'" << std::endl;
         }
 
         return true;
@@ -214,18 +239,18 @@ namespace Actions {
             StaticForge::StaticForgeArchive archive;
             StaticForge::StaticForgeReader reader;
             if (!reader.Load(archivePath, &archive)) {
-                std::cout << "[DAMAGED] " << archivePath.u8string() << ": " << reader.GetError() << std::endl;
+                PrintError(archivePath.generic_u8string(), reader.GetError());
                 allValid = false;
                 continue;
             }
 
             if (!archive.VerifyAll()) {
-                std::cout << "[DAMAGED] " << archivePath.u8string() << ":" << std::endl << archive.TakeError() << std::endl;
+                PrintError(archivePath.generic_u8string(), archive.TakeError());
                 allValid = false;
                 continue;
             }
 
-            std::cout << "[OK]      " << archivePath.u8string() << " (" << archive.GetFileCount()
+            std::cout << "[OK]    " << archivePath.generic_u8string() << " (" << archive.GetFileCount()
                 << (archive.GetFileCount() == 1 ? " file" : " files") << ")" << std::endl;
         }
 

@@ -13,13 +13,11 @@
 namespace StaticForge {
 
 	StaticForgeBuilder::StaticForgeBuilder()
-		: ErrorSupport(HAS_HEADER)
-		, m_compressor(std::make_unique<Internal::LZ4Compression>(Internal::IsLittleEndian(), !Internal::LZ4_STORE_HEADER)) {
+		: m_compressor(std::make_unique<Internal::LZ4Compression>(Internal::IsLittleEndian(), !Internal::LZ4_STORE_HEADER)) {
 	}
 
 	StaticForgeBuilder::StaticForgeBuilder(const std::string& archiveName, const std::vector<StaticForgePath>& sourcePaths, const StaticForgePath& outputPath)
-		: ErrorSupport(HAS_HEADER)
-		, m_archiveName(archiveName)
+		: m_archiveName(archiveName)
 		, m_srcPaths(sourcePaths)
 		, m_outputPath(outputPath)
 		, m_compressor(std::make_unique<Internal::LZ4Compression>(Internal::IsLittleEndian(), !Internal::LZ4_STORE_HEADER)) {
@@ -33,22 +31,22 @@ namespace StaticForge {
 
 		std::string error;
 		if (!CheckCompressionSettings(m_compressionBlockSize, m_compressionTableSizeLog2, m_compressionMinMatchLength, m_compressionMinSaving, &error)) {
-			AddError("CheckCompressionSettings: " + error);
+			AddError(error);
 			return false;
 		}
 
 		if (!CheckFilepaths(&error)) {
-			AddError("CheckFilepaths: " + error);
+			AddError(error);
 			return false;
 		}
 
 		if (!ScanFiles(&error)) {
-			AddError("ScanFiles: " + error);
+			AddError(error);
 			return false;
 		}
 
 		if (!CreateGroups(&error)) {
-			AddError("CreateGroups: " + error);
+			AddError(error);
 			return false;
 		}
 
@@ -228,18 +226,18 @@ namespace StaticForge {
 		// check src paths
 		for (const auto& p : m_srcPaths) {
 			if (!std::filesystem::exists(p, ec)) {
-				*errorOut = "Source path '" + p.u8string() + "' does not exist!";
+				*errorOut = "Source path '" + p.generic_u8string() + "' does not exist!";
 				return false;
 			}
 
 			if (!std::filesystem::is_directory(p, ec)) {
-				*errorOut = "Source path '" + p.u8string() + "' must be a directory!";
+				*errorOut = "Source path '" + p.generic_u8string() + "' must be a directory!";
 				return false;
 			}
 		}
 
 		if (Internal::HasExtension(m_outputPath, PACK_FILE_EXTENSION, true)) {
-			*errorOut = "Output path must be a directory path, not an archive file: '" + m_outputPath.u8string()
+			*errorOut = "Output path must be a directory path, not an archive file: '" + m_outputPath.generic_u8string()
 				+ "' (the archive file name comes from the archive name (--name) or a meta file)";
 			return false;
 		}
@@ -247,19 +245,19 @@ namespace StaticForge {
 		// checks/creates output path
 		if (!std::filesystem::exists(m_outputPath, ec)) {
 			if (!m_createOutputDir) {
-				*errorOut = "Output path '" + m_outputPath.u8string() + "' does not exist!";
+				*errorOut = "Output path '" + m_outputPath.generic_u8string() + "' does not exist!";
 				return false;
 			}
 			else {
 				std::filesystem::create_directories((m_outputPath.has_filename() ? m_outputPath : m_outputPath.parent_path()), ec);
 				if (ec) {
-					*errorOut = "Failed to create output directory '" + m_outputPath.u8string() + "': " + ec.message();
+					*errorOut = "Failed to create output directory '" + m_outputPath.generic_u8string() + "': " + ec.message();
 					return false;
 				}
 			}
 		}
 		else if (!std::filesystem::is_directory(m_outputPath, ec)) {
-			*errorOut = "Output path '" + m_outputPath.u8string() + "' must be a directory!";
+			*errorOut = "Output path '" + m_outputPath.generic_u8string() + "' must be a directory!";
 			return false;
 		}
 
@@ -278,7 +276,7 @@ namespace StaticForge {
 		}
 
 		if (ec) {
-			*errorOut = "Failed to read directory '" + directory.u8string() + "': " + ec.message();
+			*errorOut = "Failed to read directory '" + directory.generic_u8string() + "': " + ec.message();
 			return false;
 		}
 
@@ -313,25 +311,25 @@ namespace StaticForge {
 
 				metaBuilder.Load(fullPath);
 				if (!metaBuilder.IsValid()) {
-					*errorOut = "Failed to read meta file '" + fullPath.u8string() + "': " + metaBuilder.GetError();
+					*errorOut = "Failed to read meta file '" + fullPath.generic_u8string() + "': " + metaBuilder.GetError();
 					return false;
 				}
 
 				const auto& metaData = metaBuilder.GetLoadedMetaData();
 				if (metaData.archiveName.empty()) {
-					*errorOut = "Meta file '" + fullPath.u8string() + "' has archive param not set";
+					*errorOut = "Meta file '" + fullPath.generic_u8string() + "' has archive param not set";
 					return false;
 				}
 
 				if (!IsValidArchiveName(metaData.archiveName)) {
-					*errorOut = "Meta file '" + fullPath.u8string() + "' has an invalid archive name '" + metaData.archiveName
+					*errorOut = "Meta file '" + fullPath.generic_u8string() + "' has an invalid archive name '" + metaData.archiveName
 						+ "' (must not contain '/' or '\\' and must not be '.' or '..')";
 					return false;
 				}
 
 				std::string compressionError;
 				if (!CheckCompressionSettings(metaData.compressionBlockSize, metaData.compressionTableSizeLog2, metaData.compressionMinMatchLength, metaData.compressionMinSaving, &compressionError)) {
-					*errorOut = "Meta file '" + fullPath.u8string() + "': " + compressionError;
+					*errorOut = "Meta file '" + fullPath.generic_u8string() + "': " + compressionError;
 					return false;
 				}
 
@@ -399,13 +397,13 @@ namespace StaticForge {
 
 				StaticForgePath relativePath = fs::relative(fullPath, src, ec);
 				if (ec) {
-					*errorOut = "Failed to compute relative path for: " + fullPath.u8string();
+					*errorOut = "Failed to compute relative path for: " + fullPath.generic_u8string();
 					return false;
 				}
 
 				uint64_t fileSize = fs::file_size(fullPath, ec);
 				if (ec) {
-					*errorOut = "Failed to read file size: " + fullPath.u8string();
+					*errorOut = "Failed to read file size: " + fullPath.generic_u8string();
 					return false;
 				}
 
@@ -443,8 +441,8 @@ namespace StaticForge {
 					}
 					else {
 						*errorOut = "Duplicate path '" + relpathStr + "': '" +
-							other.fullPath.u8string() + "' (archive '" + other.archiveName + "') and '" +
-							fullPath.u8string() + "' (archive '" + archive.name + "')";
+							other.fullPath.generic_u8string() + "' (archive '" + other.archiveName + "') and '" +
+							fullPath.generic_u8string() + "' (archive '" + archive.name + "')";
 					}
 					return false;
 				}
@@ -542,12 +540,12 @@ namespace StaticForge {
 
 			stream.open(outputPath, std::ios::out | std::ios::binary | std::ios::trunc);
 			if (!stream.is_open()) {
-				*errorOut = "Failed to create file with path '" + outputPath.u8string() + "'";
+				*errorOut = "Failed to create file with path '" + outputPath.generic_u8string() + "'";
 				return false;
 			}
 
 			if (!CalculateDataStart(archive, &error)) {
-				*errorOut = "CalculateDataStart of group '" + archiveName + "': " + error;
+				*errorOut = "Archive '" + archiveName + "': " + error;
 				stream.close();
 				return false;
 			}
@@ -574,19 +572,19 @@ namespace StaticForge {
 			}
 
 			if (!WriteData(archive, stream, &error)) {
-				*errorOut = "WriteData: " + error;
+				*errorOut = "Archive '" + archiveName + "': " + error;
 				stream.close();
 				return false;
 			}
 
 			if (!WriteHeader(archive, stream, &error)) {
-				*errorOut = "WriteHeader: " + error;
+				*errorOut = "Archive '" + archiveName + "': " + error;
 				stream.close();
 				return false;
 			}
 
 			if (!WriteIndex(archive, stream, &error)) {
-				*errorOut = "WriteIndex: " + error;
+				*errorOut = "Archive '" + archiveName + "': " + error;
 				stream.close();
 				return false;
 			}
@@ -594,18 +592,18 @@ namespace StaticForge {
 			if (archive.storeNames) {
 				stream.seekp(static_cast<std::streamoff>(archive.nameTableStart));
 				if (stream.fail()) {
-					*errorOut = "seekp to name table start failed";
+					*errorOut = "Archive '" + archiveName + "': Failed to seek to the name table";
 					return false;
 				}
 
 				if (!BuildNameTable(archive, &error)) {
-					*errorOut = "BuildNameTable of group '" + archiveName + "': " + error;
+					*errorOut = "Archive '" + archiveName + "': " + error;
 					stream.close();
 					return false;
 				}
 
 				if (!WriteNameTable(archive, stream, &error)) {
-					*errorOut = "WriteNameTable: " + error;
+					*errorOut = "Archive '" + archiveName + "': " + error;
 					stream.close();
 					return false;
 				}
@@ -622,7 +620,7 @@ namespace StaticForge {
 			if (!ec && fileSize > archiveEnd)
 				std::filesystem::resize_file(outputPath, archiveEnd, ec);
 			if (ec) {
-				*errorOut = "Failed to set the size of archive '" + outputPath.u8string() + "': " + ec.message();
+				*errorOut = "Failed to set the size of archive '" + outputPath.generic_u8string() + "': " + ec.message();
 				return false;
 			}
 
@@ -780,7 +778,7 @@ namespace StaticForge {
 		stream.seekp(0);
 
 		if (stream.fail()) {
-			*errorOut = "seekp failed";
+			*errorOut = "Failed to seek to the header";
 			return false;
 		}
 
@@ -801,7 +799,7 @@ namespace StaticForge {
 		}
 
 		if (stream.fail()) {
-			*errorOut = "Failed to write header!";
+			*errorOut = "Failed to write the header";
 			return false;
 		}
 
@@ -850,9 +848,8 @@ namespace StaticForge {
 			}
 
 			if (stream.fail()) {
-				*errorOut = "Failed to write index at index'" 
-					+ std::to_string(i) + "' name='" 
-					+ fe.filepath.u8string() + "'";
+				*errorOut = "Failed to write index entry " + std::to_string(i)
+					+ " ('" + fe.filepath.generic_u8string() + "')";
 				return false;
 			}
 		}
@@ -877,7 +874,7 @@ namespace StaticForge {
 		stream.write(pad.data(), archive.dataStart);
 
 		if (stream.fail()) {
-			*errorOut = "Failed to write data0 padding";
+			*errorOut = "Failed to write the space for header and index";
 			return false;
 		}
 
@@ -888,7 +885,7 @@ namespace StaticForge {
 			// load file
 			std::ifstream fileStream(f.filepath, std::ios::binary);
 			if (!fileStream.is_open()) {
-				*errorOut = "Failed to open file: " + f.filepath.u8string();
+				*errorOut = "Failed to open file: " + f.filepath.generic_u8string();
 				return false;
 			}
 
@@ -914,7 +911,7 @@ namespace StaticForge {
 					auto compressData = m_compressor->Compress(buffer.data(), bytesRead);
 
 					if (!m_compressor->IsValid()) {
-						*errorOut = "Failed to write compressed data block '" + f.filepath.u8string() + "':\n   " + m_compressor->GetError();
+						*errorOut = "Failed to write compressed data block '" + f.filepath.generic_u8string() + "': " + m_compressor->GetError();
 						return false;
 					}
 
@@ -956,7 +953,7 @@ namespace StaticForge {
 				}
 
 				if (stream.fail()) {
-					*errorOut = "Failed to write data block '" + f.filepath.u8string() + "'";
+					*errorOut = "Failed to write data block '" + f.filepath.generic_u8string() + "'";
 					return false;
 				}
 			}
@@ -972,7 +969,7 @@ namespace StaticForge {
 				fileStream.clear();
 				fileStream.seekg(0);
 				if (stream.fail() || fileStream.fail()) {
-					*errorOut = "Failed to seek for writing '" + f.filepath.u8string() + "' uncompressed";
+					*errorOut = "Failed to seek for writing '" + f.filepath.generic_u8string() + "' uncompressed";
 					return false;
 				}
 
@@ -987,14 +984,14 @@ namespace StaticForge {
 					written += bytesRead;
 
 					if (stream.fail()) {
-						*errorOut = "Failed to write data block '" + f.filepath.u8string() + "'";
+						*errorOut = "Failed to write data block '" + f.filepath.generic_u8string() + "'";
 						return false;
 					}
 				}
 			}
 
 			if (written != f.fileSize && !useCompression) {
-				*errorOut = "Failed to write data block '" + f.filepath.u8string() + "'";
+				*errorOut = "Failed to write data block '" + f.filepath.generic_u8string() + "'";
 				return false;
 			}
 
@@ -1008,7 +1005,7 @@ namespace StaticForge {
 
 			// file padding cant be larger than uint32_t
 			if ((fileAligned64 - written) > static_cast<uint64_t>(std::numeric_limits<uint32_t>::max() - 1)) {
-				*errorOut = "Failed to write data block, file padding to large '" + f.filepath.u8string() + "'";
+				*errorOut = "Failed to write data block, file padding too large '" + f.filepath.generic_u8string() + "'";
 				return false;
 			}
 			uint32_t filePadding = static_cast<uint32_t>(fileAligned64 - written);
@@ -1087,17 +1084,17 @@ namespace StaticForge {
 	bool StaticForgeBuilder::WriteNameTable(const ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) const {
 		std::string error;
 		if (!WriteNameTableHeader(archive, stream, &error)) {
-			*errorOut = "Header: " + error;
+			*errorOut = error;
 			return false;
 		}
 
 		if (!WriteNameTableData(archive, stream, &error)) {
-			*errorOut = "Table Data: " + error;
+			*errorOut = error;
 			return false;
 		}
 
 		if (!WriteNameTableStringData(archive, stream, &error)) {
-			*errorOut = "String Data: " + error;
+			*errorOut = error;
 			return false;
 		}
 
@@ -1127,7 +1124,7 @@ namespace StaticForge {
 		}
 
 		if (stream.fail()) {
-			*errorOut = "Failed to write header!";
+			*errorOut = "Failed to write the name table header";
 			return false;
 		}
 
@@ -1157,9 +1154,8 @@ namespace StaticForge {
 			}
 
 			if (stream.fail()) {
-				*errorOut = "Failed to write index at index'"
-					+ std::to_string(i) + "' name='"
-					+ f.filepath.u8string() + "'";
+				*errorOut = "Failed to write name table entry " + std::to_string(i)
+					+ " ('" + f.filepath.generic_u8string() + "')";
 				return false;
 			}
 		}
@@ -1172,7 +1168,7 @@ namespace StaticForge {
 		stream.write(reinterpret_cast<const char*>(data.data()), static_cast<std::streamsize>(data.size()));
 
 		if (stream.fail()) {
-			*errorOut = "Failed to write compressed string data";
+			*errorOut = "Failed to write the name table string data";
 			return false;
 		}
 		return true;

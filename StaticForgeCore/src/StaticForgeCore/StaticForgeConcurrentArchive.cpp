@@ -57,7 +57,7 @@ namespace StaticForge {
 			lock.unlock();
 			poolCondition.notify_one();
 
-			*errorOut = "Failed to open archive file at '" + path.u8string() + "'";
+			*errorOut = "Failed to open archive file at '" + path.generic_u8string() + "'";
 			return nullptr;
 		}
 

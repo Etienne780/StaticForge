@@ -8,8 +8,7 @@
 
 namespace StaticForge::Internal {
 
-	StaticForgeMeta::StaticForgeMeta() 
-		: ErrorSupport(!HAS_HEADER) {
+	StaticForgeMeta::StaticForgeMeta() {
 	}
 
 	bool StaticForgeMeta::Load(const StaticForgePath& path) {
@@ -52,14 +51,14 @@ namespace StaticForge::Internal {
 		if (!std::filesystem::exists(m_path)) {
 			*errorOut =
 				"Meta file does not exist: '" +
-				m_path.u8string() + "'";
+				m_path.generic_u8string() + "'";
 			return false;
 		}
 
 		if (!Internal::HasExtension(m_path, META_FILE_EXTENSION)) {
 			*errorOut =
 				"Invalid meta file extension for '" +
-				m_path.u8string() +
+				m_path.generic_u8string() +
 				"' (expected '" +
 				std::string(META_FILE_EXTENSION) +
 				"')";

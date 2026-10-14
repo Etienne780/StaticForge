@@ -2,25 +2,12 @@
 
 namespace StaticForge {
 
-	ErrorSupport::ErrorSupport(bool hasHeader)
-		: m_hasHeader(hasHeader) {
-	}
-
 	bool ErrorSupport::IsValid() const {
 		return m_errors.empty();
 	}
 
 	void ErrorSupport::AddError(const std::string& error) {
-		constexpr const char* header = "[Error]: ";
-		constexpr const char* indent = ">        ";
-
-		if (m_hasHeader) {
-			const char* prefix = m_errors.empty() ? header : indent;
-			m_errors.emplace_back(std::string(prefix) + error);
-		}
-		else {
-			m_errors.emplace_back(error);
-		}
+		m_errors.emplace_back(error);
 	}
 
 	std::string ErrorSupport::GetError() const {

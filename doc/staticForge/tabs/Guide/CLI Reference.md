@@ -67,6 +67,14 @@ Combining arguments from multiple modes (e.g. `--source` together with `--info`)
 
 The tool returns `0` on success and `1` on any error, so it can be used in build scripts.
 
+Errors are printed as `[Error] <message>`. Several errors at once, e.g. more than one invalid argument, are listed below a short description:
+
+```
+[Error] Invalid arguments:
+  - Unknown argument 'foo'
+  - Invalid value '10k' for argument 'cbs'
+```
+
 ## Command line priority
 
 When `--store-names` or `--compress` is set on the command line, the option is forced on for every archive regardless of what the `.sfpak.meta` file specifies. The meta-file value is only used when the CLI flag is absent.

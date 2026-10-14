@@ -146,7 +146,7 @@ namespace StaticForge::Internal {
 			std::error_code ec;
 			FilePath absPath = std::filesystem::absolute(FilePath{ pathStr }, ec);
 			if (ec) {
-				*errorOut = "Failed to resolve absolute path for '" + path.u8string() + "': " + ec.message();
+				*errorOut = "Failed to resolve absolute path for '" + path.generic_u8string() + "': " + ec.message();
 				return false;
 			}
 			pathStr = absPath.lexically_normal().wstring();

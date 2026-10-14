@@ -108,7 +108,7 @@ namespace StaticForge {
 			return {};
 
 		if (!archive->IsMapped()) {
-			Report("Failed to get asset mapped for key '" + key + "', archive '" + archive->GetPath().u8string() + "' is not mapped", errorOut);
+			Report("Failed to get asset mapped for key '" + key + "', archive '" + archive->GetPath().generic_u8string() + "' is not mapped", errorOut);
 			return {};
 		}
 
@@ -177,7 +177,7 @@ namespace StaticForge {
 
 			allValid = false;
 			for (const auto& error : errors) {
-				const std::string message = "Archive '" + slot.archive->GetPath().u8string() + "': " + error;
+				const std::string message = "Archive '" + slot.archive->GetPath().generic_u8string() + "': " + error;
 
 				// errorOut gets one line per damaged asset
 				if (errorOut)
@@ -243,7 +243,7 @@ namespace StaticForge {
 
 		// the entry belongs to the data the archive had when it was added
 		if (location.archive->m_data.get() != location.data) {
-			Report("Failed to " + action + " '" + key + "': archive '" + location.data->path.u8string()
+			Report("Failed to " + action + " '" + key + "': archive '" + location.data->path.generic_u8string()
 				+ "' was loaded again after it was added to the set, remove and add it again", errorOut);
 			return false;
 		}

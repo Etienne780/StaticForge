@@ -20,8 +20,7 @@ namespace StaticForge::Internal {
 		if (entry.number == 0)
 			entry.number = m_nextNumber++;
 
-		// same format as ErrorSupport
-		entry.errors.push_back((entry.errors.empty() ? "[Error]: " : ">        ") + error);
+		entry.errors.push_back(error);
 	}
 
 	bool ThreadErrors::IsValid() const {
