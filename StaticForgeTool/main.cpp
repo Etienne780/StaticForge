@@ -1,5 +1,6 @@
 #include <iostream>
 #include <functional>
+#include <cstdlib>
 #include <StaticForgeCore/StaticForge.h>
 #include "InitConsoleArguments.h"
 #include "ConsoleActions.h"
@@ -17,7 +18,7 @@ int main(int argc, char** argv) {
 
 	if (!config.IsValid()) {
 		std::cout << config.GetError() << std::endl;
-		return -1;
+		return EXIT_FAILURE;
 	}
 
 	ConfigMode mode = config.GetMode();
@@ -43,19 +44,19 @@ int main(int argc, char** argv) {
 	case ConfigMode::UNKNOWN:
 	default:
 		std::cout << "Invalid config" << std::endl;
-		return -1;
+		return EXIT_FAILURE;
 	}
 
 	// execute action, catches unexpected errors so the tool never ends without a message
 	try {
 		if (!action(config)) {
-			return -1;
+			return EXIT_FAILURE;
 		}
 	}
 	catch (const std::exception& e) {
 		std::cout << "[Error]: Unexpected error: " << e.what() << std::endl;
-		return -1;
+		return EXIT_FAILURE;
 	}
 
-	return 0;
+	return EXIT_SUCCESS;
 }

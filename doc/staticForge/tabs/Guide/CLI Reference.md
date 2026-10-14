@@ -65,7 +65,7 @@ Combining arguments from multiple modes (e.g. `--source` together with `--info`)
 
 ## Exit code
 
-The tool returns `0` on success and a non-zero exit code on any error, so it can be used in build scripts.
+The tool returns `0` on success and `1` on any error, so it can be used in build scripts.
 
 ## Command line priority
 
