@@ -107,6 +107,36 @@ TEST_CASE("Builder/Output and source paths") {
 	CHECK(!fs::exists("main.sfpak"));
 }
 
+TEST_CASE("Builder/Symbolic links keep their own path") {
+	TempDir dir;
+	WriteFile(dir / "shared/lib.dll", "library");
+	WriteFile(dir / "src/a.txt", "a");
+	fs::create_directories(dir / "src/client");
+	fs::create_directories(dir / "src/office");
+
+	// creating links needs the developer mode or admin rights on Windows
+	std::error_code ec;
+	fs::create_symlink(dir / "shared/lib.dll", dir / "src/client/lib.dll", ec);
+	if (ec)
+		return;
+	fs::create_symlink(dir / "shared/lib.dll", dir / "src/office/lib.dll", ec);
+	if (ec)
+		return;
+
+	StaticForgeBuilder builder{ "main", { dir / "src" }, dir / "out" };
+	builder.SetCreateOutputDir(true).SetStoreNames(true);
+	REQUIRE_MSG(builder.Build(), builder.GetError());
+
+	StaticForgeArchive archive;
+	StaticForgeReader reader;
+	REQUIRE_MSG(reader.Load(dir / "out/main.sfpak", &archive), reader.GetError());
+	CHECK_EQ(archive.GetFileCount(), size_t(3));
+
+	std::vector<std::byte> data;
+	CHECK(archive.LoadAsset("client/lib.dll", &data) && Same(data, "library"));
+	CHECK(archive.LoadAsset("office/lib.dll", &data) && Same(data, "library"));
+}
+
 TEST_CASE("Builder/Failed build leaves no files behind") {
 	TempDir dir;
 	WriteFile(dir / "src/audio/audio.sfpak.meta", "archive = audio;");

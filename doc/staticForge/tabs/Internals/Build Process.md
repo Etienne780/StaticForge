@@ -29,7 +29,7 @@ Each source directory is read **once** into a list of files. Read errors are rep
 Collects all files ending with `.sfpak.meta` and builds a `directory → StaticForgeMetaData` mapping. Each entry stores the archive name, excluded extensions, the `store-names` and `compress` flags and the optional compression settings. Archive names and compression settings are validated here.
 
 **Pass 2 — File assignment:**  
-Iterates all non-meta files, computes their relative path, hashes it with 64-bit FNV-1a, and assigns each file to the appropriate `ArchiveGroup` by walking up the directory tree until a meta entry is found. Falls back to the default archive name if no meta file applies.
+Iterates all non-meta files, computes their relative path (from the path itself, so a symbolic link to a file is stored under its own path with the content of its target), hashes it with 64-bit FNV-1a, and assigns each file to the appropriate `ArchiveGroup` by walking up the directory tree until a meta entry is found. Falls back to the default archive name if no meta file applies.
 
 For each file the builder also:
 - Skips files whose name ends with one of the excluded extensions (case insensitive).

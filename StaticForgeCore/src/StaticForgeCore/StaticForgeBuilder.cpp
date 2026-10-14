@@ -448,8 +448,9 @@ namespace StaticForge {
 				if (Internal::HasExtension(fullPath, META_FILE_EXTENSION))
 					continue;
 
-				StaticForgePath relativePath = fs::relative(fullPath, src, ec);
-				if (ec) {
+				// computed from the path itself, a symbolic link keeps its own path and the content of its target is stored
+				StaticForgePath relativePath = fullPath.lexically_normal().lexically_relative(src.lexically_normal());
+				if (relativePath.empty() || *relativePath.begin() == "..") {
 					*errorOut = "Failed to compute relative path for: " + fullPath.generic_u8string();
 					return false;
 				}
