@@ -73,6 +73,48 @@ Add `--verbose` (or `--v`) to print detailed information about every file proces
 StaticForgeTool --source ./assets --output ./build --verbose
 ```
 
+The output has these sections:
+
+- **Paths** - the output and source paths, with the absolute path in brackets.
+- **Meta files** - every meta file found and the values it sets.
+- **Files** - the files of every archive with their source file, and the excluded files.
+- **Writing archive** - one section per archive, sorted by name: the settings that are really used (command line, meta file or default), the layout of header, index and data, and for every file its hash, offset, size, how it is stored (raw or compressed, and why it is raw), padding and checksum. Archives with stored names also show the layout of the name table.
+
+```
+===================================
+Writing archive 'textures' -> ./build/textures.sfpak
+===================================
+store-names: true
+compress: true
+compression: block size 65536, table size 2^16, min match 8, min saving 10%
+header: offset 0, 64 bytes (52 + padding)
+index: offset 64, 3 x 40 = 120 bytes
+data: offset 4096
+files (3):
+  [0] textures/hero.png
+      - hash: f798a942ed32fd87
+      - offset: 0 (in file 4096)
+      - size: 20000 bytes
+      - stored: raw, compressed 20008 bytes, saving below 10%
+      - padding: 480 bytes (aligned 20480 bytes)
+      - checksum: fbd33a7b
+  ...
+  [2] textures/ui/theme.txt
+      - hash: 8e586dbde1d8ef94
+      - offset: 32768 (in file 36864)
+      - size: 23492 bytes
+      - stored: 3633 bytes compressed (-84%), 1 block
+      - padding: 463 bytes (aligned 4096 bytes)
+      - checksum: a08daa81
+name table:
+  - header: offset 40960, 32 bytes
+  - entries: offset 40992, 3 x 16 = 48 bytes
+  - names: offset 41040, 60 bytes, raw
+archive size: 41100 bytes
+```
+
+The offset of a file is relative to the start of the data, `in file` is the position in the archive file.
+
 ## Unicode
 
 File names, directories, archive names and command line arguments can contain any Unicode characters (e.g. `纹理/背景.png`). Names are stored as UTF-8.

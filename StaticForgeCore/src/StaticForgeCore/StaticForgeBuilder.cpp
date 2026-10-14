@@ -1,6 +1,9 @@
 #include <algorithm>
 #include <variant>
 #include <iostream>
+#include <sstream>
+#include <iomanip>
+#include <map>
 
 #include "StaticForgeBuilder.h"
 #include "Internal/InternalHelpers.h"
@@ -177,11 +180,19 @@ namespace StaticForge {
 		return path.u8string() + " (" + absolute.u8string() + ")";
 	}
 
+	static std::string ToHex(uint64_t value, int width) {
+		std::ostringstream stream;
+		stream << std::hex << std::setw(width) << std::setfill('0') << value;
+		return stream.str();
+	}
+
+	static void PrintSection(const std::string& title) {
+		std::cout << Internal::CONSOLE_SEPERATOR << "\n" << title << "\n" << Internal::CONSOLE_SEPERATOR << "\n";
+	}
+
 	bool StaticForgeBuilder::CheckFilepaths(std::string* errorOut) {
 		if (m_isDebugActive) {
-			std::cout << Internal::CONSOLE_SEPERATOR << std::endl;
-			std::cout << "Validating file paths" << std::endl;
-			std::cout << Internal::CONSOLE_SEPERATOR << std::endl;
+			PrintSection("Paths");
 			std::cout << "output path: " << PathWithAbsolute(m_outputPath) << std::endl;
 
 			if (m_srcPaths.size() <= 1) {
@@ -291,13 +302,8 @@ namespace StaticForge {
 				return false;
 		}
 
-		if (m_isDebugActive) {
-			std::cout << Internal::CONSOLE_SEPERATOR << "\n";
-			std::cout << "Scanning  files" << "\n";
-			std::cout << Internal::CONSOLE_SEPERATOR << "\n";
-
-			std::cout << "found meta files:" << std::endl;
-		}
+		if (m_isDebugActive)
+			PrintSection("Meta files");
 		
 		// search for meta data files
 		for (const auto& files : srcFiles) {
@@ -339,44 +345,37 @@ namespace StaticForge {
 
 				dirToArchiveMeta[dir] = metaData;
 				
+				// the values as they are in the meta file, the used values are printed when the archive is written
 				if (m_isDebugActive) {
-					auto booltoStr = [](bool v) -> const char*{
-						return v ? "true" : "false";
-					};
-					
-					std::cout << "  meta file:" << "\n";
-					std::cout << "  - path: " << fullPath.u8string() << "\n";
-					std::cout << "  - archiveName: " << metaData.archiveName << "\n";
+					std::cout << fullPath.generic_u8string() << "\n";
+					std::cout << "  - archive: " << metaData.archiveName << "\n";
 					std::cout << "  - exclude: [";
-					
-					const size_t excludeSize = metaData.excludedExtensions.size();
-					if (excludeSize > 0) {
-						for (size_t i = 0; i < excludeSize - 1; i++) {
-							std::cout << metaData.excludedExtensions[i] << ", ";
-						}
-
-						std::cout << metaData.excludedExtensions[excludeSize - 1];
-					}
+					for (size_t i = 0; i < metaData.excludedExtensions.size(); i++)
+						std::cout << (i > 0 ? ", " : "") << metaData.excludedExtensions[i];
 					std::cout << "]\n";
+					std::cout << "  - store-names: " << (metaData.storeNames ? "true" : "false") << "\n";
+					std::cout << "  - compress: " << (metaData.compress ? "true" : "false") << "\n";
 
-					std::cout << "  - store-names: " << booltoStr(m_storeNames ? true : metaData.storeNames) << "\n";
-					std::cout << "  - compress: " << booltoStr(m_compress ? true : metaData.compress) << "\n";
-
-					auto optToStr = [](const std::optional<uint64_t>& v) -> std::string {
-						return v ? std::to_string(*v) : "not set";
+					auto printOpt = [](const char* name, const std::optional<uint64_t>& v) {
+						if (v)
+							std::cout << "  - " << name << ": " << *v << "\n";
 					};
-					std::cout << "  - compress-block-size: " << optToStr(metaData.compressionBlockSize) << "\n";
-					std::cout << "  - compress-table-size: " << optToStr(metaData.compressionTableSizeLog2) << "\n";
-					std::cout << "  - compress-min-match: " << optToStr(metaData.compressionMinMatchLength) << "\n";
-					std::cout << "  - compress-min-saving: " << optToStr(metaData.compressionMinSaving) << "\n";
-					std::cout << std::endl;
+					printOpt("compress-block-size", metaData.compressionBlockSize);
+					printOpt("compress-table-size", metaData.compressionTableSizeLog2);
+					printOpt("compress-min-match", metaData.compressionMinMatchLength);
+					printOpt("compress-min-saving", metaData.compressionMinSaving);
 				}
 			}
 		}
 
-		// if no meta files were found
-		if (m_isDebugActive && dirToArchiveMeta.empty())
-			std::cout << "- none" << std::endl << std::endl;
+		if (m_isDebugActive) {
+			if (dirToArchiveMeta.empty())
+				std::cout << "none, all files go into archive '" << m_archiveName << "'\n";
+			std::cout << std::endl;
+		}
+
+		// excluded files per archive, only for the debug output
+		std::map<std::string, std::vector<std::string>> excludedFiles;
 
 		m_archiveGroups.reserve(dirToArchiveMeta.size());
 
@@ -416,8 +415,11 @@ namespace StaticForge {
 					return false;
 				}
 
-				if (ExcludedFileExtension(fullPath, archiveMeta.excludedExtensions))
+				if (ExcludedFileExtension(fullPath, archiveMeta.excludedExtensions)) {
+					if (m_isDebugActive)
+						excludedFiles[archiveMeta.archiveName].push_back(fullPath.generic_u8string());
 					continue;
+				}
 
 				auto& archive = m_archiveGroups[archiveMeta.archiveName];
 
@@ -467,41 +469,45 @@ namespace StaticForge {
 			});
 		}
 
-		if (m_isDebugActive) {
-			std::cout << "found files:" << std::endl;
-
-			std::vector<std::string> archiveNames;
-			archiveNames.reserve(m_archiveGroups.size());
-
-			for (const auto& [name, _] : m_archiveGroups) {
-				archiveNames.push_back(name);
-			}
-
-			std::sort(archiveNames.begin(), archiveNames.end());
-
-			for (const auto& archiveName : archiveNames) {
-				const auto& archive = m_archiveGroups.at(archiveName);
-
-				std::cout << "archive: " << archiveName << std::endl;
-				std::cout << "  file count: " << archive.files.size() << std::endl;
-
-				for (const auto& file : archive.files) {
-					std::cout
-						<< "  - file: " << file.filepath.u8string() << std::endl
-						<< "      hash: " << file.hashName << std::endl
-						<< "      file size: " << file.fileSize << " bytes" << std::endl
-						<< "      aligned file size: " << file.fileSize + file.filePadding<< " bytes" << std::endl;
-				}
-
-				std::cout << std::endl;
-			}
-
-			std::cout << std::endl;
-		}
-
+		// without files an empty archive is written
 		if (m_archiveGroups.empty()) {
 			m_archiveGroups[m_archiveName] = {};
 			m_archiveGroups[m_archiveName].name = m_archiveName;
+		}
+
+		if (m_isDebugActive) {
+			PrintSection("Files");
+
+			// archives with files and archives where all files were excluded, sorted by name
+			std::map<std::string, const ArchiveGroup*> archives;
+			for (const auto& [name, archive] : m_archiveGroups)
+				archives[name] = &archive;
+			for (const auto& [name, _] : excludedFiles)
+				archives.emplace(name, nullptr);
+
+			for (const auto& [name, archive] : archives) {
+				const size_t fileCount = archive ? archive->files.size() : 0;
+				auto excluded = excludedFiles.find(name);
+
+				std::cout << "archive '" << name << "' (" << fileCount << (fileCount == 1 ? " file" : " files");
+				if (excluded != excludedFiles.end())
+					std::cout << ", " << excluded->second.size() << " excluded";
+				if (!archive)
+					std::cout << ", not written";
+				std::cout << ")\n";
+
+				if (archive) {
+					for (const auto& file : archive->files)
+						std::cout << "  - " << file.relativeUtf8 << " (" << file.fileSize << " bytes) <- " << file.filepath.generic_u8string() << "\n";
+				}
+
+				if (excluded != excludedFiles.end()) {
+					for (const auto& path : excluded->second)
+						std::cout << "  - excluded: " << path << "\n";
+				}
+			}
+
+			std::cout << std::endl;
 		}
 
 		return true;
@@ -523,7 +529,14 @@ namespace StaticForge {
 		std::string error;
 		std::ofstream stream;
 
-		for (auto& [archiveName, archive] : m_archiveGroups) {
+		// written in order of the name, so the output is always the same
+		std::map<std::string, ArchiveGroup*> sortedGroups;
+		for (auto& [name, group] : m_archiveGroups)
+			sortedGroups[name] = &group;
+
+		for (auto& [archiveName, archivePtr] : sortedGroups) {
+			ArchiveGroup& archive = *archivePtr;
+
 			// the name is UTF-8 and may contain dots, so the extension is appended and not replaced
 			StaticForgePath outputPath = m_outputPath / std::filesystem::u8path(archive.name + std::string(PACK_FILE_EXTENSION));
 
@@ -537,6 +550,27 @@ namespace StaticForge {
 				*errorOut = "CalculateDataStart of group '" + archiveName + "': " + error;
 				stream.close();
 				return false;
+			}
+
+			if (m_isDebugActive) {
+				PrintSection("Writing archive '" + archive.name + "' -> " + outputPath.generic_u8string());
+				std::cout << "store-names: " << (archive.storeNames ? "true" : "false") << "\n";
+				std::cout << "compress: " << (archive.compress ? "true" : "false") << "\n";
+				if (archive.compress) {
+					std::cout << "compression: block size " << archive.compressionBlockSize
+						<< ", table size 2^" << archive.compressionTableSizeLog2
+						<< ", min match " << archive.compressionMinMatchLength
+						<< ", min saving " << archive.compressionMinSaving << "%\n";
+				}
+
+				uint64_t headerSize = 0;
+				Internal::GetHeaderSize(&headerSize);
+				const uint64_t entrySize = sizeof(Internal::StaticForgeIndexEntry);
+				std::cout << "header: offset 0, " << headerSize << " bytes (" << sizeof(Internal::StaticForgeHeader) << " + padding)\n";
+				std::cout << "index: offset " << headerSize << ", " << archive.files.size() << " x " << entrySize
+					<< " = " << archive.files.size() * entrySize << " bytes\n";
+				std::cout << "data: offset " << archive.dataStart << "\n";
+				std::cout << "files (" << archive.files.size() << "):\n";
 			}
 
 			if (!WriteData(archive, stream, &error)) {
@@ -591,6 +625,25 @@ namespace StaticForge {
 				*errorOut = "Failed to set the size of archive '" + outputPath.u8string() + "': " + ec.message();
 				return false;
 			}
+
+			if (m_isDebugActive) {
+				if (archive.storeNames) {
+					const uint64_t headerSize = sizeof(Internal::StaticForgeNameTableHeader);
+					const uint64_t entrySize = sizeof(Internal::StaticForgeNameTableEntry);
+					const uint64_t stored = archive.nameStringDataCompressed.size();
+					std::cout << "name table:\n";
+					std::cout << "  - header: offset " << archive.nameTableStart << ", " << headerSize << " bytes\n";
+					std::cout << "  - entries: offset " << archive.nameTableStart + headerSize << ", "
+						<< archive.files.size() << " x " << entrySize << " = " << archive.files.size() * entrySize << " bytes\n";
+					std::cout << "  - names: offset " << archive.nameStringDataStart << ", " << archive.nameStringDataSize << " bytes";
+					if (stored == archive.nameStringDataSize)
+						std::cout << ", raw\n";
+					else
+						std::cout << ", compressed " << stored << " bytes\n";
+				}
+
+				std::cout << "archive size: " << archiveEnd << " bytes\n" << std::endl;
+			}
 		}
 
 		return true;
@@ -633,12 +686,6 @@ namespace StaticForge {
 
 		const uint64_t sizeNameTableHeader = sizeof(Internal::StaticForgeNameTableHeader);
 		const uint64_t sizeNameTableEntry = sizeof(Internal::StaticForgeNameTableEntry);
-		
-		if (m_isDebugActive) {
-			std::cout << Internal::CONSOLE_SEPERATOR << std::endl;
-			std::cout << "Building name table offsets for archive '" << archive.name << "(" << archive.files.size() << ")'" << std::endl;
-			std::cout << Internal::CONSOLE_SEPERATOR << std::endl;
-		}
 
 		// gets set during write data at the end
 		// archive.nameTableStart = archive.totalArchiveSize;
@@ -701,15 +748,6 @@ namespace StaticForge {
 		if (!IsWorthCompressing(stringData.size(), archive.nameStringDataCompressed.size(), archive.compressionMinSaving)) {
 			const auto* raw = reinterpret_cast<const std::byte*>(stringData.data());
 			archive.nameStringDataCompressed.assign(raw, raw + stringData.size());
-		}
-
-		if (m_isDebugActive) {
-			std::cout << "total size: " << archive.totalArchiveSize << " bytes" << std::endl;
-			std::cout << "name table start: " << archive.nameTableStart << std::endl;
-			std::cout << "name data start: " << archive.nameStringDataStart << std::endl;
-			std::cout << "name data size: " << archive.nameStringDataSize << " bytes, compressed: "
-				<< archive.nameStringDataCompressed.size() << " bytes" << std::endl;
-			std::cout << std::endl;
 		}
 
 		return true;
@@ -779,22 +817,11 @@ namespace StaticForge {
 			}
 		}
 
-		if (m_isDebugActive) {
-			std::cout << "header:" << std::endl;
-			std::cout << "  offset: " << 0 << std::endl;
-			std::cout << "  size: " << headerSize << std::endl;
-			std::cout << std::endl;
-		}
-
 		return true;
 	}
 
 	bool StaticForgeBuilder::WriteIndex(ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) const {
 		const uint64_t indexEntrySize = sizeof(Internal::StaticForgeIndexEntry);
-
-		if (m_isDebugActive) {
-			std::cout << "index (" + std::to_string(archive.files.size()) + "):" << std::endl;
-		}
 
 		for (size_t i = 0; i < archive.files.size(); i++) {
 			auto& fe = archive.files[i];
@@ -828,15 +855,6 @@ namespace StaticForge {
 					+ fe.filepath.u8string() + "'";
 				return false;
 			}
-
-			if (m_isDebugActive) {
-				std::cout << "  entry " << i << ":" << std::endl;
-				std::cout << "  - size: " << indexEntrySize << std::endl;
-			}
-		}
-
-		if (m_isDebugActive) {
-			std::cout << std::endl;
 		}
 
 		return true;
@@ -852,13 +870,6 @@ namespace StaticForge {
 		m_compressor->SetTableSizeLog2(archive.compressionTableSizeLog2);
 		m_compressor->SetMinMatchLength(archive.compressionMinMatchLength);
 
-		if (m_isDebugActive && archive.compress) {
-			std::cout << "compression: block size " << archive.compressionBlockSize
-				<< ", table size 2^" << archive.compressionTableSizeLog2
-				<< ", min match length " << archive.compressionMinMatchLength
-				<< ", min saving " << archive.compressionMinSaving << "%" << std::endl;
-		}
-
 		// write padding
 		// header + index table = archive.dataStart
 
@@ -868,10 +879,6 @@ namespace StaticForge {
 		if (stream.fail()) {
 			*errorOut = "Failed to write data0 padding";
 			return false;
-		}
-
-		if (m_isDebugActive) {
-			std::cout << "data (" + std::to_string(archive.files.size()) + "):" << std::endl;
 		}
 
 		uint64_t totalOffset = 0;
@@ -891,6 +898,10 @@ namespace StaticForge {
 			const uint64_t fileStart = archive.dataStart + totalOffset;
 			uint32_t checksum = 2166136261u;
 			uint64_t written = 0;
+			// only for the debug output
+			uint64_t blockCount = 0;
+			uint64_t rawBlockCount = 0;
+			uint64_t compressedAttempt = 0;
 
 			while (fileStream) {
 				fileStream.read(buffer.data(), static_cast<std::streamsize>(readSize));
@@ -929,6 +940,9 @@ namespace StaticForge {
 					stream.write(blockData, dataSize);
 
 					written += sizeof(uint32_t) * 2 + dataSize;
+					blockCount++;
+					if (storeRaw)
+						rawBlockCount++;
 				}
 				else {
 					checksum = Internal::FNV1a(buffer.data(), bytesRead, checksum);
@@ -949,6 +963,7 @@ namespace StaticForge {
 
 			// if the whole file doesn't get small enough, it is written again uncompressed at the same position
 			if (useCompression && !IsWorthCompressing(f.fileSize, written, archive.compressionMinSaving)) {
+				compressedAttempt = written;
 				useCompression = false;
 				checksum = 2166136261u;
 				written = 0;
@@ -1034,14 +1049,28 @@ namespace StaticForge {
 			}
 
 			if (m_isDebugActive) {
-				std::cout << "  data " << i << ":\n";
-				std::cout << "  - offset: " << f.blockOffset << "\n";
-				std::cout << "  - file size: " << f.fileSize << "\n";
-				if (useCompression)
-					std::cout << "  - compressed file size: " << written << "\n";
-				std::cout << "  - file padding: " << f.filePadding << "\n";
-				std::cout << "  - file aligned size: " << alignedFileSize << "\n";
-				std::cout << "  - checksum: " << checksum << "\n";
+				std::cout << "  [" << i << "] " << f.relativeUtf8 << "\n";
+				std::cout << "      - hash: " << ToHex(f.hashName, 16) << "\n";
+				std::cout << "      - offset: " << f.blockOffset << " (in file " << fileStart << ")\n";
+				std::cout << "      - size: " << f.fileSize << " bytes\n";
+
+				std::cout << "      - stored: ";
+				if (useCompression) {
+					std::cout << written << " bytes compressed (-" << (f.fileSize - written) * 100 / f.fileSize << "%), "
+						<< blockCount << (blockCount == 1 ? " block" : " blocks");
+					if (rawBlockCount > 0)
+						std::cout << ", " << rawBlockCount << " raw";
+					std::cout << "\n";
+				}
+				else if (!archive.compress)
+					std::cout << "raw\n";
+				else if (f.fileSize <= blockSize)
+					std::cout << "raw, too small to compress (<= " << blockSize << " bytes)\n";
+				else
+					std::cout << "raw, compressed " << compressedAttempt << " bytes, saving below " << archive.compressionMinSaving << "%\n";
+
+				std::cout << "      - padding: " << f.filePadding << " bytes (aligned " << alignedFileSize << " bytes)\n";
+				std::cout << "      - checksum: " << ToHex(checksum, 8) << "\n";
 			}
 		}
 
@@ -1051,10 +1080,6 @@ namespace StaticForge {
 		}
 
 		archive.nameTableStart = archive.totalArchiveSize;
-
-		if (m_isDebugActive) {
-			std::cout << std::endl;
-		}
 
 		return true;
 	}
@@ -1106,21 +1131,10 @@ namespace StaticForge {
 			return false;
 		}
 
-		if (m_isDebugActive) {
-			std::cout << "Name table header:" << std::endl;
-			std::cout << "  offset: " << archive.nameTableStart << std::endl;
-			std::cout << "  size: " << headerSize << std::endl;
-			std::cout << std::endl;
-		}
-
 		return true;
 	}
 
 	bool StaticForgeBuilder::WriteNameTableData(const ArchiveGroup& archive, std::ofstream& stream, std::string* errorOut) const {
-		if (m_isDebugActive) {
-			std::cout << "name table (" + std::to_string(archive.files.size()) + "):" << std::endl;
-		}
-		
 		for (size_t i = 0; i < archive.files.size(); i++) {
 			using Entry = Internal::StaticForgeNameTableEntry;
 			auto& f = archive.files[i];
