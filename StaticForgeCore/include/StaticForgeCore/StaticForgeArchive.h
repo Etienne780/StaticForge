@@ -20,6 +20,7 @@ namespace StaticForge {
 	}
 
 	class StaticForgeReader;
+	class StaticForgeConcurrentArchive;
 
 	/**
 	 * @brief Lightweight view into asset data stored inside a StaticForge archive.
@@ -36,6 +37,7 @@ namespace StaticForge {
 	 */
 	class StaticForgeArchive : public ErrorSupport {
 		friend class StaticForgeReader;
+		friend class StaticForgeConcurrentArchive;
 	public:
 		/**
 		 * @brief Creates an empty archive object.
@@ -62,6 +64,13 @@ namespace StaticForge {
 		 * Cloning is cheap, nothing is read from the file.
 		 */
 		StaticForgeArchive Clone() const;
+
+		/**
+		 * @brief Creates a StaticForgeConcurrentArchive that shares the loaded data and the mapping.
+		 *
+		 * @param poolSize Maximum number of open file streams, DEFAULT_POOL_SIZE (0) = std::thread::hardware_concurrency().
+		 */
+		StaticForgeConcurrentArchive CloneConcurrent(size_t poolSize = DEFAULT_POOL_SIZE) const;
 
 		/**
 		 * @brief Opens the archive file stream for reading.
@@ -321,3 +330,6 @@ namespace StaticForge {
 	};
 
 }
+
+// after the class, so CloneConcurrent() can be used with only this header
+#include "StaticForgeConcurrentArchive.h"

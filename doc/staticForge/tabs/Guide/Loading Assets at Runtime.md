@@ -35,6 +35,51 @@ StaticForge::StaticForgeArchive clone = archive.Clone();
 
 The clone shares the loaded index and names (and the memory mapping, if the archive is mapped), but has its own file stream and its own errors. A single archive object must not be used from several threads at once, but each thread can use its own clone.
 
+## Loading from several threads
+
+`StaticForgeConcurrentArchive` can be used from several threads at the same time. It has the same loading functions as `StaticForgeArchive`:
+
+```cpp
+StaticForge::StaticForgeConcurrentArchive archive;
+archive.SetPoolSize(4); // optional, default: std::thread::hardware_concurrency()
+
+if (!reader.Load("./build/main.sfpak", &archive)) {
+    std::cerr << reader.GetError() << std::endl;
+}
+
+// in any thread
+std::vector<std::byte> data;
+std::string error;
+if (!archive.LoadAsset("textures/hero.png", &data, &error)) {
+    std::cerr << error << std::endl;
+}
+```
+
+It can also be created from a loaded archive and the other way around. Both share the loaded data:
+
+```cpp
+StaticForge::StaticForgeConcurrentArchive concurrent = archive.CloneConcurrent(4);
+StaticForge::StaticForgeArchive normal = concurrent.CloneArchive();
+```
+
+**Stream pool:** stream loads take a free file stream from a pool and give it back afterwards. Streams are only opened when they are needed. If all streams of the pool are in use, the load waits until one is free, so at most `GetPoolSize()` files are open. `GetActiveStreamCount()` and `GetOpenStreamCount()` return how many streams are used and open right now (only a snapshot, the value can change at any time). `SetPoolSize` can also be called while loading, `CloseFreeStreams()` closes all streams that are not used.
+
+**Mapped:** after `OpenMapped()` the mapped functions don't need the pool at all and are the fastest way to load from many threads. `OpenMapped` and `CloseMapped` themselves must not be called while other threads load assets.
+
+**Errors:** every function has an optional `std::string* errorOut` as last parameter.
+
+- With `errorOut` the error is only written there, nothing is collected.
+- Without `errorOut` the error is collected for the calling thread. `TakeError()`, `GetError()`, `IsValid()` and `ClearErrors()` only see the errors of the calling thread.
+- `GetAllErrors()` / `TakeAllErrors()` return the errors of all threads, each line starts with `[Thread <n>]`. Threads are numbered in the order of their first error.
+
+```cpp
+// e.g. after a loading screen
+if (!archive.GetAllErrors().empty())
+    std::cerr << archive.TakeAllErrors() << std::endl;
+```
+
+Errors without `errorOut` stay collected until they are taken or cleared, also if the thread has ended.
+
 ## Loading a file by path
 
 Pass the **relative path** of the file exactly as it appeared under the source directory:

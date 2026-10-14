@@ -5,6 +5,7 @@
 #include <string_view>
 #include <optional>
 #include <cstdint>
+#include <cstddef>
 
 namespace StaticForge {
 
@@ -30,6 +31,11 @@ namespace StaticForge {
 	constexpr uint32_t DEFAULT_COMPRESSION_MIN_MATCH_LENGTH = 8;
 	constexpr uint32_t MIN_COMPRESSION_MIN_MATCH_LENGTH = 4;
 	constexpr uint32_t MAX_COMPRESSION_MIN_MATCH_LENGTH = 0xFFFF;
+
+	// stream pool of StaticForgeConcurrentArchive, 0 = std::thread::hardware_concurrency()
+	constexpr size_t DEFAULT_POOL_SIZE = 0;
+	// used if hardware_concurrency() is unknown
+	constexpr size_t FALLBACK_POOL_SIZE = 4;
 
 	namespace Internal {
 

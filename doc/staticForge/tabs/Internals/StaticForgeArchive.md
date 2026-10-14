@@ -164,3 +164,31 @@ if (archive.GetAssetMapped("textures/ui.png").data == nullptr) {
     std::cerr << archive.TakeError() << std::endl;
 }
 ```
+
+## StaticForgeConcurrentArchive
+
+`StaticForgeConcurrentArchive` uses the same `ArchiveData` and the same loading functions of `Internal/ArchiveCore`, only the stream handling and the errors are different. It doesn't derive from `ErrorSupport`.
+
+| Member    | Description                                                                 |
+|-----------|-----------------------------------------------------------------------------|
+| `m_data`  | `std::shared_ptr<const Internal::ArchiveData>`, shared with clones          |
+| `m_mmap`  | `std::shared_ptr<Internal::MmapFile>`, shared with clones                   |
+| `m_state` | `std::unique_ptr<State>` with the stream pool and the errors (defined in the `.cpp`) |
+
+`State` is behind a pointer, because a `std::mutex` can't be moved. The move constructor gives the moved-from object a new empty `State`, so it stays usable as an empty archive.
+
+### Stream pool
+
+- `freeStreams`: open streams that are not used, protected by `poolMutex`.
+- `poolSize`, `activeCount`, `openCount`: `std::atomic`, so the getters can read them without the lock. They are only changed while the lock is held.
+- **Acquire:** waits on `poolCondition` until a free stream exists or `openCount < poolSize`. A free stream is taken, otherwise a new one is opened (outside of the lock).
+- **Release:** gives the stream back and wakes up one waiting load. If the pool got smaller in the meantime (`openCount > poolSize`), the stream is closed instead.
+- A `Lease` object gives the stream back in its destructor, so it isn't lost if loading throws.
+- `SetPoolSize` closes the free streams above the new size and wakes up all waiting loads, so it can be called while loading.
+- `StaticForgeReader::Load` puts the stream it used for reading into the pool as the first free stream.
+
+Mapped loads use `m_mmap` directly and don't touch the pool. `m_mmap` itself is not protected, so `OpenMapped`/`CloseMapped` must not run while other threads load.
+
+### Errors
+
+Every function takes an optional `std::string* errorOut`. `Report()` writes the error there, or adds it to the list of the calling thread: `std::unordered_map<std::thread::id, ThreadErrors>` protected by `errorMutex`. Each thread gets a number when it reports its first error. The number is kept when its errors are cleared, so the same thread keeps the same number. The format of a thread's list is the same as `ErrorSupport` (`[Error]: ` for the first line, `>        ` for the following ones). `GetAllErrors()` sorts the threads by number and prefixes every line with `[Thread <n>] `.

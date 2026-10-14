@@ -14,6 +14,7 @@ namespace StaticForge {
 	}
 
 	class StaticForgeArchive;
+	class StaticForgeConcurrentArchive;
 
 	/**
 	 * @brief Loads and validates StaticForge archive files.
@@ -44,7 +45,30 @@ namespace StaticForge {
 			StaticForgeArchive* archiveOut
 		);
 
+		/**
+		 * @brief Loads an archive file into a StaticForgeConcurrentArchive instance.
+		 *
+		 * The pool size of the archive is kept.
+		 *
+		 * @param path Path to the archive file.
+		 * @param archiveOut Target archive object that receives the loaded data.
+		 * @return true if the archive was loaded successfully; otherwise false.
+		 */
+		bool Load(
+			const StaticForgePath& path,
+			StaticForgeConcurrentArchive* archiveOut
+		);
+
 	private:
+		/**
+		 * @brief Validates the archive file path and gets the file size.
+		 *
+		 * @param path Archive file path.
+		 * @param fileSizeOut Receives the file size.
+		 * @return true if the file can be loaded.
+		 */
+		bool CheckFile(const StaticForgePath& path, uint64_t* fileSizeOut);
+
 		/**
 		 * @brief Validates the archive file path.
 		 *

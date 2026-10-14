@@ -29,18 +29,9 @@ namespace StaticForge {
 			return false;
 		}
 
-		std::string error;
-		if (!ValidatePackPath(path, &error)) {
-			AddError("ValidatePackPath: " + error);
+		uint64_t fileSize = 0;
+		if (!CheckFile(path, &fileSize))
 			return false;
-		}
-
-		std::error_code ec;
-		const uint64_t fileSize = std::filesystem::file_size(path, ec);
-		if (ec) {
-			AddError("Failed to get file size of '" + path.u8string() + "': " + ec.message());
-			return false;
-		}
 
 		// resets the archive so it is allways fresh
 		archiveOut->Reset();
@@ -53,6 +44,51 @@ namespace StaticForge {
 		// the stream used for reading stays open for loading assets
 		archiveOut->m_data = std::move(data);
 		archiveOut->m_stream = std::move(stream);
+		return true;
+	}
+
+	bool StaticForgeReader::Load(
+		const StaticForgePath& path,
+		StaticForgeConcurrentArchive* archiveOut
+	) {
+		ClearErrors();
+
+		if (!archiveOut) {
+			AddError("Load needs a valid 'StaticForgeConcurrentArchive' object");
+			return false;
+		}
+
+		uint64_t fileSize = 0;
+		if (!CheckFile(path, &fileSize))
+			return false;
+
+		// resets the archive so it is allways fresh, the pool size is kept
+		archiveOut->Reset();
+
+		auto data = std::make_shared<Internal::ArchiveData>();
+		std::ifstream stream;
+		if (!LoadData(path, fileSize, data.get(), &stream))
+			return false;
+
+		// the stream used for reading becomes the first stream of the pool
+		archiveOut->m_data = std::move(data);
+		archiveOut->AddStreamToPool(std::move(stream));
+		return true;
+	}
+
+	bool StaticForgeReader::CheckFile(const StaticForgePath& path, uint64_t* fileSizeOut) {
+		std::string error;
+		if (!ValidatePackPath(path, &error)) {
+			AddError("ValidatePackPath: " + error);
+			return false;
+		}
+
+		std::error_code ec;
+		*fileSizeOut = std::filesystem::file_size(path, ec);
+		if (ec) {
+			AddError("Failed to get file size of '" + path.u8string() + "': " + ec.message());
+			return false;
+		}
 		return true;
 	}
 
