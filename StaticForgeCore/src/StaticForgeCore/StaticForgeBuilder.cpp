@@ -45,12 +45,69 @@ namespace StaticForge {
 			return false;
 		}
 
-		if (!CreateGroups(&error)) {
+		// archives are written to temporary files first, so a failed build keeps the old archives
+		if (!CreateOutputDir(&error) || !CreateGroups(&error) || !CommitArchives(&error)) {
 			AddError(error);
+			RemoveTempFiles();
 			return false;
 		}
 
 		return true;
+	}
+
+	bool StaticForgeBuilder::CreateOutputDir(std::string* errorOut) {
+		namespace fs = std::filesystem;
+
+		const StaticForgePath dir = m_outputPath.has_filename() ? m_outputPath : m_outputPath.parent_path();
+		std::error_code ec;
+		if (fs::exists(dir, ec))
+			return true;
+
+		// the highest directory that gets created, removed again if the build fails
+		StaticForgePath root = dir;
+		for (StaticForgePath parent = dir.parent_path(); !parent.empty() && parent != root && !fs::exists(parent, ec); parent = parent.parent_path())
+			root = parent;
+
+		fs::create_directories(dir, ec);
+		if (ec) {
+			*errorOut = "Failed to create output directory '" + m_outputPath.generic_u8string() + "': " + ec.message();
+			return false;
+		}
+
+		m_createdOutputDir = dir;
+		m_createdOutputRoot = root;
+		return true;
+	}
+
+	bool StaticForgeBuilder::CommitArchives(std::string* errorOut) {
+		for (const auto& [tempPath, path] : m_tempFiles) {
+			std::error_code ec;
+			std::filesystem::rename(tempPath, path, ec);
+			if (ec) {
+				*errorOut = "Failed to rename '" + tempPath.generic_u8string() + "' to '" + path.generic_u8string() + "': " + ec.message();
+				return false;
+			}
+		}
+
+		m_tempFiles.clear();
+		return true;
+	}
+
+	void StaticForgeBuilder::RemoveTempFiles() {
+		namespace fs = std::filesystem;
+		std::error_code ec;
+
+		for (const auto& [tempPath, path] : m_tempFiles)
+			fs::remove(tempPath, ec);
+		m_tempFiles.clear();
+
+		// only empty directories are removed
+		if (!m_createdOutputDir.empty()) {
+			for (StaticForgePath dir = m_createdOutputDir; ; dir = dir.parent_path()) {
+				if (!fs::remove(dir, ec) || dir == m_createdOutputRoot)
+					break;
+			}
+		}
 	}
 
 	StaticForgeBuilder& StaticForgeBuilder::SetArchiveName(const std::string& archiveName) {
@@ -116,6 +173,9 @@ namespace StaticForge {
 	void StaticForgeBuilder::Reset() {
 		ClearErrors();
 		m_archiveGroups.clear();
+		m_tempFiles.clear();
+		m_createdOutputDir.clear();
+		m_createdOutputRoot.clear();
 	}
 
 	bool StaticForgeBuilder::CheckCompressionSettings(
@@ -242,18 +302,11 @@ namespace StaticForge {
 			return false;
 		}
 
-		// checks/creates output path
+		// a missing output directory is created when the archives are written
 		if (!std::filesystem::exists(m_outputPath, ec)) {
 			if (!m_createOutputDir) {
 				*errorOut = "Output path '" + m_outputPath.generic_u8string() + "' does not exist!";
 				return false;
-			}
-			else {
-				std::filesystem::create_directories((m_outputPath.has_filename() ? m_outputPath : m_outputPath.parent_path()), ec);
-				if (ec) {
-					*errorOut = "Failed to create output directory '" + m_outputPath.generic_u8string() + "': " + ec.message();
-					return false;
-				}
 			}
 		}
 		else if (!std::filesystem::is_directory(m_outputPath, ec)) {
@@ -537,10 +590,13 @@ namespace StaticForge {
 
 			// the name is UTF-8 and may contain dots, so the extension is appended and not replaced
 			StaticForgePath outputPath = m_outputPath / std::filesystem::u8path(archive.name + std::string(PACK_FILE_EXTENSION));
+			StaticForgePath tempPath = outputPath;
+			tempPath += ".tmp";
+			m_tempFiles.emplace_back(tempPath, outputPath);
 
-			stream.open(outputPath, std::ios::out | std::ios::binary | std::ios::trunc);
+			stream.open(tempPath, std::ios::out | std::ios::binary | std::ios::trunc);
 			if (!stream.is_open()) {
-				*errorOut = "Failed to create file with path '" + outputPath.generic_u8string() + "'";
+				*errorOut = "Failed to create file '" + tempPath.generic_u8string() + "'";
 				return false;
 			}
 
@@ -616,9 +672,9 @@ namespace StaticForge {
 
 			// a file written again uncompressed can leave old bytes behind the end of the archive
 			std::error_code ec;
-			const uint64_t fileSize = std::filesystem::file_size(outputPath, ec);
+			const uint64_t fileSize = std::filesystem::file_size(tempPath, ec);
 			if (!ec && fileSize > archiveEnd)
-				std::filesystem::resize_file(outputPath, archiveEnd, ec);
+				std::filesystem::resize_file(tempPath, archiveEnd, ec);
 			if (ec) {
 				*errorOut = "Failed to set the size of archive '" + outputPath.generic_u8string() + "': " + ec.message();
 				return false;

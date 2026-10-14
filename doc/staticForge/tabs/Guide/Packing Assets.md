@@ -49,6 +49,8 @@ If the output directory doesn't exist yet, add `--mkdir`:
 StaticForgeTool --source ./assets --output ./build/packed --mkdir
 ```
 
+The archives are written to temporary files (`<name>.sfpak.tmp`) and renamed when all of them are written. If the build fails, the existing archives stay as they were, the temporary files are removed and a directory created by `--mkdir` is removed again.
+
 ## Compression
 
 Add `--compress` to compress every file larger than 4096 bytes:

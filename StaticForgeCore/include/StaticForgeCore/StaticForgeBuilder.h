@@ -5,6 +5,7 @@
 #include <optional>
 #include <unordered_map>
 #include <fstream>
+#include <utility>
 
 #include "StaticForgeTypes.h"
 #include "ErrorSupport.h"
@@ -196,6 +197,12 @@ namespace StaticForge {
 		std::unordered_map<std::string, ArchiveGroup> m_archiveGroups;
 		std::unique_ptr<Internal::LZ4Compression> m_compressor;
 
+		// written archives as (temporary path, final path), renamed when all archives are written
+		std::vector<std::pair<StaticForgePath, StaticForgePath>> m_tempFiles;
+		// output directory created by this build and its highest created parent
+		StaticForgePath m_createdOutputDir;
+		StaticForgePath m_createdOutputRoot;
+
 		/**
 		 * @brief Clears all data of a previous build.
 		 */
@@ -233,9 +240,24 @@ namespace StaticForge {
 		bool ScanFiles(std::string* errorOut);
 
 		/**
-		 * @brief Builds all archive groups and writes them to disk.
+		 * @brief Creates the output directory if it is missing.
+		 */
+		bool CreateOutputDir(std::string* errorOut);
+
+		/**
+		 * @brief Builds all archive groups and writes them to temporary files.
 		 */
 		bool CreateGroups(std::string* errorOut);
+
+		/**
+		 * @brief Renames the temporary files to the final archive paths.
+		 */
+		bool CommitArchives(std::string* errorOut);
+
+		/**
+		 * @brief Removes the temporary files and the empty output directories created by this build.
+		 */
+		void RemoveTempFiles();
 
 		bool CalculateDataStart(ArchiveGroup& archive, std::string* errorOut) const;
 

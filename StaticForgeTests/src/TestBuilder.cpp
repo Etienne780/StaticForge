@@ -107,6 +107,53 @@ TEST_CASE("Builder/Output and source paths") {
 	CHECK(!fs::exists("main.sfpak"));
 }
 
+TEST_CASE("Builder/Failed build leaves no files behind") {
+	TempDir dir;
+	WriteFile(dir / "src/audio/audio.sfpak.meta", "archive = audio;");
+	WriteFile(dir / "src/audio/music.ogg", RandomData(5000, 1));
+	WriteFile(dir / "src/textures/textures.sfpak.meta", "archive = textures;");
+	WriteFile(dir / "src/textures/hero.png", RandomData(5000, 2));
+
+	// error while scanning, the output directory is not created
+	WriteFile(dir / "bad/bad.sfpak.meta", "archive = bad; compress-min-saving = abc;");
+	StaticForgeBuilder scanError{ "main", { dir / "bad" }, dir / "new/sub" };
+	scanError.SetCreateOutputDir(true);
+	CHECK(!scanError.Build());
+	CHECK(!fs::exists(dir / "new"));
+
+	// error while writing (file name too long), the created directories are removed again
+	WriteFile(dir / "long/a/a.sfpak.meta", "archive = a;");
+	WriteFile(dir / "long/a/a.txt", "a");
+	WriteFile(dir / "long/b/b.sfpak.meta", "archive = b" + std::string(300, 'b') + ";");
+	WriteFile(dir / "long/b/b.txt", "b");
+	StaticForgeBuilder writeError{ "main", { dir / "long" }, dir / "new/sub" };
+	writeError.SetCreateOutputDir(true);
+	CHECK(!writeError.Build());
+	CHECK_MSG(writeError.GetError().find("Failed to create file") != std::string::npos, writeError.GetError());
+	CHECK_MSG(!fs::exists(dir / "new"), writeError.GetError());
+
+	// error while writing, the old archives are kept and the temporary files are removed
+	StaticForgeBuilder first{ "main", { dir / "src" }, dir / "out" };
+	first.SetCreateOutputDir(true);
+	CHECK_MSG(first.Build(), first.GetError());
+	const std::string oldAudio = ReadFile(dir / "out/audio.sfpak");
+
+	WriteFile(dir / "src/audio/music.ogg", RandomData(9000, 3));
+	fs::create_directories(dir / "out/textures.sfpak.tmp");
+	StaticForgeBuilder second{ "main", { dir / "src" }, dir / "out" };
+	CHECK(!second.Build());
+	CHECK_MSG(second.GetError().find("Failed to create file") != std::string::npos, second.GetError());
+	CHECK(ReadFile(dir / "out/audio.sfpak") == oldAudio);
+	CHECK(!fs::exists(dir / "out/audio.sfpak.tmp"));
+
+	// after the problem is gone the build works and no temporary files are left
+	fs::remove(dir / "out/textures.sfpak.tmp");
+	CHECK_MSG(second.Build(), second.GetError());
+	CHECK(ReadFile(dir / "out/audio.sfpak") != oldAudio);
+	for (const auto& entry : fs::directory_iterator(dir / "out"))
+		CHECK_MSG(entry.path().extension() == ".sfpak", entry.path().u8string());
+}
+
 TEST_CASE("Builder/Archive names") {
 	TempDir dir;
 	WriteFile(dir / "src/a.txt", "a");

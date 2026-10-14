@@ -91,6 +91,8 @@ All archives are checked, also if one of them is damaged. The exit code is not `
 StaticForgeTool --extract ./build/textures.sfpak --output ./unpacked --mkdir
 ```
 
+All archives are loaded and checked before anything is written. The output directory is only created when all of them can be extracted.
+
 With stored names the original folder structure is restored, e.g. `./unpacked/textures/textures/background.png` (the path inside the archive is relative to the source folder).
 
 Without stored names the original paths are unknown, so the files are named after their hash, matching the `--info --verbose` output: `./unpacked/main/a01c85352df03fae.bin`.

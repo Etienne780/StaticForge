@@ -5,7 +5,7 @@ name: Build Process
 
 # Build Process
 
-`StaticForgeBuilder::Build()` resets the data of a previous build, then runs four internal phases in sequence.
+`StaticForgeBuilder::Build()` resets the data of a previous build, then runs the internal phases below in sequence.
 
 ## 1. CheckCompressionSettings
 
@@ -19,7 +19,7 @@ Validates that:
 - all source paths exist and are directories
 - the output path is not an archive file path (ending with `.sfpak`) and, if it exists, is a directory
 
-If `SetCreateOutputDir(true)` was called and the output directory is missing, it is created here.
+A missing output directory is only an error if `SetCreateOutputDir(true)` was not called. The directory is created later in `CreateOutputDir`, so a build that fails while scanning leaves nothing behind.
 
 ## 3. ScanFiles
 
@@ -41,9 +41,13 @@ For each file the builder also:
 
 At the end the files of every archive group are sorted by their relative path (UTF-8 byte order), also when they come from several source paths. The same sources therefore always give the same archive, byte for byte, on every system.
 
-## 4. CreateGroups
+## 4. CreateOutputDir
 
-For each `ArchiveGroup` the output file `<output>/<archive name>.sfpak` is created and the following phases run in order:
+Creates the output directory and its missing parents if `SetCreateOutputDir(true)` was called. The created directories are remembered, so they can be removed again if the build fails.
+
+## 5. CreateGroups
+
+The archive groups are written in order of their name. For each `ArchiveGroup` the temporary file `<output>/<archive name>.sfpak.tmp` is created and the following phases run in order:
 
 **CalculateDataStart** — computes the byte offset at which file data begins. This is the sum of the aligned header size and the index table size, rounded up to the next 4096-byte boundary.
 
@@ -56,6 +60,12 @@ For each `ArchiveGroup` the output file `<output>/<archive name>.sfpak` is creat
 **BuildNameTable** *(optional, when store-names is enabled)* — computes the byte layout of the Name Table Header, Name Table Entries, and String Data region, and compresses all names as one block. Offsets are appended after the last data block.
 
 **WriteNameTable** *(optional)* — seeks to `nameTableStart` (set at the end of `WriteData`) and writes the Name Table Header, Name Table Entries, and the compressed UTF-8 string data.
+
+## 6. CommitArchives
+
+When all archives are written, every temporary file is renamed to `<archive name>.sfpak` and replaces the old archive.
+
+If any phase from `CreateOutputDir` on fails, all temporary files are removed and the directories created by `CreateOutputDir` are removed again if they are empty. The old archives stay as they were, unless the error happens while renaming: the archives renamed until then are already replaced.
 
 ## Write phases summary
 

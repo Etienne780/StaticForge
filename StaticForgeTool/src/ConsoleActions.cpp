@@ -148,38 +148,49 @@ namespace Actions {
         const bool verbose = config.GetVerbosePrint();
 
         std::error_code ec;
-        if (!fs::exists(outputPath, ec)) {
-            if (!config.GetCreateOutputDir()) {
-                PrintError("", "Output path '" + outputPath.generic_u8string() + "' does not exist (use --mkdir to create it)");
-                return false;
-            }
-
-            if (!fs::create_directories(outputPath, ec) || ec) {
-                PrintError("", "Failed to create output directory '" + outputPath.generic_u8string() + "'" + (ec ? ": " + ec.message() : std::string()));
-                return false;
-            }
+        const bool outputExists = fs::exists(outputPath, ec);
+        if (!outputExists && !config.GetCreateOutputDir()) {
+            PrintError("", "Output path '" + outputPath.generic_u8string() + "' does not exist (use --mkdir to create it)");
+            return false;
         }
 
-        for (const auto& archivePath : config.GetExtractPaths()) {
+        struct Job {
+            fs::path archivePath;
+            fs::path archiveDir;
             StaticForge::StaticForgeArchive archive;
+            std::vector<fs::path> targets;
+        };
+
+        // loads all archives and checks all targets first, so nothing gets written if one is invalid
+        std::vector<Job> jobs;
+        jobs.reserve(config.GetExtractPaths().size());
+        for (const auto& archivePath : config.GetExtractPaths()) {
+            Job job;
+            job.archivePath = archivePath;
+            // each archive gets its own folder
+            job.archiveDir = outputPath / archivePath.stem();
+
+            for (const auto& other : jobs) {
+                if (other.archiveDir == job.archiveDir) {
+                    PrintError("", "Archives '" + other.archivePath.generic_u8string() + "' and '" + archivePath.generic_u8string()
+                        + "' would both be extracted to '" + job.archiveDir.generic_u8string() + "'");
+                    return false;
+                }
+            }
+
             StaticForge::StaticForgeReader reader;
-            if (!reader.Load(archivePath, &archive)) {
+            if (!reader.Load(archivePath, &job.archive)) {
                 PrintError("Failed to load archive '" + archivePath.generic_u8string() + "'", reader.GetError());
                 return false;
             }
 
-            // each archive gets its own folder
-            const fs::path archiveDir = outputPath / archivePath.stem();
-            const bool storesNames = archive.StoresNames();
-            const size_t count = archive.GetFileCount();
-
-            // resolve and check all targets first, so nothing gets written if one is invalid
-            std::vector<fs::path> targets;
-            targets.reserve(count);
+            const bool storesNames = job.archive.StoresNames();
+            const size_t count = job.archive.GetFileCount();
+            job.targets.reserve(count);
             for (size_t i = 0; i < count; i++) {
                 fs::path relative = storesNames
-                    ? fs::u8path(archive.GetName(i))
-                    : fs::path(HashToHex(archive.GetHashName(i)) + ".bin");
+                    ? fs::u8path(job.archive.GetName(i))
+                    : fs::path(HashToHex(job.archive.GetHashName(i)) + ".bin");
 
                 if (!IsSafeRelativePath(relative)) {
                     PrintError("", "Invalid file name '" + relative.generic_u8string() + "' in archive '"
@@ -187,21 +198,34 @@ namespace Actions {
                     return false;
                 }
 
-                fs::path target = (archiveDir / relative).make_preferred();
+                fs::path target = (job.archiveDir / relative).make_preferred();
                 if (fs::exists(target, ec)) {
                     PrintError("", "File '" + target.generic_u8string() + "' already exists, nothing was extracted");
                     return false;
                 }
 
-                targets.push_back(std::move(target));
+                job.targets.push_back(std::move(target));
             }
 
-            std::cout << "Extracting '" << archivePath.generic_u8string() << "' (" << count << (count == 1 ? " file" : " files")
-                << (storesNames ? "" : ", no names stored, files are named by hash") << ")" << std::endl;
+            jobs.push_back(std::move(job));
+        }
 
-            std::vector<std::byte> data;
+        if (!outputExists) {
+            fs::create_directories(outputPath, ec);
+            if (ec) {
+                PrintError("", "Failed to create output directory '" + outputPath.generic_u8string() + "': " + ec.message());
+                return false;
+            }
+        }
+
+        std::vector<std::byte> data;
+        for (auto& job : jobs) {
+            const size_t count = job.targets.size();
+            std::cout << "Extracting '" << job.archivePath.generic_u8string() << "' (" << count << (count == 1 ? " file" : " files")
+                << (job.archive.StoresNames() ? "" : ", no names stored, files are named by hash") << ")" << std::endl;
+
             for (size_t i = 0; i < count; i++) {
-                const fs::path& target = targets[i];
+                const fs::path& target = job.targets[i];
 
                 fs::create_directories(target.parent_path(), ec);
                 if (ec) {
@@ -209,8 +233,8 @@ namespace Actions {
                     return false;
                 }
 
-                if (!archive.LoadAssetAt(i, &data)) {
-                    PrintError("Failed to load file '" + target.generic_u8string() + "'", archive.TakeError());
+                if (!job.archive.LoadAssetAt(i, &data)) {
+                    PrintError("Failed to load file '" + target.generic_u8string() + "'", job.archive.TakeError());
                     return false;
                 }
 
@@ -225,7 +249,7 @@ namespace Actions {
                     std::cout << "  " << target.generic_u8string() << " (" << data.size() << " bytes)" << std::endl;
             }
 
-            std::cout << "Extracted to '" << archiveDir.generic_u8string() << "'" << std::endl;
+            std::cout << "Extracted to '" << job.archiveDir.generic_u8string() << "'" << std::endl;
         }
 
         return true;
