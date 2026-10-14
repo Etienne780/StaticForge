@@ -250,6 +250,32 @@ TEST_CASE("Builder/Builds are deterministic") {
 	CHECK(ReadFile(dir / "out0/main.sfpak") == ReadFile(dir / "out1/main.sfpak"));
 }
 
+TEST_CASE("Builder/Files are sorted by path") {
+	TempDir dir;
+	for (const char* name : { "b.txt", "a/z.txt", "Z.txt", u8"ä.txt", "a.txt", "10.txt", "9.txt" })
+		WriteFile(dir / "src1" / fs::u8path(name), name);
+	for (const char* name : { "a/a.txt", "c.txt", "_.txt" })
+		WriteFile(dir / "src2" / fs::u8path(name), name);
+
+	StaticForgeBuilder builder{ "main", { dir / "src1", dir / "src2" }, dir / "out" };
+	builder.SetCreateOutputDir(true).SetStoreNames(true);
+	REQUIRE_MSG(builder.Build(), builder.GetError());
+
+	StaticForgeReader reader;
+	StaticForgeArchive archive;
+	REQUIRE(reader.Load(dir / "out/main.sfpak", &archive));
+
+	// byte order of UTF-8, the same on every system
+	std::vector<std::string> expected = { "10.txt", "9.txt", "Z.txt", "_.txt", "a.txt", "a/a.txt", "a/z.txt", "b.txt", "c.txt", u8"ä.txt" };
+	REQUIRE_MSG(archive.GetFileCount() == expected.size(), archive.GetFileCount());
+	for (size_t i = 0; i < expected.size(); i++)
+		CHECK_MSG(archive.GetName(i) == expected[i], std::to_string(i) + ": " + archive.GetName(i));
+
+	// the offsets follow the order
+	for (size_t i = 1; i < archive.GetFileCount(); i++)
+		CHECK(archive.GetFileOffset(i) > archive.GetFileOffset(i - 1));
+}
+
 TEST_CASE("Builder/Builder can be used again") {
 	TempDir dir;
 	WriteFile(dir / "src/a.txt", "a");

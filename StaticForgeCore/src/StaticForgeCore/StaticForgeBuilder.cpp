@@ -271,6 +271,11 @@ namespace StaticForge {
 			return false;
 		}
 
+		// the order of the file system differs between systems, sorted by UTF-8 the build is the same everywhere
+		std::sort(outFiles->begin(), outFiles->end(), [](const StaticForgePath& a, const StaticForgePath& b) {
+			return a.u8string() < b.u8string();
+		});
+
 		return true;
 	}
 
@@ -453,6 +458,13 @@ namespace StaticForge {
 
 				archive.files.push_back(std::move(f));
 			}
+		}
+
+		// the files of an archive are stored sorted by their path, also when they come from several source paths
+		for (auto& [name, archive] : m_archiveGroups) {
+			std::sort(archive.files.begin(), archive.files.end(), [](const Internal::StaticForgeFileEntry& a, const Internal::StaticForgeFileEntry& b) {
+				return a.relativeUtf8 < b.relativeUtf8;
+			});
 		}
 
 		if (m_isDebugActive) {

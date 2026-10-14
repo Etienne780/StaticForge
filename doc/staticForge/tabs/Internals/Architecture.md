@@ -56,4 +56,4 @@ The tool-side classes (`StaticForgeBuilder`, meta parsing) are compiled into Cor
 
 ## Platforms
 
-Tested on Windows (MSVC) and Linux (GCC, Ubuntu). Archives are byte-identical across platforms: an archive packed on Windows can be loaded on Linux and the other way around.
+Tested on Windows (MSVC) and Linux (GCC, Ubuntu). Archives are byte-identical across platforms: the same sources give the same archive on Windows and Linux (the files are sorted by path), and an archive packed on Windows can be loaded on Linux and the other way around.

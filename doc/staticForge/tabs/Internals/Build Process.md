@@ -23,7 +23,7 @@ If `SetCreateOutputDir(true)` was called and the output directory is missing, it
 
 ## 3. ScanFiles
 
-Each source directory is read **once** into a list of files. Read errors are reported as build errors. Then two passes run over these lists:
+Each source directory is read **once** into a list of files. Read errors are reported as build errors. The list is sorted by the UTF-8 path, because every file system returns the files in a different order. Then two passes run over these lists:
 
 **Pass 1 — Meta collection:**  
 Collects all files ending with `.sfpak.meta` and builds a `directory → StaticForgeMetaData` mapping. Each entry stores the archive name, excluded extensions, the `store-names` and `compress` flags and the optional compression settings. Archive names and compression settings are validated here.
@@ -38,6 +38,8 @@ For each file the builder also:
 - Applies the overrides when an archive group is created:
   - `store-names` and `compress`: if the global flag is set, it is forced on even when the meta file sets it to `false`.
   - compression settings: builder value → meta file value → default.
+
+At the end the files of every archive group are sorted by their relative path (UTF-8 byte order), also when they come from several source paths. The same sources therefore always give the same archive, byte for byte, on every system.
 
 ## 4. CreateGroups
 
