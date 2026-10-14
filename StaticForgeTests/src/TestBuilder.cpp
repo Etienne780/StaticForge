@@ -416,3 +416,188 @@ TEST_CASE("Builder/No old bytes behind the end of the archive") {
 	CHECK_EQ(fs::file_size(dir / "out/main.sfpak"), archive.GetDataOffset() + 80 * 4096);
 	CHECK(archive.VerifyAll());
 }
+
+// three archives (audio, data, textures) for the build cache tests
+static void WriteCacheSources(const TempDir& dir) {
+	WriteFile(dir / "src/audio/audio.sfpak.meta", "archive = audio;");
+	WriteFile(dir / "src/audio/music.ogg", RandomData(9000, 1));
+	WriteFile(dir / "src/data/data.sfpak.meta", "archive = data; compress = true;");
+	WriteFile(dir / "src/data/items.json", TextData(20000, 2));
+	WriteFile(dir / "src/textures/textures.sfpak.meta", "archive = textures; store-names = true;");
+	WriteFile(dir / "src/textures/hero.png", RandomData(5000, 3));
+}
+
+struct CacheBuildResult {
+	bool success = false;
+	size_t built = 0;
+	size_t upToDate = 0;
+	std::string error;
+};
+
+static CacheBuildResult CacheBuild(const TempDir& dir, bool rebuild = false, bool compress = false) {
+	StaticForgeBuilder builder{ "main", { dir / "src" }, dir / "out" };
+	builder.SetCreateOutputDir(true).SetCacheDir(dir / "cache").SetRebuild(rebuild).SetCompress(compress);
+
+	CacheBuildResult result;
+	result.success = builder.Build();
+	result.built = builder.GetBuiltArchiveCount();
+	result.upToDate = builder.GetUpToDateArchiveCount();
+	result.error = builder.GetError();
+	return result;
+}
+
+// moves the modification time, so a file looks changed without changing its content
+static void Touch(const fs::path& path) {
+	fs::last_write_time(path, fs::last_write_time(path) + std::chrono::hours(1));
+}
+
+#define CHECK_CACHE_BUILD(result, expectedBuilt, expectedUpToDate) \
+	do { \
+		const CacheBuildResult r_ = (result); \
+		CHECK_MSG(r_.success, r_.error); \
+		CHECK_EQ(r_.built, size_t(expectedBuilt)); \
+		CHECK_EQ(r_.upToDate, size_t(expectedUpToDate)); \
+	} while (false)
+
+TEST_CASE("BuildCache/Unchanged archives are skipped") {
+	TempDir dir;
+	WriteCacheSources(dir);
+
+	CHECK_CACHE_BUILD(CacheBuild(dir), 3, 0);
+	const auto modified = fs::last_write_time(dir / "out/audio.sfpak");
+	CHECK(fs::exists(dir / "cache/audio.sfcache"));
+	CHECK(!fs::exists(dir / "out/audio.sfcache"));
+
+	CHECK_CACHE_BUILD(CacheBuild(dir), 0, 3);
+	CHECK(fs::last_write_time(dir / "out/audio.sfpak") == modified);
+
+	// without a cache directory everything is built and no cache file is written
+	StaticForgeBuilder noCache{ "main", { dir / "src" }, dir / "out2" };
+	noCache.SetCreateOutputDir(true);
+	REQUIRE_MSG(noCache.Build(), noCache.GetError());
+	CHECK_EQ(noCache.GetBuiltArchiveCount(), size_t(3));
+	CHECK(!fs::exists(dir / "out2/audio.sfcache"));
+}
+
+TEST_CASE("BuildCache/Only changed archives are built") {
+	TempDir dir;
+	WriteCacheSources(dir);
+	CHECK_CACHE_BUILD(CacheBuild(dir), 3, 0);
+
+	// changed content
+	WriteFile(dir / "src/data/items.json", TextData(21000, 4));
+	CHECK_CACHE_BUILD(CacheBuild(dir), 1, 2);
+	StaticForgeReader reader;
+	StaticForgeArchive archive;
+	REQUIRE(reader.Load(dir / "out/data.sfpak", &archive));
+	std::vector<std::byte> data;
+	CHECK(archive.LoadAsset("data/items.json", &data) && Same(data, TextData(21000, 4)));
+
+	// added and removed file
+	WriteFile(dir / "src/textures/ui.png", RandomData(100, 5));
+	CHECK_CACHE_BUILD(CacheBuild(dir), 1, 2);
+	fs::remove(dir / "src/textures/ui.png");
+	CHECK_CACHE_BUILD(CacheBuild(dir), 1, 2);
+
+	// changed meta file
+	WriteFile(dir / "src/audio/audio.sfpak.meta", "archive = audio; compress = true;");
+	CHECK_CACHE_BUILD(CacheBuild(dir), 1, 2);
+
+	// changed builder setting, data is already compressed
+	CHECK_CACHE_BUILD(CacheBuild(dir, false, true), 1, 2);
+	CHECK_CACHE_BUILD(CacheBuild(dir, false, true), 0, 3);
+}
+
+TEST_CASE("BuildCache/Changed modification time without changed content") {
+	TempDir dir;
+	WriteCacheSources(dir);
+	CHECK_CACHE_BUILD(CacheBuild(dir), 3, 0);
+
+	Touch(dir / "src/audio/music.ogg");
+	CHECK_CACHE_BUILD(CacheBuild(dir), 0, 3);
+
+	// the new time is stored, the content is not compared again
+	const std::string cache = ReadFile(dir / "cache/audio.sfcache");
+	CHECK_CACHE_BUILD(CacheBuild(dir), 0, 3);
+	CHECK(ReadFile(dir / "cache/audio.sfcache") == cache);
+}
+
+TEST_CASE("BuildCache/Missing or replaced archive is built") {
+	TempDir dir;
+	WriteCacheSources(dir);
+	CHECK_CACHE_BUILD(CacheBuild(dir), 3, 0);
+
+	fs::remove(dir / "out/audio.sfpak");
+	CHECK_CACHE_BUILD(CacheBuild(dir), 1, 2);
+	CHECK(fs::exists(dir / "out/audio.sfpak"));
+
+	Touch(dir / "out/data.sfpak");
+	CHECK_CACHE_BUILD(CacheBuild(dir), 1, 2);
+}
+
+TEST_CASE("BuildCache/Invalid cache files and rebuild") {
+	TempDir dir;
+	WriteCacheSources(dir);
+	CHECK_CACHE_BUILD(CacheBuild(dir), 3, 0);
+
+	WriteFile(dir / "cache/audio.sfcache", "garbage");
+	const std::string data = ReadFile(dir / "cache/data.sfcache");
+	WriteFile(dir / "cache/data.sfcache", data.substr(0, data.size() / 2));
+	fs::remove(dir / "cache/textures.sfcache");
+	CHECK_CACHE_BUILD(CacheBuild(dir), 3, 0);
+	CHECK_CACHE_BUILD(CacheBuild(dir), 0, 3);
+
+	CHECK_CACHE_BUILD(CacheBuild(dir, true), 3, 0);
+}
+
+TEST_CASE("BuildCache/Failed build keeps the old cache") {
+	TempDir dir;
+	WriteCacheSources(dir);
+	CHECK_CACHE_BUILD(CacheBuild(dir), 3, 0);
+
+	// audio changes, textures can't be written
+	WriteFile(dir / "src/audio/music.ogg", RandomData(9500, 6));
+	WriteFile(dir / "src/textures/hero.png", RandomData(5500, 7));
+	fs::create_directories(dir / "out/textures.sfpak.tmp");
+	const std::string audioCache = ReadFile(dir / "cache/audio.sfcache");
+	CHECK(!CacheBuild(dir).success);
+	CHECK(ReadFile(dir / "cache/audio.sfcache") == audioCache);
+
+	fs::remove(dir / "out/textures.sfpak.tmp");
+	CHECK_CACHE_BUILD(CacheBuild(dir), 2, 1);
+	CHECK_CACHE_BUILD(CacheBuild(dir), 0, 3);
+}
+
+TEST_CASE("BuildCache/Archives that are not built anymore are deleted") {
+	TempDir dir;
+	WriteCacheSources(dir);
+	CHECK_CACHE_BUILD(CacheBuild(dir), 3, 0);
+
+	// the audio files go into main now
+	fs::remove(dir / "src/audio/audio.sfpak.meta");
+
+	// cache files of another output directory are kept
+	StaticForgeBuilder otherOutput{ "main", { dir / "src" }, dir / "out2" };
+	otherOutput.SetCreateOutputDir(true).SetCacheDir(dir / "cache");
+	REQUIRE_MSG(otherOutput.Build(), otherOutput.GetError());
+	CHECK_EQ(otherOutput.GetRemovedArchiveCount(), size_t(0));
+	CHECK(fs::exists(dir / "out/audio.sfpak"));
+	CHECK(fs::exists(dir / "cache/audio.sfcache"));
+
+	StaticForgeBuilder builder{ "main", { dir / "src" }, dir / "out" };
+	builder.SetCreateOutputDir(true).SetCacheDir(dir / "cache");
+	REQUIRE_MSG(builder.Build(), builder.GetError());
+	CHECK_EQ(builder.GetRemovedArchiveCount(), size_t(1));
+	CHECK(!fs::exists(dir / "out/audio.sfpak"));
+	CHECK(!fs::exists(dir / "cache/audio.sfcache"));
+	CHECK(fs::exists(dir / "out/main.sfpak"));
+	CHECK(fs::exists(dir / "out/data.sfpak"));
+}
+
+TEST_CASE("BuildCache/File names with spaces") {
+	TempDir dir;
+	WriteFile(dir / "src/my file.txt", "a");
+	WriteFile(dir / "src/sub dir/other file.txt", "b");
+	CHECK_CACHE_BUILD(CacheBuild(dir), 1, 0);
+	CHECK_CACHE_BUILD(CacheBuild(dir), 0, 1);
+}

@@ -43,7 +43,7 @@ StaticForgeTool
             ├── StaticForgeArchive
             ├── StaticForgeConcurrentArchive
             ├── StaticForgeArchiveSet / StaticForgeConcurrentArchiveSet
-            └── Internal (archive core, set index, thread errors, helpers, meta, hashing, compression, mmap)
+            └── Internal (archive core, set index, thread errors, build cache, helpers, meta, hashing, compression, mmap)
 
 Your Game / Application
     └── StaticForgeCore

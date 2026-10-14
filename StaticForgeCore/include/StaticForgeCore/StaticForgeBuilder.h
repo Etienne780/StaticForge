@@ -158,6 +158,42 @@ namespace StaticForge {
 		 */
 		StaticForgeBuilder& SetCompressionMinSaving(uint64_t percent);
 
+		/**
+		 * @brief Enables incremental builds, archives whose inputs didn't change since the last build are skipped.
+		 *
+		 * One cache file per archive is stored in this directory. Use a separate directory for every
+		 * build configuration, e.g. "intermediates/release/sfcache". An empty path disables the cache.
+		 *
+		 * @param path Cache directory, created if it is missing.
+		 * @return Reference to the builder instance.
+		 */
+		StaticForgeBuilder& SetCacheDir(const StaticForgePath& path);
+
+		/**
+		 * @brief Builds all archives, also the ones the cache reports as up to date.
+		 *
+		 * @param active True to rebuild everything.
+		 * @return Reference to the builder instance.
+		 */
+		StaticForgeBuilder& SetRebuild(bool active);
+
+		/**
+		 * @brief Number of archives written by the last build.
+		 */
+		size_t GetBuiltArchiveCount() const;
+
+		/**
+		 * @brief Number of archives the last build skipped because they were up to date.
+		 */
+		size_t GetUpToDateArchiveCount() const;
+
+		/**
+		 * @brief Number of archives the last build deleted because no files go into them anymore.
+		 *
+		 * Only archives with a cache file of the same output directory are deleted, together with their cache file.
+		 */
+		size_t GetRemovedArchiveCount() const;
+
 	private:
 		/**
 		 * @brief Internal archive build data container.
@@ -170,7 +206,12 @@ namespace StaticForge {
 			uint32_t compressionTableSizeLog2 = DEFAULT_COMPRESSION_TABLE_SIZE_LOG2;
 			uint32_t compressionMinMatchLength = DEFAULT_COMPRESSION_MIN_MATCH_LENGTH;
 			uint32_t compressionMinSaving = DEFAULT_COMPRESSION_MIN_SAVING;
+			std::vector<std::string> excludedExtensions;
 			std::vector<Internal::StaticForgeFileEntry> files;
+
+			// build cache: the archive is skipped, only the cache file is written again if it changed
+			bool upToDate = false;
+			bool cacheChanged = false;
 
 			uint64_t totalArchiveSize = 0;
 			uint64_t dataStart = 0;
@@ -193,6 +234,12 @@ namespace StaticForge {
 		std::optional<uint64_t> m_compressionTableSizeLog2;
 		std::optional<uint64_t> m_compressionMinMatchLength;
 		std::optional<uint64_t> m_compressionMinSaving;
+		StaticForgePath m_cacheDir;
+		bool m_rebuild = false;
+		size_t m_builtArchiveCount = 0;
+		size_t m_upToDateArchiveCount = 0;
+		// archives of a previous build that are not built anymore
+		std::vector<std::string> m_removedArchives;
 
 		std::unordered_map<std::string, ArchiveGroup> m_archiveGroups;
 		std::unique_ptr<Internal::LZ4Compression> m_compressor;
@@ -238,6 +285,39 @@ namespace StaticForge {
 		 * @brief Scans source directories and collects files.
 		 */
 		bool ScanFiles(std::string* errorOut);
+
+		/**
+		 * @brief Marks the archives as up to date whose inputs match their cache file.
+		 */
+		void CheckUpToDate();
+
+		/**
+		 * @brief Compares an archive with its cache file, sets the reason if it has to be built.
+		 */
+		bool IsUpToDate(ArchiveGroup& archive, const std::string& outputPath, std::string* reasonOut) const;
+
+		/**
+		 * @brief Writes the cache files of the built archives and of the archives whose cache changed.
+		 */
+		bool WriteCacheFiles(std::string* errorOut) const;
+
+		/**
+		 * @brief Deletes the archives and cache files of archives that are not built anymore.
+		 */
+		bool RemoveOldArchives(std::string* errorOut) const;
+
+		/**
+		 * @brief The settings of an archive as text, stored in the cache file.
+		 */
+		static std::string GetCacheSettings(const ArchiveGroup& archive);
+
+		/**
+		 * @brief Absolute output directory as stored in the cache file.
+		 */
+		std::string GetCacheOutputPath() const;
+
+		StaticForgePath GetCacheFilePath(const std::string& archiveName) const;
+		StaticForgePath GetArchivePath(const std::string& archiveName) const;
 
 		/**
 		 * @brief Creates the output directory if it is missing.

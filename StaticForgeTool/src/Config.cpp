@@ -90,6 +90,14 @@ const std::optional<uint64_t>& Config::GetCompressMinSaving() const {
 	return m_compressMinSaving;
 }
 
+const std::filesystem::path& Config::GetCacheDir() const {
+	return m_cacheDir;
+}
+
+bool Config::GetRebuild() const {
+	return m_rebuild;
+}
+
 const std::string& Config::GetError() const {
 	return m_error;
 }
@@ -249,6 +257,14 @@ void* Config::GetOutput(const ConsoleArgument* arg) {
 		return static_cast<void*>(&m_compressMinSaving);
 	}
 
+	if (argName == ArgName::CACHE_DIR) {
+		return static_cast<void*>(&m_cacheDir);
+	}
+
+	if (argName == ArgName::REBUILD) {
+		return static_cast<void*>(&m_rebuild);
+	}
+
 	return nullptr;
 }
 
@@ -346,6 +362,8 @@ void Config::ValidateConfig() {
 			AddError("Cannot set compression settings while printing help");
 		if (!m_extractPaths.empty())
 			AddError("Cannot set extract path while printing help");
+		if (!m_cacheDir.empty() || m_rebuild)
+			AddError("Cannot set cache settings while printing help");
 		break;
 
 	case ConfigMode::INFO:
@@ -369,13 +387,15 @@ void Config::ValidateConfig() {
 			AddError("--compress-min-match cannot be used with --info");
 		if (m_compressMinSaving)
 			AddError("--compress-min-saving cannot be used with --info");
+		if (!m_cacheDir.empty() || m_rebuild)
+			AddError("--cache-dir and --rebuild cannot be used with --info");
 		// --verbose
 		break;
 
 	case ConfigMode::PACK:
 		if (m_outputAbsolPath.empty())
 			AddError("--output is required for packing");
-		// --name, --mkdir, --verbose, --store-names, --compress*
+		// --name, --mkdir, --verbose, --store-names, --compress*, --cache-dir, --rebuild
 		break;
 
 	case ConfigMode::EXTRACT:
@@ -389,6 +409,8 @@ void Config::ValidateConfig() {
 			AddError("--compress cannot be used with --extract");
 		if (m_compressBlockSize || m_compressTableSize || m_compressMinMatch || m_compressMinSaving)
 			AddError("compression settings cannot be used with --extract");
+		if (!m_cacheDir.empty() || m_rebuild)
+			AddError("--cache-dir and --rebuild cannot be used with --extract");
 		// --mkdir, --verbose
 		break;
 
@@ -405,6 +427,8 @@ void Config::ValidateConfig() {
 			AddError("--compress cannot be used with --verify");
 		if (m_compressBlockSize || m_compressTableSize || m_compressMinMatch || m_compressMinSaving)
 			AddError("compression settings cannot be used with --verify");
+		if (!m_cacheDir.empty() || m_rebuild)
+			AddError("--cache-dir and --rebuild cannot be used with --verify");
 		// --verbose
 		break;
 

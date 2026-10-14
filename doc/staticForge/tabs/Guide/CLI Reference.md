@@ -42,6 +42,15 @@ Larger blocks compress better, because a block can only reference data inside of
 
 `--compress-min-saving` avoids compression that isn't worth the time it takes to decompress: a block is only stored compressed if it gets at least this many percent smaller, otherwise it is stored raw. The same applies to the whole file, a file that doesn't get small enough is stored completely uncompressed. With `0` every saved byte counts.
 
+## Incremental build
+
+| Argument      | Short  | Description                                                     | Type     | Default |
+|---------------|--------|-----------------------------------------------------------------|----------|---------|
+| `--cache-dir` | `--cd` | Directory of the build cache, enables incremental builds        | filepath | —       |
+| `--rebuild`   | `--rb` | Builds all archives, also the ones that are up to date          | bool     | false   |
+
+With `--cache-dir` only the archives whose files or settings changed are built, see *Packing Assets*. Without it every archive is built.
+
 ## Values
 
 - **bool** arguments can be used without a value: `--verbose` is the same as `--verbose true`. Accepted values are `true`/`false`, `1`/`0`, `yes`/`no` and `y`/`n` (case insensitive). Anything else is an error, so a forgotten value like `--mkdir ./assets` is reported instead of silently being `false`.
@@ -56,7 +65,7 @@ Exactly one mode must be active per invocation. Modes are determined by which ar
 
 | Mode    | Required arguments            | Optional arguments                                                          |
 |---------|-------------------------------|-----------------------------------------------------------------------------|
-| pack    | `--source` and `--output`     | `--name`, `--mkdir`, `--verbose`, `--store-names`, `--compress`, `--compress-*` |
+| pack    | `--source` and `--output`     | `--name`, `--mkdir`, `--verbose`, `--store-names`, `--compress`, `--compress-*`, `--cache-dir`, `--rebuild` |
 | extract | `--extract` and `--output`    | `--mkdir`, `--verbose`                                                      |
 | info    | `--info`                      | `--verbose`                                                                 |
 | verify  | `--verify`                    | `--verbose`                                                                 |

@@ -9,8 +9,12 @@
 #include "Internal/InternalHelpers.h"
 #include "Internal/StaticForgeMeta.h"
 #include "Internal/LZ4Compression.h"
+#include "Internal/BuildCache.h"
 
 namespace StaticForge {
+
+	static void PrintSection(const std::string& title);
+	static bool IsValidArchiveName(const std::string& name);
 
 	StaticForgeBuilder::StaticForgeBuilder()
 		: m_compressor(std::make_unique<Internal::LZ4Compression>(Internal::IsLittleEndian(), !Internal::LZ4_STORE_HEADER)) {
@@ -45,14 +49,245 @@ namespace StaticForge {
 			return false;
 		}
 
+		CheckUpToDate();
+
 		// archives are written to temporary files first, so a failed build keeps the old archives
-		if (!CreateOutputDir(&error) || !CreateGroups(&error) || !CommitArchives(&error)) {
+		if (!CreateOutputDir(&error) || !CreateGroups(&error) || !CommitArchives(&error) || !WriteCacheFiles(&error) || !RemoveOldArchives(&error)) {
 			AddError(error);
 			RemoveTempFiles();
 			return false;
 		}
 
+		for (const auto& [name, archive] : m_archiveGroups) {
+			if (archive.upToDate)
+				m_upToDateArchiveCount++;
+			else
+				m_builtArchiveCount++;
+		}
+
 		return true;
+	}
+
+	void StaticForgeBuilder::CheckUpToDate() {
+		namespace fs = std::filesystem;
+
+		if (m_cacheDir.empty())
+			return;
+
+		if (m_isDebugActive)
+			PrintSection("Up to date check (cache: " + m_cacheDir.generic_u8string() + ")");
+
+		const std::string outputPath = GetCacheOutputPath();
+		std::map<std::string, ArchiveGroup*> sortedGroups;
+		for (auto& [name, group] : m_archiveGroups)
+			sortedGroups[name] = &group;
+
+		for (auto& [name, archive] : sortedGroups) {
+			std::string reason;
+			archive->upToDate = IsUpToDate(*archive, outputPath, &reason);
+
+			if (m_isDebugActive)
+				std::cout << name << ": " << (archive->upToDate ? "up to date" : "rebuild, " + reason) << "\n";
+		}
+
+		// archives with a cache file of this output directory that are not built anymore, deleted after the build
+		std::error_code ec;
+		std::vector<std::string> oldArchives;
+		for (fs::directory_iterator it(m_cacheDir, ec), end; !ec && it != end; it.increment(ec)) {
+			if (!Internal::HasExtension(it->path(), Internal::BUILD_CACHE_EXTENSION))
+				continue;
+
+			std::string name = it->path().filename().u8string();
+			name.resize(name.size() - Internal::BUILD_CACHE_EXTENSION.size());
+			if (!IsValidArchiveName(name) || m_archiveGroups.find(name) != m_archiveGroups.end())
+				continue;
+
+			Internal::BuildCache cache;
+			if (Internal::ReadBuildCache(it->path(), &cache) && cache.outputPath == outputPath)
+				oldArchives.push_back(name);
+		}
+
+		std::sort(oldArchives.begin(), oldArchives.end());
+		for (const auto& name : oldArchives) {
+			m_removedArchives.push_back(name);
+			if (m_isDebugActive)
+				std::cout << name << ": not built anymore, archive and cache file are deleted\n";
+		}
+
+		if (m_isDebugActive)
+			std::cout << std::endl;
+	}
+
+	bool StaticForgeBuilder::RemoveOldArchives(std::string* errorOut) const {
+		namespace fs = std::filesystem;
+
+		for (const auto& name : m_removedArchives) {
+			std::error_code ec;
+			fs::remove(GetArchivePath(name), ec);
+			if (!ec)
+				fs::remove(GetCacheFilePath(name), ec);
+			if (ec) {
+				*errorOut = "Failed to delete the old archive '" + name + "': " + ec.message();
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	bool StaticForgeBuilder::IsUpToDate(ArchiveGroup& archive, const std::string& outputPath, std::string* reasonOut) const {
+		namespace fs = std::filesystem;
+
+		if (m_rebuild) {
+			*reasonOut = "rebuild requested";
+			return false;
+		}
+
+		Internal::BuildCache cache;
+		if (!Internal::ReadBuildCache(GetCacheFilePath(archive.name), &cache)) {
+			*reasonOut = "no valid cache file";
+			return false;
+		}
+
+		if (cache.formatVersion != VERSION) {
+			*reasonOut = "archive format version changed";
+			return false;
+		}
+
+		if (cache.outputPath != outputPath) {
+			*reasonOut = "output path changed";
+			return false;
+		}
+
+		if (cache.settings != GetCacheSettings(archive)) {
+			*reasonOut = "settings changed";
+			return false;
+		}
+
+		// the archive itself was deleted or replaced
+		const StaticForgePath archivePath = GetArchivePath(archive.name);
+		std::error_code ec;
+		const uint64_t archiveSize = fs::file_size(archivePath, ec);
+		if (ec) {
+			*reasonOut = "archive file is missing";
+			return false;
+		}
+
+		int64_t archiveModified = 0;
+		if (archiveSize != cache.archiveSize || !Internal::GetModifiedTime(archivePath, &archiveModified) || archiveModified != cache.archiveModified) {
+			*reasonOut = "archive file changed";
+			return false;
+		}
+
+		// both lists are sorted by path
+		const auto& files = archive.files;
+		const size_t count = std::min(files.size(), cache.files.size());
+		for (size_t i = 0; i < count; i++) {
+			const int order = files[i].relativeUtf8.compare(cache.files[i].path);
+			if (order < 0) {
+				*reasonOut = "'" + files[i].relativeUtf8 + "' added";
+				return false;
+			}
+			if (order > 0) {
+				*reasonOut = "'" + cache.files[i].path + "' removed";
+				return false;
+			}
+		}
+		if (files.size() > count) {
+			*reasonOut = "'" + files[count].relativeUtf8 + "' added";
+			return false;
+		}
+		if (cache.files.size() > count) {
+			*reasonOut = "'" + cache.files[count].path + "' removed";
+			return false;
+		}
+
+		for (size_t i = 0; i < count; i++) {
+			if (files[i].fileSize != cache.files[i].size) {
+				*reasonOut = "'" + files[i].relativeUtf8 + "' changed";
+				return false;
+			}
+		}
+
+		// a different modification time only counts if the content changed, e.g. after a checkout
+		for (size_t i = 0; i < count; i++) {
+			auto& file = archive.files[i];
+			file.contentHash = cache.files[i].contentHash;
+			if (file.modified == cache.files[i].modified)
+				continue;
+
+			uint64_t hash = 0;
+			if (!Internal::HashFileContent(file.filepath, &hash) || hash != cache.files[i].contentHash) {
+				*reasonOut = "'" + file.relativeUtf8 + "' changed";
+				return false;
+			}
+			archive.cacheChanged = true;
+		}
+
+		return true;
+	}
+
+	bool StaticForgeBuilder::WriteCacheFiles(std::string* errorOut) const {
+		if (m_cacheDir.empty())
+			return true;
+
+		const std::string outputPath = GetCacheOutputPath();
+		for (const auto& [name, archive] : m_archiveGroups) {
+			if (archive.upToDate && !archive.cacheChanged)
+				continue;
+
+			Internal::BuildCache cache;
+			cache.formatVersion = VERSION;
+			cache.outputPath = outputPath;
+			cache.settings = GetCacheSettings(archive);
+
+			const StaticForgePath archivePath = GetArchivePath(name);
+			std::error_code ec;
+			cache.archiveSize = std::filesystem::file_size(archivePath, ec);
+			if (ec || !Internal::GetModifiedTime(archivePath, &cache.archiveModified)) {
+				*errorOut = "Failed to read size and time of archive '" + archivePath.generic_u8string() + "' for the cache";
+				return false;
+			}
+
+			cache.files.reserve(archive.files.size());
+			for (const auto& file : archive.files)
+				cache.files.push_back({ file.fileSize, file.modified, file.contentHash, file.relativeUtf8 });
+
+			if (!Internal::WriteBuildCache(GetCacheFilePath(name), cache, errorOut))
+				return false;
+		}
+
+		return true;
+	}
+
+	std::string StaticForgeBuilder::GetCacheSettings(const ArchiveGroup& archive) {
+		std::string exclude;
+		for (const auto& extension : archive.excludedExtensions)
+			exclude += (exclude.empty() ? "" : ",") + extension;
+
+		return "store-names=" + std::to_string(archive.storeNames ? 1 : 0)
+			+ " compress=" + std::to_string(archive.compress ? 1 : 0)
+			+ " block-size=" + std::to_string(archive.compressionBlockSize)
+			+ " table-size=" + std::to_string(archive.compressionTableSizeLog2)
+			+ " min-match=" + std::to_string(archive.compressionMinMatchLength)
+			+ " min-saving=" + std::to_string(archive.compressionMinSaving)
+			+ " exclude=" + exclude;
+	}
+
+	std::string StaticForgeBuilder::GetCacheOutputPath() const {
+		std::error_code ec;
+		const StaticForgePath dir = m_outputPath.has_filename() ? m_outputPath : m_outputPath.parent_path();
+		const StaticForgePath absolute = std::filesystem::absolute(dir, ec);
+		return (ec ? dir : absolute).lexically_normal().generic_u8string();
+	}
+
+	StaticForgePath StaticForgeBuilder::GetCacheFilePath(const std::string& archiveName) const {
+		return m_cacheDir / std::filesystem::u8path(archiveName + std::string(Internal::BUILD_CACHE_EXTENSION));
+	}
+
+	StaticForgePath StaticForgeBuilder::GetArchivePath(const std::string& archiveName) const {
+		// the name is UTF-8 and may contain dots, so the extension is appended and not replaced
+		return m_outputPath / std::filesystem::u8path(archiveName + std::string(PACK_FILE_EXTENSION));
 	}
 
 	bool StaticForgeBuilder::CreateOutputDir(std::string* errorOut) {
@@ -170,12 +405,37 @@ namespace StaticForge {
 		return *this;
 	}
 
+	StaticForgeBuilder& StaticForgeBuilder::SetCacheDir(const StaticForgePath& path) {
+		m_cacheDir = path;
+		return *this;
+	}
+
+	StaticForgeBuilder& StaticForgeBuilder::SetRebuild(bool active) {
+		m_rebuild = active;
+		return *this;
+	}
+
+	size_t StaticForgeBuilder::GetBuiltArchiveCount() const {
+		return m_builtArchiveCount;
+	}
+
+	size_t StaticForgeBuilder::GetUpToDateArchiveCount() const {
+		return m_upToDateArchiveCount;
+	}
+
+	size_t StaticForgeBuilder::GetRemovedArchiveCount() const {
+		return m_removedArchives.size();
+	}
+
 	void StaticForgeBuilder::Reset() {
 		ClearErrors();
 		m_archiveGroups.clear();
 		m_tempFiles.clear();
 		m_createdOutputDir.clear();
 		m_createdOutputRoot.clear();
+		m_builtArchiveCount = 0;
+		m_upToDateArchiveCount = 0;
+		m_removedArchives.clear();
 	}
 
 	bool StaticForgeBuilder::CheckCompressionSettings(
@@ -481,6 +741,7 @@ namespace StaticForge {
 					archive.storeNames = m_storeNames ? true : archiveMeta.storeNames;
 					archive.compress = m_compress ? true : archiveMeta.compress;
 					ApplyCompressionSettings(archive, archiveMeta);
+					archive.excludedExtensions = archiveMeta.excludedExtensions;
 					archive.files.reserve(50);
 				}
 
@@ -509,6 +770,8 @@ namespace StaticForge {
 				f.filePadding = 0; // filled during writing
 				f.hashName = h;
 				f.blockOffset = 0;// filled during writing
+				if (!m_cacheDir.empty())
+					Internal::GetModifiedTime(fullPath, &f.modified);
 
 				archive.files.push_back(std::move(f));
 			}
@@ -588,9 +851,10 @@ namespace StaticForge {
 
 		for (auto& [archiveName, archivePtr] : sortedGroups) {
 			ArchiveGroup& archive = *archivePtr;
+			if (archive.upToDate)
+				continue;
 
-			// the name is UTF-8 and may contain dots, so the extension is appended and not replaced
-			StaticForgePath outputPath = m_outputPath / std::filesystem::u8path(archive.name + std::string(PACK_FILE_EXTENSION));
+			StaticForgePath outputPath = GetArchivePath(archive.name);
 			StaticForgePath tempPath = outputPath;
 			tempPath += ".tmp";
 			m_tempFiles.emplace_back(tempPath, outputPath);
@@ -952,6 +1216,8 @@ namespace StaticForge {
 			const uint64_t fileStart = archive.dataStart + totalOffset;
 			uint32_t checksum = 2166136261u;
 			uint64_t written = 0;
+			// hash of the original content for the build cache
+			uint64_t contentHash = Internal::FNV1a64(nullptr, 0);
 			// only for the debug output
 			uint64_t blockCount = 0;
 			uint64_t rawBlockCount = 0;
@@ -963,6 +1229,9 @@ namespace StaticForge {
 
 				if (bytesRead <= 0)
 					break;
+
+				if (!m_cacheDir.empty())
+					contentHash = Internal::FNV1a64(buffer.data(), static_cast<size_t>(bytesRead), contentHash);
 
 				if (useCompression) {
 					auto compressData = m_compressor->Compress(buffer.data(), bytesRead);
@@ -1086,6 +1355,7 @@ namespace StaticForge {
 			f.compressedFileSize = useCompression ? written : 0;
 			f.blockOffset = totalOffset;
 			f.checksum = checksum;
+			f.contentHash = contentHash;
 
 			uint64_t alignedFileSize;
 			if (!Internal::SafeAddU64(written, static_cast<uint64_t>(filePadding), &alignedFileSize)) {

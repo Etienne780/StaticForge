@@ -43,6 +43,8 @@ public:
 	const std::optional<uint64_t>& GetCompressTableSize() const;
 	const std::optional<uint64_t>& GetCompressMinMatch() const;
 	const std::optional<uint64_t>& GetCompressMinSaving() const;
+	const std::filesystem::path& GetCacheDir() const;
+	bool GetRebuild() const;
 
 	const std::string& GetError() const;
 
@@ -68,6 +70,8 @@ private:
 	std::optional<uint64_t> m_compressTableSize;
 	std::optional<uint64_t> m_compressMinMatch;
 	std::optional<uint64_t> m_compressMinSaving;
+	std::filesystem::path m_cacheDir;
+	bool m_rebuild = false;
 
 	void ProcessArgument(size_t* index, const std::vector<std::string>& args);
 	void EvaluateArgument(const std::string& name, const std::string& value);

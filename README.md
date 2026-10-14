@@ -23,6 +23,7 @@ The `StaticForgeTool` is a command-line application used to create and manage ar
 **Responsibilities:**
 - Creating `.sfpak` archive files from source folders
 - Packing assets with automatic alignment and optional compression
+- Incremental builds: only archives whose files or settings changed are built again
 - Generating index and metadata
 - Inspecting and debugging archives (view header and index info)
 - Extracting archives back into normal files
@@ -168,6 +169,8 @@ The format is not backward compatible: the reader only loads archives of its own
 | `--verbose`     | Enable detailed console output                       | `false` |
 | `--store-names` | Store original file paths in the archives            | `false` |
 | `--compress`    | Compress files larger than 4096 bytes                | `false` |
+| `--cache-dir`   | Build cache, only changed archives are built         | —       |
+| `--rebuild`     | Build all archives, also the up to date ones         | `false` |
 | `--help`        | Show help message                                    | —       |
 
 Bool arguments can be used without a value (`--mkdir` is the same as `--mkdir true`). The compression can be tuned with `--compress-block-size`, `--compress-table-size`, `--compress-min-match` and `--compress-min-saving`. See the documentation for all details.

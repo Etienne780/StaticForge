@@ -63,6 +63,52 @@ Compressed assets are decompressed automatically by `LoadAsset` and `LoadAssetMa
 
 Already compressed formats (PNG, JPG, OGG, ...) barely get smaller, text and uncompressed data (shaders, scripts, JSON, meshes) compress well.
 
+## Incremental builds
+
+With `--cache-dir` only the archives whose files or settings changed are built, the others are skipped and keep their modification time:
+
+```bash
+StaticForgeTool --source ./assets --output ./build/packed --cache-dir ./build/intermediates/release/sfcache
+```
+
+```
+Build was successful (1 archive built, 3 up to date)
+```
+
+The cache directory holds one small text file per archive (`<archive name>.sfcache`), it is created automatically. Keep it outside of the output directory, so the released build only contains the archives. Use one cache directory per build configuration, e.g. `intermediates/debug/sfcache` and `intermediates/release/sfcache`.
+
+An archive is built again if:
+
+- a file was added, removed or changed (size, or content after a changed modification time)
+- its settings changed (meta file or command line)
+- the archive file is missing or was changed
+- the cache file is missing or invalid, or the archive format version changed
+- `--rebuild` is set
+
+A file with a new modification time but the same content, e.g. after a `git checkout`, doesn't trigger a build.
+
+An archive that is not built anymore, e.g. because its meta file was deleted, is deleted from the output directory together with its cache file after a successful build:
+
+```
+audio: not built anymore, archive and cache file are deleted
+
+Build was successful (1 archive built, 2 up to date, 1 removed)
+```
+
+Only archives with a cache file of the same output directory are deleted. `--verbose` shows the reason for every archive:
+
+```
+===================================
+Up to date check (cache: ./build/intermediates/release/sfcache)
+===================================
+audio: up to date
+data: rebuild, 'data/items.json' changed
+main: up to date
+textures: up to date
+```
+
+The cache files store the modification times of the local file system, so they belong to one machine and are not meant to be committed.
+
 ## Bool arguments
 
 Bool arguments like `--mkdir`, `--verbose`, `--store-names` and `--compress` can be used without a value. `--verbose` is the same as `--verbose true`. Accepted values are `true`/`false`, `1`/`0`, `yes`/`no` and `y`/`n`, anything else is an error.

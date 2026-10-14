@@ -98,4 +98,10 @@ inline void InitConsoleArguments() {
 	auto& compressMinSavingArg = CAM::RegisterConsoleArgument(ArgName::COMPRESS_MIN_SAVING, ArgName::COMPRESS_MIN_SAVING_SHORTNAME, ConsoleArgType::Int);
 	compressMinSavingArg.SetEvaluationFunction(uintParser);
 
+	auto& cacheDirArg = CAM::RegisterConsoleArgument(ArgName::CACHE_DIR, ArgName::CACHE_DIR_SHORTNAME, ConsoleArgType::Filepath);
+	cacheDirArg.SetEvaluationFunction(filepathParser);
+
+	auto& rebuildArg = CAM::RegisterConsoleArgument(ArgName::REBUILD, ArgName::REBUILD_SHORTNAME, ConsoleArgType::Bool);
+	rebuildArg.SetEvaluationFunction(boolParser);
+
 }

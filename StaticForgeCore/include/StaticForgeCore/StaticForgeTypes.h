@@ -62,6 +62,10 @@ namespace StaticForge {
 			uint32_t checksum = 0;
 			uint32_t nameStrDataOffset = 0;
 			uint32_t nameStrDataLength = 0;
+
+			// build cache: modification time of the source file and hash of its content
+			int64_t modified = 0;
+			uint64_t contentHash = 0;
 		};
 
 		struct StaticForgeMetaData {

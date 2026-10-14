@@ -34,6 +34,14 @@ Compression settings (only used with --compress, override the values of .sfpak.m
 | compress-min-saving | cms   | Percent a block/file must get smaller, otherwise stored raw      | int  | 5       | 0 - 99      |
 |---------------------|-------|------------------------------------------------------------------|------|---------|-------------|
 
+Incremental build (only archives whose files or settings changed are built):
+|-----------|-------|-------------------------------------------------------------------------|----------|---------|
+| name      | short | description                                                             | type     | default |
+|-----------|-------|-------------------------------------------------------------------------|----------|---------|
+| cache-dir | cd    | Directory of the build cache, one per build configuration               | filepath | -       |
+| rebuild   | rb    | Builds all archives, also the ones that are up to date                  | bool     | false   |
+|-----------|-------|-------------------------------------------------------------------------|----------|---------|
+
 )""";
 
 namespace ArgName {
@@ -82,5 +90,11 @@ namespace ArgName {
 
 	const std::string_view COMPRESS_MIN_SAVING = "compress-min-saving";
 	const std::string_view COMPRESS_MIN_SAVING_SHORTNAME = "cms";
+
+	const std::string_view CACHE_DIR = "cache-dir";
+	const std::string_view CACHE_DIR_SHORTNAME = "cd";
+
+	const std::string_view REBUILD = "rebuild";
+	const std::string_view REBUILD_SHORTNAME = "rb";
 	
 }

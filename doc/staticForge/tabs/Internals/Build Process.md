@@ -41,11 +41,52 @@ For each file the builder also:
 
 At the end the files of every archive group are sorted by their relative path (UTF-8 byte order), also when they come from several source paths. The same sources therefore always give the same archive, byte for byte, on every system.
 
-## 4. CreateOutputDir
+## 4. CheckUpToDate
+
+Only runs with a cache directory (`SetCacheDir`). For every archive group the cache file `<cache dir>/<archive name>.sfcache` is read and compared in this order, the first difference is the reason for the build:
+
+1. `SetRebuild(true)` was called
+2. the cache file is missing or can't be parsed, or has another cache version
+3. the archive format version (`VERSION`), the absolute output path or the settings are different
+4. the archive file is missing, or its size or modification time is different
+5. the file list is different (both lists are sorted by path)
+6. the size of a file is different
+7. the modification time of a file is different and the 64-bit FNV-1a hash of its content as well
+
+If only the modification time of a file changed, the archive is up to date and only its cache file is written again with the new time. Archives that are up to date are skipped by all following phases.
+
+Cache files in the cache directory without an archive group of this build belong to archives that are not built anymore. If the cache file is valid and contains the same output directory, the archive and its cache file are deleted in `RemoveOldArchives` after the build.
+
+The cache file is text:
+
+```
+StaticForgeCache 1
+format 3
+output D:/dev/game/build/packed
+settings store-names=1 compress=1 block-size=65536 table-size=16 min-match=8 min-saving=10 exclude=.psd
+archive 41100 134364826999478632
+files 3
+20000 134364826980778712 af8f0deb8b372d7b textures/hero.png
+9000 134364826981220378 87ddee1928e25947 textures/ui/button.png
+23492 134364826981425961 499fa1f519db8fe5 textures/ui/theme.txt
+```
+
+| Line | Content |
+|------|---------|
+| `StaticForgeCache` | version of the cache file format (`BUILD_CACHE_VERSION`) |
+| `format` | archive format version |
+| `output` | absolute output directory |
+| `settings` | settings of the archive that are used for the build |
+| `archive` | size and modification time of the archive file |
+| `files` | number of files, followed by one line per file: size, modification time, content hash (hex) and the relative path (rest of the line) |
+
+Modification times are the raw values of the file clock (`std::filesystem::file_time_type`), so a cache file is only valid on the system that wrote it. The content hash is calculated while the file is written into the archive, no extra read is needed.
+
+## 5. CreateOutputDir
 
 Creates the output directory and its missing parents if `SetCreateOutputDir(true)` was called. The created directories are remembered, so they can be removed again if the build fails.
 
-## 5. CreateGroups
+## 6. CreateGroups
 
 The archive groups are written in order of their name. For each `ArchiveGroup` the temporary file `<output>/<archive name>.sfpak.tmp` is created and the following phases run in order:
 
@@ -61,11 +102,19 @@ The archive groups are written in order of their name. For each `ArchiveGroup` t
 
 **WriteNameTable** *(optional)* — seeks to `nameTableStart` (set at the end of `WriteData`) and writes the Name Table Header, Name Table Entries, and the compressed UTF-8 string data.
 
-## 6. CommitArchives
+## 7. CommitArchives
 
 When all archives are written, every temporary file is renamed to `<archive name>.sfpak` and replaces the old archive.
 
-If any phase from `CreateOutputDir` on fails, all temporary files are removed and the directories created by `CreateOutputDir` are removed again if they are empty. The old archives stay as they were, unless the error happens while renaming: the archives renamed until then are already replaced.
+## 8. WriteCacheFiles
+
+Only runs with a cache directory. Writes the cache files of the built archives and of the archives whose cache changed, each to a temporary file that is renamed when it is complete. The cache directory is created if it is missing.
+
+## 9. RemoveOldArchives
+
+Only runs with a cache directory. Deletes the archives found by `CheckUpToDate` that are not built anymore, together with their cache files.
+
+If any phase from `CreateOutputDir` on fails, all temporary files are removed and the directories created by `CreateOutputDir` are removed again if they are empty. The old archives stay as they were, unless the error happens while renaming: the archives renamed until then are already replaced. The cache files of a failed build stay as they were, so the next build checks the archives again.
 
 ## Write phases summary
 

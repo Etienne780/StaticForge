@@ -71,12 +71,27 @@ builder
 | `SetCompressionTableSizeLog2(size)`   | `--compress-table-size`  | Match table size as power of two (default `DEFAULT_COMPRESSION_TABLE_SIZE_LOG2`) |
 | `SetCompressionMinMatchLength(length)`| `--compress-min-match`   | Shortest match stored as reference (default `DEFAULT_COMPRESSION_MIN_MATCH_LENGTH`) |
 | `SetCompressionMinSaving(percent)`    | `--compress-min-saving`  | Minimum saving in percent, otherwise stored raw (default `DEFAULT_COMPRESSION_MIN_SAVING`) |
+| `SetCacheDir(path)`                   | `--cache-dir`            | Directory of the build cache, enables incremental builds              |
+| `SetRebuild(bool)`                    | `--rebuild`              | Builds all archives, also the ones that are up to date                |
 
 The valid ranges of the compression settings are the `MIN_COMPRESSION_*` and `MAX_COMPRESSION_*` constants in `StaticForgeTypes.h`. Invalid values make `Build()` fail with an error. Compression settings that are set on the builder override the values of meta files, settings that are not set fall back to the meta file value and then to the default.
 
 ## Building again
 
 The same builder can run `Build()` several times, e.g. after changing the source paths. Each build starts fresh and clears the errors of the previous build.
+
+## Incremental builds
+
+With `SetCacheDir(path)` only the archives whose files or settings changed are built (see *Packing Assets*). After `Build()` the counts tell what happened:
+
+```cpp
+builder.SetCacheDir("./build/intermediates/release/sfcache");
+if (builder.Build()) {
+    std::cout << builder.GetBuiltArchiveCount() << " built, "
+              << builder.GetUpToDateArchiveCount() << " up to date, "
+              << builder.GetRemovedArchiveCount() << " removed\n";
+}
+```
 
 ## Debug mode
 

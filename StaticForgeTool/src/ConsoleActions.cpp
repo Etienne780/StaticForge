@@ -120,7 +120,9 @@ namespace Actions {
             .SetCreateOutputDir(config.GetCreateOutputDir())
             .SetDebugMode(config.GetVerbosePrint())
             .SetStoreNames(config.GetStoreNames())
-            .SetCompress(config.GetCompress());
+            .SetCompress(config.GetCompress())
+            .SetCacheDir(config.GetCacheDir())
+            .SetRebuild(config.GetRebuild());
 
         // only override the meta file values if they were set
         if (config.GetCompressBlockSize())
@@ -137,7 +139,13 @@ namespace Actions {
             return false;
         }
 
-        std::cout << "Build was successful" << std::endl;
+        const size_t built = builder.GetBuiltArchiveCount();
+        std::cout << "Build was successful (" << built << (built == 1 ? " archive" : " archives") << " built";
+        if (!config.GetCacheDir().empty())
+            std::cout << ", " << builder.GetUpToDateArchiveCount() << " up to date";
+        if (builder.GetRemovedArchiveCount() > 0)
+            std::cout << ", " << builder.GetRemovedArchiveCount() << " removed";
+        std::cout << ")" << std::endl;
         return true;
     }
 
