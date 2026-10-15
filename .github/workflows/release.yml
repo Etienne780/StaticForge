@@ -50,6 +50,14 @@ jobs:
             /m:1 `
             /v:minimal
 
+          # debug library for applications built in debug (/MDd)
+          msbuild Project.sln `
+            /t:StaticForgeCore `
+            /p:Configuration=Debug `
+            /p:Platform=x64 `
+            /m:1 `
+            /v:minimal
+
 
       - name: Run tests Windows
         if: matrix.name == 'windows'
@@ -82,6 +90,9 @@ jobs:
         shell: bash
         run: |
           make config=distribution
+
+          # debug library with debug symbols
+          make config=debug StaticForgeCore
 
 
       - name: Run tests Linux
@@ -128,15 +139,16 @@ jobs:
           # Reset PowerShell native exit state
           $global:LASTEXITCODE = 0
 
-          # Copy libraries
-          mkdir package-sdk\lib\x64
-          mkdir package-sdk-only\lib\x64
+          # Copy libraries: Release (/MD) and Debug (/MDd)
+          foreach ($pkg in @('package-sdk', 'package-sdk-only')) {
+              mkdir $pkg\lib\x64\Release
+              mkdir $pkg\lib\x64\Debug
 
-          copy build\lib\StaticForgeCore\windows-x86_64\Distribution\StaticForgeCore.lib package-sdk\lib\x64\
-          copy build\lib\StaticForgeCore\windows-x86_64\Distribution\StaticForgeCore.lib package-sdk-only\lib\x64\
+              copy build\lib\StaticForgeCore\windows-x86_64\Distribution\StaticForgeCore.lib $pkg\lib\x64\Release\
+              copy build\lib\StaticForgeCore\windows-x86_64\Debug\StaticForgeCore.lib $pkg\lib\x64\Debug\
 
-          if (Test-Path build\lib\StaticForgeCore\windows-x86_64\Distribution\StaticForgeCore.pdb) {
-              copy build\lib\StaticForgeCore\windows-x86_64\Distribution\StaticForgeCore.pdb package-sdk\lib\x64\
+              # the debug information of the debug library is in its pdb
+              copy build\lib\StaticForgeCore\windows-x86_64\Debug\StaticForgeCore.pdb $pkg\lib\x64\Debug\
           }
 
           Compress-Archive `
@@ -160,8 +172,8 @@ jobs:
         run: |
           mkdir -p package-sdk/include
           mkdir -p package-sdk-only/include
-          mkdir -p package-sdk/lib/x64
-          mkdir -p package-sdk-only/lib/x64
+          mkdir -p package-sdk/lib/x64/Release package-sdk/lib/x64/Debug
+          mkdir -p package-sdk-only/lib/x64/Release package-sdk-only/lib/x64/Debug
           mkdir -p package-tool
 
           cp LICENSE package-sdk/
@@ -176,9 +188,11 @@ jobs:
           rsync -a --exclude='Internal' StaticForgeCore/include/ package-sdk/include/
           rsync -a --exclude='Internal' StaticForgeCore/include/ package-sdk-only/include/
 
-          # Copy libraries
-          cp build/lib/StaticForgeCore/linux-x86_64/Distribution/libStaticForgeCore.a package-sdk/lib/x64/
-          cp build/lib/StaticForgeCore/linux-x86_64/Distribution/libStaticForgeCore.a package-sdk-only/lib/x64/
+          # Copy libraries: Release and Debug (with debug symbols)
+          for pkg in package-sdk package-sdk-only; do
+            cp build/lib/StaticForgeCore/linux-x86_64/Distribution/libStaticForgeCore.a $pkg/lib/x64/Release/
+            cp build/lib/StaticForgeCore/linux-x86_64/Debug/libStaticForgeCore.a $pkg/lib/x64/Debug/
+          done
 
           chmod +x package-sdk/StaticForgeTool
           chmod +x package-tool/StaticForgeTool
