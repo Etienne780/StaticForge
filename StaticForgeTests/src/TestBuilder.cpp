@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "TestFramework.h"
 #include "TestHelpers.h"
 
@@ -193,6 +195,16 @@ TEST_CASE("Builder/Archive names") {
 		builder.SetCreateOutputDir(true);
 		CHECK_MSG(!builder.Build(), "'" + invalid + "' was accepted");
 	}
+
+	// names that only differ in case would be the same file on Windows
+	WriteFile(dir / "case/a/a.sfpak.meta", "archive = Audio;");
+	WriteFile(dir / "case/a/a.txt", "a");
+	WriteFile(dir / "case/b/b.sfpak.meta", "archive = audio;");
+	WriteFile(dir / "case/b/b.txt", "b");
+	StaticForgeBuilder caseOnly{ "main", { dir / "case" }, dir / "caseOut" };
+	caseOnly.SetCreateOutputDir(true);
+	CHECK(!caseOnly.Build());
+	CHECK_MSG(caseOnly.GetError().find("only differ in case") != std::string::npos, caseOnly.GetError());
 
 	// dots and Unicode are allowed, the extension is appended
 	for (const std::string& valid : { std::string("my.archive"), std::string(u8"テクスチャ"), std::string("with space") }) {
@@ -592,6 +604,29 @@ TEST_CASE("BuildCache/Archives that are not built anymore are deleted") {
 	CHECK(!fs::exists(dir / "cache/audio.sfcache"));
 	CHECK(fs::exists(dir / "out/main.sfpak"));
 	CHECK(fs::exists(dir / "out/data.sfpak"));
+}
+
+// names of the files in a directory as they are stored
+static std::vector<std::string> ListNames(const fs::path& directory) {
+	std::vector<std::string> names;
+	for (const auto& entry : fs::directory_iterator(directory))
+		names.push_back(entry.path().filename().u8string());
+	std::sort(names.begin(), names.end());
+	return names;
+}
+
+TEST_CASE("BuildCache/Archive name changed only in case") {
+	TempDir dir;
+	WriteFile(dir / "src/a/a.sfpak.meta", "archive = Audio;");
+	WriteFile(dir / "src/a/a.txt", "a");
+	CHECK_CACHE_BUILD(CacheBuild(dir), 1, 0);
+
+	WriteFile(dir / "src/a/a.sfpak.meta", "archive = audio;");
+	CHECK_CACHE_BUILD(CacheBuild(dir), 1, 0);
+	CHECK(ListNames(dir / "out") == std::vector<std::string>{ "audio.sfpak" });
+	CHECK(ListNames(dir / "cache") == std::vector<std::string>{ "audio.sfcache" });
+
+	CHECK_CACHE_BUILD(CacheBuild(dir), 0, 1);
 }
 
 TEST_CASE("BuildCache/File names with spaces") {

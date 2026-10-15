@@ -4,6 +4,7 @@
 #include <sstream>
 #include <iomanip>
 #include <map>
+#include <cctype>
 
 #include "StaticForgeBuilder.h"
 #include "Internal/InternalHelpers.h"
@@ -15,6 +16,13 @@ namespace StaticForge {
 
 	static void PrintSection(const std::string& title);
 	static bool IsValidArchiveName(const std::string& name);
+
+	// ASCII only, archive names are file names and Windows ignores the case
+	static bool EqualsIgnoreCase(const std::string& a, const std::string& b) {
+		return a.size() == b.size() && std::equal(a.begin(), a.end(), b.begin(), [](char x, char y) {
+			return std::tolower(static_cast<unsigned char>(x)) == std::tolower(static_cast<unsigned char>(y));
+		});
+	}
 
 	StaticForgeBuilder::StaticForgeBuilder()
 		: m_compressor(std::make_unique<Internal::LZ4Compression>(Internal::IsLittleEndian(), !Internal::LZ4_STORE_HEADER)) {
@@ -82,16 +90,9 @@ namespace StaticForge {
 		for (auto& [name, group] : m_archiveGroups)
 			sortedGroups[name] = &group;
 
-		for (auto& [name, archive] : sortedGroups) {
-			std::string reason;
-			archive->upToDate = IsUpToDate(*archive, outputPath, &reason);
-
-			if (m_isDebugActive)
-				std::cout << name << ": " << (archive->upToDate ? "up to date" : "rebuild, " + reason) << "\n";
-		}
-
-		// archives with a cache file of this output directory that are not built anymore, deleted after the build
+		// cache files without an archive of this build: renamed archives (only the case changed) and old archives
 		std::error_code ec;
+		std::map<std::string, std::string> renamedArchives;
 		std::vector<std::string> oldArchives;
 		for (fs::directory_iterator it(m_cacheDir, ec), end; !ec && it != end; it.increment(ec)) {
 			if (!Internal::HasExtension(it->path(), Internal::BUILD_CACHE_EXTENSION))
@@ -102,9 +103,35 @@ namespace StaticForge {
 			if (!IsValidArchiveName(name) || m_archiveGroups.find(name) != m_archiveGroups.end())
 				continue;
 
+			// on Windows both names are the same file, so it is built again with the new name
+			auto renamed = std::find_if(sortedGroups.begin(), sortedGroups.end(), [&name](const auto& group) {
+				return EqualsIgnoreCase(group.first, name);
+			});
+			if (renamed != sortedGroups.end()) {
+				renamedArchives[renamed->first] = name;
+				continue;
+			}
+
+			// only archives of this output directory are deleted
 			Internal::BuildCache cache;
 			if (Internal::ReadBuildCache(it->path(), &cache) && cache.outputPath == outputPath)
 				oldArchives.push_back(name);
+		}
+
+		for (auto& [name, archive] : sortedGroups) {
+			std::string reason;
+			auto renamed = renamedArchives.find(name);
+			if (renamed != renamedArchives.end()) {
+				archive->upToDate = false;
+				reason = "archive name changed (was '" + renamed->second + "')";
+				m_renamedArchives.emplace_back(renamed->second, name);
+			}
+			else {
+				archive->upToDate = IsUpToDate(*archive, outputPath, &reason);
+			}
+
+			if (m_isDebugActive)
+				std::cout << name << ": " << (archive->upToDate ? "up to date" : "rebuild, " + reason) << "\n";
 		}
 
 		std::sort(oldArchives.begin(), oldArchives.end());
@@ -130,6 +157,18 @@ namespace StaticForge {
 				*errorOut = "Failed to delete the old archive '" + name + "': " + ec.message();
 				return false;
 			}
+		}
+
+		// files of the old name are only different files if the file system is case sensitive
+		auto removeIfOther = [](const StaticForgePath& oldPath, const StaticForgePath& newPath) {
+			std::error_code ec;
+			const bool same = fs::equivalent(oldPath, newPath, ec);
+			if (!ec && !same)
+				fs::remove(oldPath, ec);
+		};
+		for (const auto& [oldName, newName] : m_renamedArchives) {
+			removeIfOther(GetArchivePath(oldName), GetArchivePath(newName));
+			removeIfOther(GetCacheFilePath(oldName), GetCacheFilePath(newName));
 		}
 
 		return true;
@@ -436,6 +475,7 @@ namespace StaticForge {
 		m_builtArchiveCount = 0;
 		m_upToDateArchiveCount = 0;
 		m_removedArchives.clear();
+		m_renamedArchives.clear();
 	}
 
 	bool StaticForgeBuilder::CheckCompressionSettings(
@@ -737,6 +777,14 @@ namespace StaticForge {
 
 				// sets the settings of the archive group if it is new
 				if (archive.name.empty()) {
+					// both would be the same file on Windows
+					for (const auto& [otherName, other] : m_archiveGroups) {
+						if (otherName != archiveMeta.archiveName && EqualsIgnoreCase(otherName, archiveMeta.archiveName)) {
+							*errorOut = "Archive names '" + otherName + "' and '" + archiveMeta.archiveName + "' only differ in case";
+							return false;
+						}
+					}
+
 					archive.name = archiveMeta.archiveName;
 					archive.storeNames = m_storeNames ? true : archiveMeta.storeNames;
 					archive.compress = m_compress ? true : archiveMeta.compress;
@@ -834,7 +882,7 @@ namespace StaticForge {
 		* Order:
 		* - calculate data start
 		* - insert padding until data start
-		* - wirte file data and compress if used
+		* - write file data and compress if used
 		*   - during writing save block offsets
 		* - write header and index table
 		* - build name table
@@ -1325,7 +1373,7 @@ namespace StaticForge {
 			uint64_t fileAligned64 = 0;
 			if (!Internal::SafeAlignSize(written, blockSize, &fileAligned64)) {
 				*errorOut = "File alignment overflow file size: '" + std::to_string(written) +
-					"' bytes; aligment size: '" + std::to_string(blockSize) + " bytes'";
+					"' bytes; alignment size: '" + std::to_string(blockSize) + " bytes'";
 				return false;
 			}
 

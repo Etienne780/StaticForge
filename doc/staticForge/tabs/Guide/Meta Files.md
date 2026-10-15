@@ -59,7 +59,7 @@ compress-min-saving = 5;
 
 ## Archive names
 
-The archive name becomes the file name of the archive (`archive = textures;` produces `textures.sfpak`). It may contain dots (`textures.hd` produces `textures.hd.sfpak`) but no `/` or `\`, and it must not be `.` or `..`.
+The archive name becomes the file name of the archive (`archive = textures;` produces `textures.sfpak`). It may contain dots (`textures.hd` produces `textures.hd.sfpak`) but no `/` or `\`, and it must not be `.` or `..`. Two archive names of one build must not only differ in case (`Audio` and `audio`), because they would be the same file on Windows.
 
 ## Excluding files
 

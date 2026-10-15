@@ -19,7 +19,7 @@ Commands:
 | verify  | vf    | Checks the checksums of all files in `.sfpak` file(s)                      | filepath | -       | true        |
 | verbose | v	  | Enable debug mode (verbose console output)                                 | bool     | false   | false       |
 | help    | h	  | Show this help message                                                     | -        | -       | false       |
-| store-  | sn    | Stores the file names for better debuging                                  | bool     | false   | false       |
+| store-  | sn    | Stores the file names for better debugging                                 | bool     | false   | false       |
 | names   | 	  |                                                                            |          |         |             |
 | compress| c     | Compresses files if they are larger than 4096 bytes                        | bool     | false   | false       |
 |---------|-------|----------------------------------------------------------------------------|----------|---------|-------------|

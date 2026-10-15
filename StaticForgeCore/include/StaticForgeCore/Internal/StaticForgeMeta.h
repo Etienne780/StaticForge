@@ -35,7 +35,7 @@ namespace StaticForge::Internal {
 
 		bool CheckFilepath(std::string* errorOut) const;
 		bool ParseTokens(const std::vector<Internal::MetaToken>& tokens, std::string* errorOut);
-		bool ParseStatment(
+		bool ParseStatement(
 			const Internal::MetaToken* first,
 			const std::vector<const Internal::MetaToken*>& values,
 			std::string* errorOut

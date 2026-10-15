@@ -118,7 +118,7 @@ namespace StaticForge::Internal {
 				return false;
 			}
 
-			if (!ParseStatment(
+			if (!ParseStatement(
 				firstIdentifierToken,
 				values,
 				&error
@@ -131,7 +131,7 @@ namespace StaticForge::Internal {
 		return true;
 	}
 
-	bool StaticForgeMeta::ParseStatment(
+	bool StaticForgeMeta::ParseStatement(
 		const Internal::MetaToken* first,
 		const std::vector<const Internal::MetaToken*>& values,
 		std::string* errorOut

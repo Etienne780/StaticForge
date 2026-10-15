@@ -4,6 +4,7 @@
 #include <sstream>
 #include <iomanip>
 #include <vector>
+#include <cctype>
 #include <StaticForgeCore/StaticForge.h>
 #include "Config.h"
 #include "ArgumentNames.h"
@@ -17,6 +18,13 @@ namespace Actions {
     }
 
     // names come from the archive, so they must not point outside of the output folder
+    // Windows ignores the case of file names
+    static std::string ToLowerAscii(std::string text) {
+        for (char& c : text)
+            c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+        return text;
+    }
+
     static bool IsSafeRelativePath(const std::filesystem::path& path) {
         if (path.empty() || path.has_root_name() || path.has_root_directory())
             return false;
@@ -179,7 +187,7 @@ namespace Actions {
             job.archiveDir = outputPath / archivePath.stem();
 
             for (const auto& other : jobs) {
-                if (other.archiveDir == job.archiveDir) {
+                if (ToLowerAscii(other.archiveDir.generic_u8string()) == ToLowerAscii(job.archiveDir.generic_u8string())) {
                     PrintError("", "Archives '" + other.archivePath.generic_u8string() + "' and '" + archivePath.generic_u8string()
                         + "' would both be extracted to '" + job.archiveDir.generic_u8string() + "'");
                     return false;

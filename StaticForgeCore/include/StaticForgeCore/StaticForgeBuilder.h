@@ -240,6 +240,8 @@ namespace StaticForge {
 		size_t m_upToDateArchiveCount = 0;
 		// archives of a previous build that are not built anymore
 		std::vector<std::string> m_removedArchives;
+		// archives whose name only changed in case, as (old name, new name)
+		std::vector<std::pair<std::string, std::string>> m_renamedArchives;
 
 		std::unordered_map<std::string, ArchiveGroup> m_archiveGroups;
 		std::unique_ptr<Internal::LZ4Compression> m_compressor;
