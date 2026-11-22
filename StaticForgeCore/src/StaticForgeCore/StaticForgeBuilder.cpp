@@ -16,6 +16,11 @@ namespace StaticForge {
 
 	static void PrintSection(const std::string& title);
 	static bool IsValidArchiveName(const std::string& name);
+	static std::string NormalizeArchiveExtension(const std::string& extension);
+	static bool IsValidArchiveExtension(const std::string& extension);
+
+	static const char* const INVALID_EXTENSION_HINT =
+		"must not be empty, contain '/', '\\', '<', '>', ':', '\"', '|', '?', '*' or end with '.' or ' '";
 
 	// ASCII only, archive names are file names and Windows ignores the case
 	static bool EqualsIgnoreCase(const std::string& a, const std::string& b) {
@@ -91,9 +96,10 @@ namespace StaticForge {
 			sortedGroups[name] = &group;
 
 		// cache files without an archive of this build: renamed archives (only the case changed) and old archives
+		// as (old name, old extension) and (name, extension)
 		std::error_code ec;
-		std::map<std::string, std::string> renamedArchives;
-		std::vector<std::string> oldArchives;
+		std::map<std::string, std::pair<std::string, std::string>> renamedArchives;
+		std::vector<std::pair<std::string, std::string>> oldArchives;
 		for (fs::directory_iterator it(m_cacheDir, ec), end; !ec && it != end; it.increment(ec)) {
 			if (!Internal::HasExtension(it->path(), Internal::BUILD_CACHE_EXTENSION))
 				continue;
@@ -103,31 +109,45 @@ namespace StaticForge {
 			if (!IsValidArchiveName(name) || m_archiveGroups.find(name) != m_archiveGroups.end())
 				continue;
 
+			// a wrong extension could point to another file, so it is only used if it is valid
+			Internal::BuildCache cache;
+			const bool hasCache = Internal::ReadBuildCache(it->path(), &cache) && IsValidArchiveExtension(cache.extension);
+
 			// on Windows both names are the same file, so it is built again with the new name
 			auto renamed = std::find_if(sortedGroups.begin(), sortedGroups.end(), [&name](const auto& group) {
 				return EqualsIgnoreCase(group.first, name);
 			});
 			if (renamed != sortedGroups.end()) {
-				renamedArchives[renamed->first] = name;
+				// without a cache the extension most likely didn't change
+				renamedArchives[renamed->first] = { name, hasCache ? cache.extension : renamed->second->extension };
 				continue;
 			}
 
 			// only archives of this output directory are deleted
-			Internal::BuildCache cache;
-			if (Internal::ReadBuildCache(it->path(), &cache) && cache.outputPath == outputPath)
-				oldArchives.push_back(name);
+			if (hasCache && cache.outputPath == outputPath)
+				oldArchives.emplace_back(name, cache.extension);
 		}
 
 		for (auto& [name, archive] : sortedGroups) {
 			std::string reason;
+			const StaticForgePath archivePath = GetArchivePath(name, archive->extension);
 			auto renamed = renamedArchives.find(name);
 			if (renamed != renamedArchives.end()) {
+				const auto& [oldName, oldExtension] = renamed->second;
 				archive->upToDate = false;
-				reason = "archive name changed (was '" + renamed->second + "')";
-				m_renamedArchives.emplace_back(renamed->second, name);
+				reason = "archive name changed (was '" + oldName + "')";
+				m_renamedArchives.emplace_back(oldName, name);
+				m_movedArchives.emplace_back(GetArchivePath(oldName, oldExtension), archivePath);
 			}
 			else {
-				archive->upToDate = IsUpToDate(*archive, outputPath, &reason);
+				Internal::BuildCache cache;
+				const bool hasCache = Internal::ReadBuildCache(GetCacheFilePath(name), &cache);
+
+				// the file with the old extension is deleted after the archive was written with the new one
+				if (hasCache && cache.outputPath == outputPath && cache.extension != archive->extension && IsValidArchiveExtension(cache.extension))
+					m_movedArchives.emplace_back(GetArchivePath(name, cache.extension), archivePath);
+
+				archive->upToDate = IsUpToDate(*archive, hasCache ? &cache : nullptr, outputPath, &reason);
 			}
 
 			if (m_isDebugActive)
@@ -135,10 +155,10 @@ namespace StaticForge {
 		}
 
 		std::sort(oldArchives.begin(), oldArchives.end());
-		for (const auto& name : oldArchives) {
-			m_removedArchives.push_back(name);
+		for (const auto& old : oldArchives) {
+			m_removedArchives.push_back(old);
 			if (m_isDebugActive)
-				std::cout << name << ": not built anymore, archive and cache file are deleted\n";
+				std::cout << old.first << ": not built anymore, archive and cache file are deleted\n";
 		}
 
 		if (m_isDebugActive)
@@ -148,9 +168,9 @@ namespace StaticForge {
 	bool StaticForgeBuilder::RemoveOldArchives(std::string* errorOut) const {
 		namespace fs = std::filesystem;
 
-		for (const auto& name : m_removedArchives) {
+		for (const auto& [name, extension] : m_removedArchives) {
 			std::error_code ec;
-			fs::remove(GetArchivePath(name), ec);
+			fs::remove(GetArchivePath(name, extension), ec);
 			if (!ec)
 				fs::remove(GetCacheFilePath(name), ec);
 			if (ec) {
@@ -159,22 +179,22 @@ namespace StaticForge {
 			}
 		}
 
-		// files of the old name are only different files if the file system is case sensitive
+		// a name that only changed in case is only a different file if the file system is case sensitive
 		auto removeIfOther = [](const StaticForgePath& oldPath, const StaticForgePath& newPath) {
 			std::error_code ec;
 			const bool same = fs::equivalent(oldPath, newPath, ec);
 			if (!ec && !same)
 				fs::remove(oldPath, ec);
 		};
-		for (const auto& [oldName, newName] : m_renamedArchives) {
-			removeIfOther(GetArchivePath(oldName), GetArchivePath(newName));
+		for (const auto& [oldPath, newPath] : m_movedArchives)
+			removeIfOther(oldPath, newPath);
+		for (const auto& [oldName, newName] : m_renamedArchives)
 			removeIfOther(GetCacheFilePath(oldName), GetCacheFilePath(newName));
-		}
 
 		return true;
 	}
 
-	bool StaticForgeBuilder::IsUpToDate(ArchiveGroup& archive, const std::string& outputPath, std::string* reasonOut) const {
+	bool StaticForgeBuilder::IsUpToDate(ArchiveGroup& archive, const Internal::BuildCache* cachePtr, const std::string& outputPath, std::string* reasonOut) const {
 		namespace fs = std::filesystem;
 
 		if (m_rebuild) {
@@ -182,11 +202,11 @@ namespace StaticForge {
 			return false;
 		}
 
-		Internal::BuildCache cache;
-		if (!Internal::ReadBuildCache(GetCacheFilePath(archive.name), &cache)) {
+		if (!cachePtr) {
 			*reasonOut = "no valid cache file";
 			return false;
 		}
+		const Internal::BuildCache& cache = *cachePtr;
 
 		if (cache.formatVersion != VERSION) {
 			*reasonOut = "archive format version changed";
@@ -198,13 +218,18 @@ namespace StaticForge {
 			return false;
 		}
 
+		if (cache.extension != archive.extension) {
+			*reasonOut = "archive extension changed (was '" + cache.extension + "')";
+			return false;
+		}
+
 		if (cache.settings != GetCacheSettings(archive)) {
 			*reasonOut = "settings changed";
 			return false;
 		}
 
 		// the archive itself was deleted or replaced
-		const StaticForgePath archivePath = GetArchivePath(archive.name);
+		const StaticForgePath archivePath = GetArchivePath(archive.name, archive.extension);
 		std::error_code ec;
 		const uint64_t archiveSize = fs::file_size(archivePath, ec);
 		if (ec) {
@@ -278,9 +303,10 @@ namespace StaticForge {
 			Internal::BuildCache cache;
 			cache.formatVersion = VERSION;
 			cache.outputPath = outputPath;
+			cache.extension = archive.extension;
 			cache.settings = GetCacheSettings(archive);
 
-			const StaticForgePath archivePath = GetArchivePath(name);
+			const StaticForgePath archivePath = GetArchivePath(name, archive.extension);
 			std::error_code ec;
 			cache.archiveSize = std::filesystem::file_size(archivePath, ec);
 			if (ec || !Internal::GetModifiedTime(archivePath, &cache.archiveModified)) {
@@ -324,9 +350,9 @@ namespace StaticForge {
 		return m_cacheDir / std::filesystem::u8path(archiveName + std::string(Internal::BUILD_CACHE_EXTENSION));
 	}
 
-	StaticForgePath StaticForgeBuilder::GetArchivePath(const std::string& archiveName) const {
+	StaticForgePath StaticForgeBuilder::GetArchivePath(const std::string& archiveName, const std::string& extension) const {
 		// the name is UTF-8 and may contain dots, so the extension is appended and not replaced
-		return m_outputPath / std::filesystem::u8path(archiveName + std::string(PACK_FILE_EXTENSION));
+		return m_outputPath / std::filesystem::u8path(archiveName + extension);
 	}
 
 	bool StaticForgeBuilder::CreateOutputDir(std::string* errorOut) {
@@ -386,6 +412,12 @@ namespace StaticForge {
 
 	StaticForgeBuilder& StaticForgeBuilder::SetArchiveName(const std::string& archiveName) {
 		m_archiveName = archiveName;
+		return *this;
+	}
+
+	StaticForgeBuilder& StaticForgeBuilder::SetArchiveExtension(const std::string& extension) {
+		// validated when building
+		m_archiveExtension = NormalizeArchiveExtension(extension);
 		return *this;
 	}
 
@@ -476,6 +508,7 @@ namespace StaticForge {
 		m_upToDateArchiveCount = 0;
 		m_removedArchives.clear();
 		m_renamedArchives.clear();
+		m_movedArchives.clear();
 	}
 
 	bool StaticForgeBuilder::CheckCompressionSettings(
@@ -529,6 +562,28 @@ namespace StaticForge {
 			&& name.find('\\') == std::string::npos;
 	}
 
+	// "pak" is the same as ".pak", like the excluded extensions of the meta files
+	static std::string NormalizeArchiveExtension(const std::string& extension) {
+		if (extension.empty() || extension[0] == '.')
+			return extension;
+		return "." + extension;
+	}
+
+	// the extension becomes part of a file name, so it must not point to another directory
+	// and must be a valid file name on Windows (a '.' or ' ' at the end is removed by Windows)
+	static bool IsValidArchiveExtension(const std::string& extension) {
+		if (extension.size() < 2 || extension[0] != '.' || extension.back() == '.' || extension.back() == ' ')
+			return false;
+
+		for (const char c : extension) {
+			const unsigned char uc = static_cast<unsigned char>(c);
+			if (uc < 0x20 || std::string_view("/\\<>:\"|?*").find(c) != std::string_view::npos)
+				return false;
+		}
+
+		return true;
+	}
+
 	// the path as given, with the absolute path in brackets if it differs
 	static std::string PathWithAbsolute(const StaticForgePath& path) {
 		std::error_code ec;
@@ -573,6 +628,11 @@ namespace StaticForge {
 			return false;
 		}
 
+		if (m_archiveExtension && !IsValidArchiveExtension(*m_archiveExtension)) {
+			*errorOut = "Invalid archive extension '" + *m_archiveExtension + "' (" + INVALID_EXTENSION_HINT + ")";
+			return false;
+		}
+
 		if (m_srcPaths.empty()) {
 			*errorOut = "No source path set";
 			return false;
@@ -594,12 +654,6 @@ namespace StaticForge {
 				*errorOut = "Source path '" + p.generic_u8string() + "' must be a directory!";
 				return false;
 			}
-		}
-
-		if (Internal::HasExtension(m_outputPath, PACK_FILE_EXTENSION, true)) {
-			*errorOut = "Output path must be a directory path, not an archive file: '" + m_outputPath.generic_u8string()
-				+ "' (the archive file name comes from the archive name (--name) or a meta file)";
-			return false;
 		}
 
 		// a missing output directory is created when the archives are written
@@ -668,7 +722,7 @@ namespace StaticForge {
 					return false;
 				}
 
-				const auto& metaData = metaBuilder.GetLoadedMetaData();
+				Internal::StaticForgeMetaData metaData = metaBuilder.GetLoadedMetaData();
 				if (metaData.archiveName.empty()) {
 					*errorOut = "Meta file '" + fullPath.generic_u8string() + "' has archive param not set";
 					return false;
@@ -678,6 +732,16 @@ namespace StaticForge {
 					*errorOut = "Meta file '" + fullPath.generic_u8string() + "' has an invalid archive name '" + metaData.archiveName
 						+ "' (must not contain '/' or '\\' and must not be '.' or '..')";
 					return false;
+				}
+
+				// empty if not set in the meta file
+				if (!metaData.archiveExtension.empty()) {
+					metaData.archiveExtension = NormalizeArchiveExtension(metaData.archiveExtension);
+					if (!IsValidArchiveExtension(metaData.archiveExtension)) {
+						*errorOut = "Meta file '" + fullPath.generic_u8string() + "' has an invalid extension '" + metaData.archiveExtension
+							+ "' (" + INVALID_EXTENSION_HINT + ")";
+						return false;
+					}
 				}
 
 				std::string compressionError;
@@ -706,6 +770,8 @@ namespace StaticForge {
 					std::cout << "]\n";
 					std::cout << "  - store-names: " << (metaData.storeNames ? "true" : "false") << "\n";
 					std::cout << "  - compress: " << (metaData.compress ? "true" : "false") << "\n";
+					if (!metaData.archiveExtension.empty())
+						std::cout << "  - extension: " << metaData.archiveExtension << "\n";
 
 					auto printOpt = [](const char* name, const std::optional<uint64_t>& v) {
 						if (v)
@@ -786,6 +852,9 @@ namespace StaticForge {
 					}
 
 					archive.name = archiveMeta.archiveName;
+					// builder value -> meta value -> default
+					archive.extension = m_archiveExtension.value_or(
+						archiveMeta.archiveExtension.empty() ? std::string(PACK_FILE_EXTENSION) : archiveMeta.archiveExtension);
 					archive.storeNames = m_storeNames ? true : archiveMeta.storeNames;
 					archive.compress = m_compress ? true : archiveMeta.compress;
 					ApplyCompressionSettings(archive, archiveMeta);
@@ -832,10 +901,24 @@ namespace StaticForge {
 			});
 		}
 
+		// with own extensions two archives can get the same file, e.g. "a" + ".b.c" and "a.b" + ".c"
+		std::map<std::string, std::string> sortedFileNames;
+		for (const auto& [name, archive] : m_archiveGroups)
+			sortedFileNames[name] = name + archive.extension;
+		for (auto it = sortedFileNames.begin(); it != sortedFileNames.end(); ++it) {
+			for (auto other = std::next(it); other != sortedFileNames.end(); ++other) {
+				if (EqualsIgnoreCase(it->second, other->second)) {
+					*errorOut = "Archives '" + it->first + "' and '" + other->first + "' would both be written to '" + it->second + "'";
+					return false;
+				}
+			}
+		}
+
 		// without files an empty archive is written
 		if (m_archiveGroups.empty()) {
 			m_archiveGroups[m_archiveName] = {};
 			m_archiveGroups[m_archiveName].name = m_archiveName;
+			m_archiveGroups[m_archiveName].extension = m_archiveExtension.value_or(std::string(PACK_FILE_EXTENSION));
 		}
 
 		if (m_isDebugActive) {
@@ -902,7 +985,7 @@ namespace StaticForge {
 			if (archive.upToDate)
 				continue;
 
-			StaticForgePath outputPath = GetArchivePath(archive.name);
+			StaticForgePath outputPath = GetArchivePath(archive.name, archive.extension);
 			StaticForgePath tempPath = outputPath;
 			tempPath += ".tmp";
 			m_tempFiles.emplace_back(tempPath, outputPath);

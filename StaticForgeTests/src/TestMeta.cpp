@@ -24,6 +24,7 @@ TEST_CASE("Meta/All parameters and comments") {
 		"exclude = .png, .jpg;\n"
 		"store-names = true;\n"
 		"compress = TRUE;\n"
+		"extension = .pak;\n"
 		"compress-block-size = 16384;\n"
 		"compress-table-size = 12;\n"
 		"compress-min-match = 6;\n"
@@ -35,6 +36,7 @@ TEST_CASE("Meta/All parameters and comments") {
 	CHECK_EQ(data.excludedExtensions.size(), size_t(2));
 	CHECK(data.storeNames);
 	CHECK(data.compress);
+	CHECK_EQ(data.archiveExtension, std::string(".pak"));
 	CHECK(data.compressionBlockSize && *data.compressionBlockSize == 16384);
 	CHECK(data.compressionTableSizeLog2 && *data.compressionTableSizeLog2 == 12);
 	CHECK(data.compressionMinMatchLength && *data.compressionMinMatchLength == 6);
@@ -50,6 +52,7 @@ TEST_CASE("Meta/Values that are not set") {
 	CHECK(!data.storeNames);
 	CHECK(!data.compress);
 	CHECK(data.excludedExtensions.empty());
+	CHECK(data.archiveExtension.empty());
 	CHECK(!data.compressionBlockSize);
 	CHECK(!data.compressionTableSizeLog2);
 	CHECK(!data.compressionMinMatchLength);

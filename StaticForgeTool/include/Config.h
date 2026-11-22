@@ -34,6 +34,8 @@ public:
 	const std::vector<std::filesystem::path>& GetVerifyPaths() const;
 
 	const std::string GetArchiveName() const;
+	// empty if not set
+	const std::string& GetArchiveExtension() const;
 	bool GetCreateOutputDir() const;
 	bool GetPrintHelp() const;
 	bool GetVerbosePrint() const;
@@ -61,6 +63,7 @@ private:
 	std::vector<std::filesystem::path> m_verifyPaths;
 
 	std::string m_archiveName = "main";
+	std::string m_archiveExtension;
 	bool m_createOutputDir = false;
 	bool m_printHelp = false;
 	bool m_verbosePrint = false;

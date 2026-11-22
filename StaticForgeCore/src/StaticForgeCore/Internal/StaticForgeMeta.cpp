@@ -360,6 +360,10 @@ namespace StaticForge::Internal {
 			return static_cast<void*>(&m_metaData.compress);
 		}
 
+		if (name == MetaParams::EXTENSION) {
+			return static_cast<void*>(&m_metaData.archiveExtension);
+		}
+
 		if (name == MetaParams::COMPRESS_BLOCK_SIZE) {
 			return static_cast<void*>(&m_metaData.compressionBlockSize);
 		}

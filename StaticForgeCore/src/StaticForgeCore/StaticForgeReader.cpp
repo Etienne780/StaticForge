@@ -126,17 +126,8 @@ namespace StaticForge {
 	}
 
 	bool StaticForgeReader::ValidatePackPath(const StaticForgePath& path, std::string* errorOut) {
-		if (!path.has_extension()) {
-			*errorOut = "Path must point to a '" + std::string(PACK_FILE_EXTENSION) + "' file";
-			return false;
-		}
-
-		StaticForgePath extension = path.extension();
-		if (extension != PACK_FILE_EXTENSION) {
-			*errorOut = "Invalid extension '" + extension.generic_u8string() + "', must be '" + std::string(PACK_FILE_EXTENSION) + "'";
-			return false;
-		}
-
+		// the extension is not checked, archives can have any extension,
+		// the header (magic and version) decides if it is an archive
 		std::error_code ec;
 		if (!std::filesystem::is_regular_file(path, ec)) {
 			*errorOut = "File does not exist or is not a regular file";

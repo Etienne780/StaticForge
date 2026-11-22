@@ -84,6 +84,32 @@ TEST_CASE("Reader/Invalid paths") {
 	CHECK(!reader.Load(valid, static_cast<StaticForgeConcurrentArchive*>(nullptr)));
 }
 
+TEST_CASE("Reader/Any extension is accepted") {
+	TempDir dir;
+	const auto assets = SmallAssets();
+	const fs::path original = BuildSmallArchive(dir, assets);
+
+	// the header decides if it is an archive, not the extension
+	for (const char* name : { "main.pak", "main.data.bin", "noextension" }) {
+		const fs::path copy = dir / name;
+		fs::copy_file(original, copy);
+
+		StaticForgeReader reader;
+		StaticForgeArchive archive;
+		REQUIRE_MSG(reader.Load(copy, &archive), std::string(name) + ": " + reader.GetError());
+		CHECK_EQ(archive.GetFileCount(), assets.size());
+		std::vector<std::byte> data;
+		CHECK(archive.LoadAsset("c/c.txt", &data) && Same(data, "c"));
+	}
+
+	// a file with another content is still rejected
+	WriteFile(dir / "text.pak", TextData(5000, 3));
+	StaticForgeReader reader;
+	StaticForgeArchive archive;
+	CHECK(!reader.Load(dir / "text.pak", &archive));
+	CHECK_MSG(reader.GetError().find("magic") != std::string::npos, reader.GetError());
+}
+
 TEST_CASE("Reader/Damaged header is rejected") {
 	TempDir dir;
 	const fs::path path = BuildSmallArchive(dir, SmallAssets());

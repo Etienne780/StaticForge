@@ -14,6 +14,7 @@ namespace StaticForge {
 	constexpr uint64_t VERSION = 3;
 	// constexpr uint64_t MAX_ARCHIVE_SIZE = std::numeric_limits<uint64_t>::max() - 1;// big boy
 
+	// default extension of the archive files, can be changed with the builder or a meta file
 	constexpr std::string_view PACK_FILE_EXTENSION = ".sfpak";
 	constexpr std::string_view META_FILE_EXTENSION = ".sfpak.meta";
 
@@ -73,6 +74,9 @@ namespace StaticForge {
 			std::vector<std::string> excludedExtensions;
 			bool storeNames = false;
 			bool compress = false;
+
+			// empty means the builder value or the default is used
+			std::string archiveExtension;
 
 			// not set means the builder value or the default is used
 			std::optional<uint64_t> compressionBlockSize;

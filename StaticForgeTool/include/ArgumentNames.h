@@ -14,9 +14,11 @@ Commands:
 | output  | o	  | Output path for the packed archive file                                    | filepath | -       | false       |
 | mkdir   | p	  | Create the output directory if it does not exist                           | bool     | false   | false       |
 | name    | n	  | Default archive name if no `.sfpak.meta` file is found                     | string   | "main"  | false       |
-| info    | i	  | Display header and index information of a `.sfpak` file (read-only mode)   | filepath | -       | true        |
-| extract | x     | Extracts `.sfpak` file(s) into --output/<archive name>/ (needs --output)   | filepath | -       | true        |
-| verify  | vf    | Checks the checksums of all files in `.sfpak` file(s)                      | filepath | -       | true        |
+| exten-  | ext   | File extension of all archives (e.g. pak or .pak), overrides the           | string   | ".sfpak"| false       |
+| sion    | 	  | extension of the `.sfpak.meta` files                                       |          |         |             |
+| info    | i	  | Display header and index information of archive file(s) (read-only mode)   | filepath | -       | true        |
+| extract | x     | Extracts archive file(s) into --output/<archive name>/ (needs --output)    | filepath | -       | true        |
+| verify  | vf    | Checks the checksums of all files in archive file(s)                       | filepath | -       | true        |
 | verbose | v	  | Enable debug mode (verbose console output)                                 | bool     | false   | false       |
 | help    | h	  | Show this help message                                                     | -        | -       | false       |
 | store-  | sn    | Stores the file names for better debugging                                 | bool     | false   | false       |
@@ -57,6 +59,9 @@ namespace ArgName {
 
 	const std::string_view ARCHIVE_NAME = "name";
 	const std::string_view ARCHIVE_NAME_SHORTNAME = "n";
+
+	const std::string_view ARCHIVE_EXTENSION = "extension";
+	const std::string_view ARCHIVE_EXTENSION_SHORTNAME = "ext";
 
 	const std::string_view INFO = "info";
 	const std::string_view INFO_SHORTNAME = "i";

@@ -8,7 +8,7 @@
 
 namespace StaticForge::Internal {
 
-	constexpr uint64_t BUILD_CACHE_VERSION = 1;
+	constexpr uint64_t BUILD_CACHE_VERSION = 2;
 	constexpr std::string_view BUILD_CACHE_EXTENSION = ".sfcache";
 
 	struct BuildCacheFile {
@@ -24,6 +24,7 @@ namespace StaticForge::Internal {
 	struct BuildCache {
 		uint64_t formatVersion = 0;
 		std::string outputPath;
+		std::string extension;	/*< extension of the archive file, needed to find it again if it changes */
 		std::string settings;
 		uint64_t archiveSize = 0;
 		int64_t archiveModified = 0;

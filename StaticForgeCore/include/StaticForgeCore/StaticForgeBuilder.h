@@ -15,6 +15,7 @@ namespace StaticForge {
 	namespace Internal {
 	
 		class LZ4Compression;
+		struct BuildCache;
 
 	}
 
@@ -60,6 +61,18 @@ namespace StaticForge {
 		 * @return Reference to the builder instance.
 		 */
 		StaticForgeBuilder& SetArchiveName(const std::string& archiveName);
+
+		/**
+		 * @brief Sets the file extension of all archives, overrides the extension of the meta files.
+		 *
+		 * The leading dot is optional ("pak" is the same as ".pak"). Must not be empty, contain '/' or '\\',
+		 * characters that are invalid in Windows file names or end with '.' or ' '.
+		 * If not set the meta file value or PACK_FILE_EXTENSION is used.
+		 *
+		 * @param extension Extension of the archive files, e.g. ".pak".
+		 * @return Reference to the builder instance.
+		 */
+		StaticForgeBuilder& SetArchiveExtension(const std::string& extension);
 
 		/**
 		 * @brief Replaces all source paths.
@@ -200,6 +213,7 @@ namespace StaticForge {
 		 */
 		struct ArchiveGroup {
 			std::string name;
+			std::string extension{ PACK_FILE_EXTENSION };
 			bool storeNames = false;
 			bool compress = false;
 			uint64_t compressionBlockSize = DEFAULT_COMPRESSION_BLOCK_SIZE;
@@ -230,6 +244,7 @@ namespace StaticForge {
 		bool m_storeNames = false;
 		bool m_compress = false;
 		// set values override the meta files, otherwise the meta file value or the default is used
+		std::optional<std::string> m_archiveExtension;
 		std::optional<uint64_t> m_compressionBlockSize;
 		std::optional<uint64_t> m_compressionTableSizeLog2;
 		std::optional<uint64_t> m_compressionMinMatchLength;
@@ -238,10 +253,13 @@ namespace StaticForge {
 		bool m_rebuild = false;
 		size_t m_builtArchiveCount = 0;
 		size_t m_upToDateArchiveCount = 0;
-		// archives of a previous build that are not built anymore
-		std::vector<std::string> m_removedArchives;
+		// archives of a previous build that are not built anymore, as (name, extension)
+		std::vector<std::pair<std::string, std::string>> m_removedArchives;
 		// archives whose name only changed in case, as (old name, new name)
 		std::vector<std::pair<std::string, std::string>> m_renamedArchives;
+		// archive files of a previous build that got a new path (name changed in case or new extension),
+		// as (old path, new path), the old file is deleted after the build if it is another file
+		std::vector<std::pair<StaticForgePath, StaticForgePath>> m_movedArchives;
 
 		std::unordered_map<std::string, ArchiveGroup> m_archiveGroups;
 		std::unique_ptr<Internal::LZ4Compression> m_compressor;
@@ -296,7 +314,7 @@ namespace StaticForge {
 		/**
 		 * @brief Compares an archive with its cache file, sets the reason if it has to be built.
 		 */
-		bool IsUpToDate(ArchiveGroup& archive, const std::string& outputPath, std::string* reasonOut) const;
+		bool IsUpToDate(ArchiveGroup& archive, const Internal::BuildCache* cache, const std::string& outputPath, std::string* reasonOut) const;
 
 		/**
 		 * @brief Writes the cache files of the built archives and of the archives whose cache changed.
@@ -319,7 +337,7 @@ namespace StaticForge {
 		std::string GetCacheOutputPath() const;
 
 		StaticForgePath GetCacheFilePath(const std::string& archiveName) const;
-		StaticForgePath GetArchivePath(const std::string& archiveName) const;
+		StaticForgePath GetArchivePath(const std::string& archiveName, const std::string& extension) const;
 
 		/**
 		 * @brief Creates the output directory if it is missing.

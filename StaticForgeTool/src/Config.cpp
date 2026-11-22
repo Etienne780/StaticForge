@@ -54,6 +54,10 @@ const std::string Config::GetArchiveName() const {
 	return m_archiveName;
 }
 
+const std::string& Config::GetArchiveExtension() const {
+	return m_archiveExtension;
+}
+
 bool Config::GetCreateOutputDir() const {
 	return m_createOutputDir;
 }
@@ -214,6 +218,10 @@ void* Config::GetOutput(const ConsoleArgument* arg) {
 		return static_cast<void*>(&m_archiveName);
 	}
 
+	if (argName == ArgName::ARCHIVE_EXTENSION) {
+		return static_cast<void*>(&m_archiveExtension);
+	}
+
 	if (argName == ArgName::INFO) {
 		m_infoPaths.emplace_back("");
 		return static_cast<void*>(&m_infoPaths.back());
@@ -352,6 +360,8 @@ void Config::ValidateConfig() {
 			AddError("Cannot set mkdir while printing help");
 		if (m_archiveName != "main")
 			AddError("Cannot set archive name while printing help");
+		if (!m_archiveExtension.empty())
+			AddError("Cannot set archive extension while printing help");
 		if (m_verbosePrint)
 			AddError("Cannot set verbose while printing help");
 		if (m_storeNames)
@@ -375,6 +385,8 @@ void Config::ValidateConfig() {
 			AddError("--mkdir cannot be used with --info");
 		if (m_archiveName != "main")
 			AddError("--name cannot be used with --info");
+		if (!m_archiveExtension.empty())
+			AddError("--extension cannot be used with --info");
 		if (m_storeNames)
 			AddError("--store-names cannot be used with --info");
 		if (m_compress)
@@ -395,7 +407,7 @@ void Config::ValidateConfig() {
 	case ConfigMode::PACK:
 		if (m_outputAbsolPath.empty())
 			AddError("--output is required for packing");
-		// --name, --mkdir, --verbose, --store-names, --compress*, --cache-dir, --rebuild
+		// --name, --extension, --mkdir, --verbose, --store-names, --compress*, --cache-dir, --rebuild
 		break;
 
 	case ConfigMode::EXTRACT:
@@ -403,6 +415,8 @@ void Config::ValidateConfig() {
 			AddError("--output is required for extracting");
 		if (m_archiveName != "main")
 			AddError("--name cannot be used with --extract");
+		if (!m_archiveExtension.empty())
+			AddError("--extension cannot be used with --extract");
 		if (m_storeNames)
 			AddError("--store-names cannot be used with --extract");
 		if (m_compress)
@@ -421,6 +435,8 @@ void Config::ValidateConfig() {
 			AddError("--mkdir cannot be used with --verify");
 		if (m_archiveName != "main")
 			AddError("--name cannot be used with --verify");
+		if (!m_archiveExtension.empty())
+			AddError("--extension cannot be used with --verify");
 		if (m_storeNames)
 			AddError("--store-names cannot be used with --verify");
 		if (m_compress)

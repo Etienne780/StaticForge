@@ -57,7 +57,8 @@ namespace StaticForge::Internal {
 		if (!ReadValue(in, "format", &value) || !ParseNumber(value, &cacheOut->formatVersion))
 			return false;
 
-		if (!ReadValue(in, "output", &cacheOut->outputPath) || !ReadValue(in, "settings", &cacheOut->settings))
+		if (!ReadValue(in, "output", &cacheOut->outputPath) || !ReadValue(in, "extension", &cacheOut->extension)
+			|| !ReadValue(in, "settings", &cacheOut->settings))
 			return false;
 
 		std::string_view rest;
@@ -102,6 +103,7 @@ namespace StaticForge::Internal {
 		out << "StaticForgeCache " << BUILD_CACHE_VERSION << "\n";
 		out << "format " << cache.formatVersion << "\n";
 		out << "output " << cache.outputPath << "\n";
+		out << "extension " << cache.extension << "\n";
 		out << "settings " << cache.settings << "\n";
 		out << "archive " << cache.archiveSize << " " << cache.archiveModified << "\n";
 		out << "files " << cache.files.size() << "\n";

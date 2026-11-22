@@ -63,6 +63,9 @@ inline void InitConsoleArguments() {
 	auto& archiveNameArg = CAM::RegisterConsoleArgument(ArgName::ARCHIVE_NAME, ArgName::ARCHIVE_NAME_SHORTNAME, ConsoleArgType::String);
 	archiveNameArg.SetEvaluationFunction(stringParser);
 
+	auto& archiveExtensionArg = CAM::RegisterConsoleArgument(ArgName::ARCHIVE_EXTENSION, ArgName::ARCHIVE_EXTENSION_SHORTNAME, ConsoleArgType::String);
+	archiveExtensionArg.SetEvaluationFunction(stringParser);
+
 	auto& infoArg = CAM::RegisterConsoleArgument(ArgName::INFO, ArgName::INFO_SHORTNAME, ConsoleArgType::Filepath);
 	infoArg.SetEvaluationFunction(filepathParser);
 	infoArg.SetAllowMultiple(true);

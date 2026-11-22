@@ -87,9 +87,12 @@ TEST_CASE("Builder/Output and source paths") {
 	CHECK_MSG(createOut.Build(), createOut.GetError());
 	CHECK(fs::exists(dir / "created/sub/main.sfpak"));
 
-	StaticForgeBuilder outIsArchive{ "main", { dir / "src" }, dir / "out.sfpak" };
+	StaticForgeBuilder outIsArchive{ "main", { dir / "src" }, dir / "out.bin" };
 	outIsArchive.SetCreateOutputDir(true);
-	CHECK(!outIsArchive.Build());
+	// a directory may have a dot in its name, the archive is written into it
+	CHECK_MSG(outIsArchive.Build(), outIsArchive.GetError());
+	CHECK(fs::is_directory(dir / "out.bin"));
+	CHECK(fs::exists(dir / "out.bin/main.sfpak"));
 
 	WriteFile(dir / "file.txt", "x");
 	StaticForgeBuilder outIsFile{ "main", { dir / "src" }, dir / "file.txt" };
@@ -213,6 +216,91 @@ TEST_CASE("Builder/Archive names") {
 		CHECK_MSG(builder.Build(), valid + ": " + builder.GetError());
 		CHECK_MSG(fs::exists(dir / "out" / fs::u8path(valid + ".sfpak")), valid);
 	}
+}
+
+TEST_CASE("Builder/Own archive extension") {
+	TempDir dir;
+	WriteFile(dir / "src/a.txt", "a");
+
+	// the leading dot is optional
+	for (const std::string& extension : { std::string("pak"), std::string(".pak"), std::string(".data.bin"), std::string(u8".データ") }) {
+		TempDir out;
+		StaticForgeBuilder builder{ "main", { dir / "src" }, out / "out" };
+		builder.SetCreateOutputDir(true).SetArchiveExtension(extension);
+		REQUIRE_MSG(builder.Build(), extension + ": " + builder.GetError());
+
+		const std::string expected = extension[0] == '.' ? extension : "." + extension;
+		CheckArchive(out / "out" / fs::u8path("main" + expected), { { "a.txt", "a" } }, false);
+		CHECK_MSG(!fs::exists(out / "out/main.sfpak"), extension);
+	}
+
+	// dots in the name are kept, the extension is appended
+	StaticForgeBuilder dotted{ "my.archive", { dir / "src" }, dir / "out" };
+	dotted.SetCreateOutputDir(true).SetArchiveExtension("pak");
+	REQUIRE_MSG(dotted.Build(), dotted.GetError());
+	CHECK(fs::exists(dir / "out/my.archive.pak"));
+}
+
+TEST_CASE("Builder/Archive extension in meta files") {
+	TempDir dir;
+	WriteFile(dir / "src/audio/audio.sfpak.meta", "archive = audio; extension = snd;");
+	WriteFile(dir / "src/audio/music.ogg", "music");
+	WriteFile(dir / "src/textures/textures.sfpak.meta", "archive = textures; extension = .tex;");
+	WriteFile(dir / "src/textures/hero.png", "hero");
+	WriteFile(dir / "src/scripts/main.lua", "print()");
+
+	StaticForgeBuilder builder{ "main", { dir / "src" }, dir / "out" };
+	builder.SetCreateOutputDir(true);
+	REQUIRE_MSG(builder.Build(), builder.GetError());
+	CheckArchive(dir / "out/audio.snd", { { "audio/music.ogg", "music" } }, false);
+	CheckArchive(dir / "out/textures.tex", { { "textures/hero.png", "hero" } }, false);
+	CheckArchive(dir / "out/main.sfpak", { { "scripts/main.lua", "print()" } }, false);
+
+	// the builder value overrides the meta files
+	StaticForgeBuilder overridden{ "main", { dir / "src" }, dir / "out2" };
+	overridden.SetCreateOutputDir(true).SetArchiveExtension(".pak");
+	REQUIRE_MSG(overridden.Build(), overridden.GetError());
+	CHECK(fs::exists(dir / "out2/audio.pak"));
+	CHECK(fs::exists(dir / "out2/textures.pak"));
+	CHECK(fs::exists(dir / "out2/main.pak"));
+	CHECK(!fs::exists(dir / "out2/audio.snd"));
+}
+
+TEST_CASE("Builder/Invalid archive extensions") {
+	TempDir dir;
+	WriteFile(dir / "src/a.txt", "a");
+
+	for (const std::string& invalid : { std::string(""), std::string("."), std::string(".."), std::string("pak."), std::string(".pak "),
+		std::string("a/b"), std::string(".a\\b"), std::string(".pa:k"), std::string(".pa*k"), std::string(".pa\nk") }) {
+		StaticForgeBuilder builder{ "main", { dir / "src" }, dir / "out" };
+		builder.SetCreateOutputDir(true).SetArchiveExtension(invalid);
+		CHECK_MSG(!builder.Build(), "'" + invalid + "' was accepted");
+		CHECK_MSG(builder.GetError().find("Invalid archive extension") != std::string::npos, builder.GetError());
+	}
+	CHECK(!fs::exists(dir / "out"));
+
+	// the same through a meta file, the tokenizer only allows some characters
+	WriteFile(dir / "meta/x.sfpak.meta", "archive = x; extension = pak.;");
+	WriteFile(dir / "meta/x.txt", "x");
+	StaticForgeBuilder metaBuilder{ "main", { dir / "meta" }, dir / "out" };
+	metaBuilder.SetCreateOutputDir(true);
+	CHECK(!metaBuilder.Build());
+	CHECK_MSG(metaBuilder.GetError().find("x.sfpak.meta") != std::string::npos
+		&& metaBuilder.GetError().find("invalid extension") != std::string::npos, metaBuilder.GetError());
+}
+
+TEST_CASE("Builder/Archives with the same file name") {
+	TempDir dir;
+	WriteFile(dir / "src/a/a.sfpak.meta", "archive = a; extension = .b.c;");
+	WriteFile(dir / "src/a/a.txt", "a");
+	WriteFile(dir / "src/b/b.sfpak.meta", "archive = A.b; extension = .c;");
+	WriteFile(dir / "src/b/b.txt", "b");
+
+	StaticForgeBuilder builder{ "main", { dir / "src" }, dir / "out" };
+	builder.SetCreateOutputDir(true);
+	CHECK(!builder.Build());
+	CHECK_MSG(builder.GetError().find("would both be written to") != std::string::npos, builder.GetError());
+	CHECK(!fs::exists(dir / "out"));
 }
 
 TEST_CASE("Builder/Meta files split the archives") {
@@ -627,6 +715,28 @@ TEST_CASE("BuildCache/Archive name changed only in case") {
 	CHECK(ListNames(dir / "cache") == std::vector<std::string>{ "audio.sfcache" });
 
 	CHECK_CACHE_BUILD(CacheBuild(dir), 0, 1);
+}
+
+TEST_CASE("BuildCache/Changed archive extension") {
+	TempDir dir;
+	WriteCacheSources(dir);
+	CHECK_CACHE_BUILD(CacheBuild(dir), 3, 0);
+
+	// the archive is built with the new extension and the old file is deleted
+	WriteFile(dir / "src/audio/audio.sfpak.meta", "archive = audio; extension = snd;");
+	CHECK_CACHE_BUILD(CacheBuild(dir), 1, 2);
+	CHECK(fs::exists(dir / "out/audio.snd"));
+	CHECK(!fs::exists(dir / "out/audio.sfpak"));
+	CHECK_CACHE_BUILD(CacheBuild(dir), 0, 3);
+
+	// archives that are not built anymore are found with the extension of their cache file
+	fs::remove(dir / "src/audio/audio.sfpak.meta");
+	StaticForgeBuilder builder{ "main", { dir / "src" }, dir / "out" };
+	builder.SetCreateOutputDir(true).SetCacheDir(dir / "cache");
+	REQUIRE_MSG(builder.Build(), builder.GetError());
+	CHECK_EQ(builder.GetRemovedArchiveCount(), size_t(1));
+	CHECK(!fs::exists(dir / "out/audio.snd"));
+	CHECK(ListNames(dir / "out") == (std::vector<std::string>{ "data.sfpak", "main.sfpak", "textures.sfpak" }));
 }
 
 TEST_CASE("BuildCache/File names with spaces") {

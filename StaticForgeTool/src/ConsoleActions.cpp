@@ -133,6 +133,8 @@ namespace Actions {
             .SetRebuild(config.GetRebuild());
 
         // only override the meta file values if they were set
+        if (!config.GetArchiveExtension().empty())
+            builder.SetArchiveExtension(config.GetArchiveExtension());
         if (config.GetCompressBlockSize())
             builder.SetCompressionBlockSize(*config.GetCompressBlockSize());
         if (config.GetCompressTableSize())

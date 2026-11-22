@@ -70,7 +70,7 @@ namespace StaticForge {
 		bool CheckFile(const StaticForgePath& path, uint64_t* fileSizeOut);
 
 		/**
-		 * @brief Validates the archive file path.
+		 * @brief Validates the archive file path, the file has to exist. Any extension is allowed.
 		 *
 		 * @param path Archive file path.
 		 * @param errorOut Receives error details on failure.
