@@ -5,26 +5,30 @@ name: Meta File Parser
 
 # Meta File Parser
 
-Meta files use a minimal custom format parsed by `StaticForgeMeta` inside `StaticForgeCore`.
+Meta files use a minimal custom format parsed by `StaticForgeMeta` inside `StaticForgeCore`. How meta files are used is described in [[meta-files]].
 
 ## Syntax
 
 Each statement is a key-value pair terminated by a semicolon:
 
+{label="sfpak.meta"}
 ```
 key = value;
 ```
 
 Multiple statements can appear in any order:
 
+{label="sfpak.meta"}
 ```
 archive = main;
+extension = pak;
 exclude = .png, .jpg, .vert, .help;
 store-names = true;
 ```
 
 Comments start with `#` and run to the end of the line:
 
+{label="sfpak.meta"}
 ```
 # this is a comment
 archive = main; # this is also a comment
@@ -36,6 +40,7 @@ archive = main; # this is also a comment
 
 **Character dispatch (`ProcessChar`):**
 
+{hover=row}
 | Input                                        | Action                                       |
 |----------------------------------------------|----------------------------------------------|
 | Whitespace (`\r`, `\n`, ` `, `\t`)           | Skipped; newlines increment the line counter |
@@ -50,6 +55,7 @@ archive = main; # this is also a comment
 
 **Token types:**
 
+{hover=row}
 | Token type   | Description                                                  |
 |--------------|--------------------------------------------------------------|
 | `Identifier` | An unquoted word — keys, values, extensions, booleans, numbers |
@@ -65,18 +71,21 @@ Every token stores its **line** and **column** at the point it was emitted.
 
 `StaticForgeMeta::ParseTokens` consumes the token stream produced by `MetaTokenizer`. Each statement follows this pattern:
 
+{label="Tokens"}
 ```
 Identifier(key)  Assign  Identifier(value)  Delimiter
 ```
 
 For list values (e.g. `exclude`) the value section is instead:
 
+{label="Tokens"}
 ```
 Identifier  Separator  Identifier  Separator  ...  Identifier  Delimiter
 ```
 
 Any deviation — wrong token type, unexpected `EndOfFile`, missing `Delimiter` — is a parse error. Errors include the line and column of the offending token, also a missing or invalid value:
 
+{label="Error"}
 ```
 Missing value for 'compress' at line: 2, column: 1
 Failed to parse value '5' of 'compress' at line: 2, column: 1
@@ -86,15 +95,18 @@ Failed to parse value '5' of 'compress' at line: 2, column: 1
 
 If a key is not recognised, the parser compares it with every known key. Separators (`-`, `_`, space) and case are ignored, and the names are compared character by character. If the lengths differ by at most 3 and at most 3 characters are different, a suggestion is appended to the error:
 
+{label="Error"}
 ```
 Unknown identifier 'archiv' at line: 1, column: 1. Did you mean 'archive'?
 ```
 
 ## Supported parameters
 
+{hover=row; striped; col 0: width=205}
 | Key                   | Type     | Required | Description                                                                 |
 |-----------------------|----------|----------|-----------------------------------------------------------------------------|
-| `archive`             | string   | yes      | Name for the `.sfpak` archive                                               |
+| `archive`             | string   | yes      | Name of the archive                                                         |
+| `extension`           | string   | no       | File extension of the archive (default `.sfpak`)                            |
 | `exclude`             | string[] | no       | Comma-separated list of file extensions to skip                             |
 | `store-names`         | bool     | no       | Store original filenames in the archive for debug inspection and extraction |
 | `compress`            | bool     | no       | Compress files larger than 4096 bytes                                       |
@@ -106,6 +118,8 @@ Unknown identifier 'archiv' at line: 1, column: 1. Did you mean 'archive'?
 ## Value parsing
 
 **`archive`** — the `Identifier` token value is used as-is. The builder rejects names containing `/` or `\` and the names `.` and `..`.
+
+**`extension`** — the `Identifier` token value is stored as-is in `StaticForgeMetaData::archiveExtension`, an empty string means not set (a meta value can never be empty). The builder adds a missing leading dot and rejects extensions that end with `.`, see [[build-process]]. The other invalid characters (`/`, `\`, `:`, ...) can't appear, because the tokenizer doesn't accept them in an identifier.
 
 **`exclude`** — after the `=`, the parser collects `Identifier` tokens separated by `Separator` (`,`) tokens until it sees a `Delimiter` (`;`). Each value is lowercased and a missing leading dot is added, so `.PNG`, `.png` and `png` are treated identically.
 

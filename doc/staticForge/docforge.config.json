@@ -3,10 +3,193 @@
   "name": "StaticForge",
   "settings": {
     "isThemePreset": false,
-    "currentThemeId": "docTheme_mu3td1ku1jtptgevrul47"
+    "currentThemeId": "docTheme_mu3td1ku1jtptgevrul47",
+    "formatGuide": {
+      "enabled": true,
+      "preferences": ""
+    },
+    "tabSize": 4
   },
   "languagesStyles": [],
-  "links": [],
+  "links": [
+    {
+      "id": "link_nyol29fyoy8eez7uog8u",
+      "slug": "getting-started",
+      "name": "Getting Started",
+      "target": {
+        "nodeId": "node_mu3td1kuufx8v3a1hzju",
+        "anchor": null
+      },
+      "refs": []
+    },
+    {
+      "id": "link_vpdv2qxs3wu6h7d3sqav",
+      "slug": "packing-assets",
+      "name": "Packing Assets",
+      "target": {
+        "nodeId": "node_mu3td1ku93dq7vjxmvr2",
+        "anchor": null
+      },
+      "refs": [
+        "node_mu3td1kuufx8v3a1hzju",
+        "node_mu3td1kuzgocka16m5db0",
+        "node_mu3td1kurklac1g47o2b",
+        "node_mu3td1kuw60i4y16ior5l",
+        "node_mu3td1kuuhnvwc15ryskk"
+      ]
+    },
+    {
+      "id": "link_vr7ohllleu6dttqa5qod",
+      "slug": "meta-files",
+      "name": "Meta Files",
+      "target": {
+        "nodeId": "node_mu3td1ku1d4g35y4wv21q",
+        "anchor": null
+      },
+      "refs": [
+        "node_mu3td1kuufx8v3a1hzju",
+        "node_mu3td1ku93dq7vjxmvr2",
+        "node_mu3td1kurklac1g47o2b",
+        "node_mu3td1ku1hsv9km18cfhyf"
+      ]
+    },
+    {
+      "id": "link_5hdqgq37ey8fmku12iwa",
+      "slug": "inspecting-archives",
+      "name": "Inspecting Archives",
+      "target": {
+        "nodeId": "node_mu3td1ku1w2zp279b2ssx",
+        "anchor": null
+      },
+      "refs": []
+    },
+    {
+      "id": "link_c403tdp25jtt71o17we5",
+      "slug": "loading-assets",
+      "name": "Loading Assets at Runtime",
+      "target": {
+        "nodeId": "node_mu3td1kuzgocka16m5db0",
+        "anchor": null
+      },
+      "refs": [
+        "node_mu3td1kuufx8v3a1hzju",
+        "node_mu3td1ku1t629jd11ytz7k"
+      ]
+    },
+    {
+      "id": "link_3e734459jelho6xfycqc",
+      "slug": "building-in-code",
+      "name": "Building Archives in Code",
+      "target": {
+        "nodeId": "node_mu3td1kurklac1g47o2b",
+        "anchor": null
+      },
+      "refs": [
+        "node_mu3td1kulgv50d577zxf"
+      ]
+    },
+    {
+      "id": "link_hsjyhz2m1vqffk3elu64",
+      "slug": "cli-reference",
+      "name": "CLI Reference",
+      "target": {
+        "nodeId": "node_mu3td1kuw60i4y16ior5l",
+        "anchor": null
+      },
+      "refs": [
+        "node_mu3td1ku93dq7vjxmvr2"
+      ]
+    },
+    {
+      "id": "link_q35qeaav3optbbz0fesl",
+      "slug": "architecture",
+      "name": "Architecture",
+      "target": {
+        "nodeId": "node_mu3td1ku1de5w2cswv1sn",
+        "anchor": null
+      },
+      "refs": []
+    },
+    {
+      "id": "link_dnppax67ej5psxog94a0",
+      "slug": "file-format",
+      "name": "File Format",
+      "target": {
+        "nodeId": "node_mu3td1kuuhnvwc15ryskk",
+        "anchor": null
+      },
+      "refs": [
+        "node_mu3td1kuzgocka16m5db0"
+      ]
+    },
+    {
+      "id": "link_5z5ttiz4jklyaoc5i7o4",
+      "slug": "hashing",
+      "name": "Hashing",
+      "target": {
+        "nodeId": "node_mu3td1kucsyh3x1ldzws1",
+        "anchor": null
+      },
+      "refs": [
+        "node_mu3td1kulgv50d577zxf",
+        "node_mu3td1ku1t629jd11ytz7k"
+      ]
+    },
+    {
+      "id": "link_fwbrp3va1m0imdcdsbq0",
+      "slug": "build-process",
+      "name": "Build Process",
+      "target": {
+        "nodeId": "node_mu3td1kulgv50d577zxf",
+        "anchor": null
+      },
+      "refs": [
+        "node_mu3td1kurklac1g47o2b",
+        "node_mu3td1ku1hsv9km18cfhyf"
+      ]
+    },
+    {
+      "id": "link_ze29onk6n6bn1aenocsv",
+      "slug": "meta-file-parser",
+      "name": "Meta File Parser",
+      "target": {
+        "nodeId": "node_mu3td1ku1hsv9km18cfhyf",
+        "anchor": null
+      },
+      "refs": [
+        "node_mu3td1ku1d4g35y4wv21q",
+        "node_mu3td1ku1de5w2cswv1sn"
+      ]
+    },
+    {
+      "id": "link_lc77wj4hum0eip7fg3zy",
+      "slug": "static-forge-archive",
+      "name": "StaticForgeArchive",
+      "target": {
+        "nodeId": "node_mu3td1ku1t629jd11ytz7k",
+        "anchor": null
+      },
+      "refs": [
+        "node_mu3td1ku1de5w2cswv1sn",
+        "node_mu3td1kuuhnvwc15ryskk",
+        "node_mu3td1kucsyh3x1ldzws1",
+        "node_mu3td1ku72xkz714tsyqd"
+      ]
+    },
+    {
+      "id": "link_zyk7bl2wehhz996ql7xt",
+      "slug": "error-support",
+      "name": "ErrorSupport",
+      "target": {
+        "nodeId": "node_mu3td1ku72xkz714tsyqd",
+        "anchor": null
+      },
+      "refs": [
+        "node_mu3td1kuzgocka16m5db0",
+        "node_mu3td1ku1t629jd11ytz7k"
+      ]
+    }
+  ],
   "tabs": [
     {
       "id": "tab_mu3td1ku2qztxt16axy53",

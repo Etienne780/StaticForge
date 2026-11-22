@@ -5,10 +5,14 @@ name: Loading Assets at Runtime
 
 # Loading Assets at Runtime
 
-At runtime, use `StaticForgeReader` to open a `.sfpak` file and `StaticForgeArchive` to load individual assets.
+At runtime, use `StaticForgeReader` to open an archive file and `StaticForgeArchive` to load individual assets.
+
+{style=outline}
+[toc]
 
 ## Opening an archive
 
+{copy indent=4}
 ```cpp
 #include <StaticForgeCore/StaticForge.h>
 
@@ -23,12 +27,15 @@ if (!reader.Load("./build/textures.sfpak", &archive)) {
 
 `Load` validates the whole archive structure (header, index and name table) against the file size, so a damaged or truncated archive is rejected with an error instead of crashing. Archives of another format version are rejected as well; rebuild them with the current tool.
 
+The extension of the file is not checked, so archives packed with another extension (e.g. `--extension pak`, see [[packing-assets]]) are loaded the same way. A file that is not an archive is rejected because of its header (`Invalid archive magic`).
+
 The same archive object can be loaded again with another file. Everything of the previous archive (open stream, memory mapping, index, errors) is released first.
 
 ## Cloning an archive
 
 An archive can't be copied, but `Clone()` creates a second archive object for the same file without reading it again:
 
+{copy}
 ```cpp
 StaticForge::StaticForgeArchive clone = archive.Clone();
 ```
@@ -39,6 +46,7 @@ The clone shares the loaded index and names (and the memory mapping, if the arch
 
 `StaticForgeConcurrentArchive` can be used from several threads at the same time. It has the same loading functions as `StaticForgeArchive`:
 
+{copy indent=4}
 ```cpp
 StaticForge::StaticForgeConcurrentArchive archive;
 archive.SetPoolSize(4); // optional, default: std::thread::hardware_concurrency()
@@ -57,6 +65,7 @@ if (!archive.LoadAsset("textures/hero.png", &data, &error)) {
 
 It can also be created from a loaded archive and the other way around. Both share the loaded data:
 
+{copy}
 ```cpp
 StaticForge::StaticForgeConcurrentArchive concurrent = archive.CloneConcurrent(4);
 StaticForge::StaticForgeArchive normal = concurrent.CloneArchive();
@@ -72,10 +81,12 @@ StaticForge::StaticForgeArchive normal = concurrent.CloneArchive();
 - Without `errorOut` the error is collected for the calling thread. `TakeError()`, `GetError()`, `IsValid()` and `ClearErrors()` only see the errors of the calling thread.
 - `GetAllErrors()` / `TakeAllErrors()` return the errors of all threads, each line starts with `[Thread <n>]`. Threads are numbered in the order of their first error.
 
+{copy indent=4}
 ```cpp
 // e.g. after a loading screen
-if (!archive.GetAllErrors().empty())
+if (!archive.GetAllErrors().empty()) {
     std::cerr << archive.TakeAllErrors() << std::endl;
+}
 ```
 
 Errors without `errorOut` stay collected until they are taken or cleared, also if the thread has ended.
@@ -84,6 +95,7 @@ Errors without `errorOut` stay collected until they are taken or cleared, also i
 
 If the assets are split into several archives (e.g. with meta files), `StaticForgeArchiveSet` loads from all of them as if they were one archive:
 
+{copy indent=4}
 ```cpp
 struct GameAssets {
     StaticForge::StaticForgeArchive textures, audio;
@@ -114,6 +126,7 @@ if (!assets.set.LoadAsset("audio/music.ogg", &data))
 
 Pass the **relative path** of the file exactly as it appeared under the source directory:
 
+{copy indent=4}
 ```cpp
 std::vector<std::byte> data;
 if (!archive.LoadAsset("textures/background.png", &data)) {
@@ -128,6 +141,7 @@ if (!archive.LoadAsset("textures/background.png", &data)) {
 
 `Contains` checks whether an asset exists, `GetAssetSize` returns its original (uncompressed) size. Neither loads any data or adds errors:
 
+{copy indent=4}
 ```cpp
 if (archive.Contains("textures/background.png")) {
     // ...
@@ -143,6 +157,7 @@ if (archive.GetAssetSize("textures/background.png", &size)) {
 
 Instead of a `std::vector`, an asset can be loaded into any existing memory, e.g. a reused buffer or a GPU upload buffer. The buffer must hold at least the asset size:
 
+{copy indent=4}
 ```cpp
 uint64_t size = 0;
 if (archive.GetAssetSize("textures/background.png", &size)) {
@@ -159,6 +174,7 @@ If the buffer is too small, nothing is loaded and an error is added. The checksu
 
 `LoadAssetRange` loads only `size` bytes starting at `offset`, e.g. to stream audio or to read the header of a file:
 
+{copy indent=4}
 ```cpp
 std::byte chunk[64 * 1024];
 uint64_t offset = 0;
@@ -186,6 +202,7 @@ while (offset < total) {
 
 `VerifyAll` checks the checksum of every asset. Use it e.g. at startup to detect a damaged or partly replaced installation and show a clear message instead of failing later while loading:
 
+{copy indent=4}
 ```cpp
 if (!archive.VerifyAll()) {
     // one error per damaged asset, e.g. "Asset 'textures/ui.png' is damaged (checksum mismatch)"
@@ -200,6 +217,7 @@ The data is read in 1 MB chunks, so large assets are not loaded into memory comp
 
 `LoadAssetAt` loads an asset by its index, which is useful to iterate over the whole archive, also if it stores no names:
 
+{copy indent=4}
 ```cpp
 std::vector<std::byte> data;
 for (size_t i = 0; i < archive.GetFileCount(); i++) {
@@ -215,6 +233,7 @@ for (size_t i = 0; i < archive.GetFileCount(); i++) {
 
 After `StaticForgeReader::Load` succeeds, the archive's file stream is open. `LoadAsset` reopens it automatically if it was closed. You can control this manually:
 
+{copy}
 ```cpp
 archive.CloseFileStream(); // release the file handle
 archive.OpenFileStream();  // reopen when needed
@@ -227,6 +246,7 @@ A failed load (e.g. a checksum mismatch) does not affect later loads of other as
 
 For better read performance, the archive can be opened using memory mapping instead of a file stream. This avoids repeated `seek`/`read` calls and lets the OS manage page caching.
 
+{copy indent=4}
 ```cpp
 if (!archive.OpenMapped()) {
     std::cerr << archive.TakeError() << std::endl;
@@ -260,6 +280,7 @@ bool mapped = archive.IsMapped();
 
 Assets can be stored compressed inside an archive. This is transparent for all functions except `GetAssetMapped` — `LoadAsset` detects compressed entries and decompresses them automatically before returning the data:
 
+{copy indent=4}
 ```cpp
 // Works for both compressed and uncompressed assets
 std::vector<std::byte> data;
@@ -268,21 +289,23 @@ if (!archive.LoadAsset("maps/level1.map", &data)) {
 }
 ```
 
-Internally, compressed files are split into blocks (64 KB by default, configurable when packing). Each block is compressed independently and prefixed with its compressed and original size.
+Internally, compressed files are split into blocks (64 KB by default, configurable when packing). Each block is compressed independently and prefixed with its compressed and original size (see [[file-format]]).
 
+{hover=row; striped}
 | Access method        | Uncompressed | Compressed          |
 |----------------------|:------------:|:-------------------:|
-| `LoadAsset`          | ✅            | ✅ (auto-decompress) |
-| `LoadAssetAt`        | ✅            | ✅ (auto-decompress) |
-| `LoadAssetRange`     | ✅            | ✅ (needed blocks)   |
-| `LoadAssetMapped`    | ✅            | ✅ (auto-decompress) |
-| `LoadAssetRangeMapped` | ✅          | ✅ (needed blocks)   |
-| `GetAssetMapped`     | ✅            | ❌ not possible      |
+| `LoadAsset`          | [x]            | [x] (auto-decompress) |
+| `LoadAssetAt`        | [x]            | [x] (auto-decompress) |
+| `LoadAssetRange`     | [x]            | [x] (needed blocks)   |
+| `LoadAssetMapped`    | [x]            | [x] (auto-decompress) |
+| `LoadAssetRangeMapped` | [x]          | [x] (needed blocks)   |
+| `GetAssetMapped`     | [x]            | [ ] not possible      |
 
 ## Error handling
 
-`StaticForgeReader` and `StaticForgeArchive` collect error messages. Always check the return value:
+`StaticForgeReader` and `StaticForgeArchive` collect error messages (see [[error-support]]). Always check the return value:
 
+{copy indent=4}
 ```cpp
 if (!archive.LoadAsset("audio/music.ogg", &data)) {
     // possible reasons: key not found, seek failure, checksum mismatch,
@@ -291,6 +314,7 @@ if (!archive.LoadAsset("audio/music.ogg", &data)) {
 }
 ```
 
+{hover=row}
 | Function        | Description                                                  |
 |-----------------|--------------------------------------------------------------|
 | `IsValid()`     | `true` if no errors are stored                               |
@@ -300,6 +324,7 @@ if (!archive.LoadAsset("audio/music.ogg", &data)) {
 
 Errors of the archive accumulate over several calls until you take or clear them, so you can load many assets and report all problems at once:
 
+{copy indent=4}
 ```cpp
 archive.LoadAsset("a.png", &a);
 archive.LoadAsset("b.png", &b);

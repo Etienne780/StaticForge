@@ -5,11 +5,13 @@ name: ErrorSupport
 
 # ErrorSupport
 
-`ErrorSupport` is the base class for `StaticForgeBuilder`, `StaticForgeReader`, `StaticForgeArchive` and `StaticForgeArchiveSet`.  
-It provides a simple error collection system.
+`ErrorSupport` is the base class for `StaticForgeBuilder`, `StaticForgeReader`, `StaticForgeArchive` and `StaticForgeArchiveSet`, and internally for `StaticForgeMeta` and `MetaTokenizer`. It provides a simple error collection system.
+
+The concurrent classes (`StaticForgeConcurrentArchive`, `StaticForgeConcurrentArchiveSet`) don't derive from it, they collect the errors per thread (see [[static-forge-archive]]).
 
 ## API
 
+{copy}
 ```cpp
 bool IsValid() const;            // true if no errors are stored
 std::string GetError() const;    // returns all stored errors as a single string
@@ -21,7 +23,8 @@ void ClearErrors();              // clears all stored errors
 
 `GetError()` returns one message per line:
 
-```txt
+{label="Error"}
+```
 Failed to load asset, entry with key 'missing1' not found
 Failed to load asset, entry with key 'missing2' not found
 ```
@@ -32,13 +35,13 @@ Formatting is left to the application. The CLI tool, for example, prints a singl
 
 Errors are accumulated in insertion order.
 
-Each call to `AddError()` appends a new entry to the internal error list.  
-`GetError()` combines all stored messages into a single newline-separated string.
+Each call to `AddError()` appends a new entry to the internal error list. `GetError()` combines all stored messages into a single newline-separated string.
 
 ## When errors are cleared
 
 Errors are only cleared when they no longer apply:
 
+{hover=row}
 | Event                          | Cleared errors                              |
 |--------------------------------|---------------------------------------------|
 | `StaticForgeBuilder::Build()`  | errors of the builder (previous build)      |

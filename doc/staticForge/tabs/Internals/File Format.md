@@ -5,12 +5,18 @@ name: File Format
 
 # File Format
 
-A `.sfpak` file consists of three required regions and three optional regions written sequentially: **Header**, **Index**, **Data**, and — when name storage is enabled — **Name Table Header**, **Name Table Entries**, and **Name Table String Data**.
+An archive file consists of three required regions and three optional regions written sequentially: **Header**, **Index**, **Data**, and — when name storage is enabled — **Name Table Header**, **Name Table Entries**, and **Name Table String Data**.
 
 All integers are stored little-endian on all platforms.
 
+The file extension is not part of the format. Archives use `.sfpak` by default, but can have any extension (see [[packing-assets]]). The reader identifies an archive only by its header (magic and version).
+
+{style=outline}
+[toc]
+
 ## Layout
 
+{label="Layout"}
 ```
 [ HEADER                 ]  52 bytes, padded to a multiple of ALIGNMENT_HEADER = 32 (64 bytes)
 [ INDEX                  ]  N × 40 bytes, then padded to ALIGNMENT_FILE = 4096
@@ -57,12 +63,14 @@ When `compressedFileSize == 0` the block contains the raw file bytes verbatim.
 
 When `compressedFileSize != 0` the block contains a sequence of independently compressed chunks:
 
+{label="Data block"}
 ```
 [ CHUNK 0 ][ CHUNK 1 ][ ... ][ CHUNK N ]
 ```
 
 Each chunk has the following layout:
 
+{label="Chunk"}
 ```
 [ compressedSize : uint32_t ]  size of the compressed payload that follows
 [ originalSize   : uint32_t ]  size of the decompressed output for this chunk
@@ -73,7 +81,7 @@ Chunks are produced by splitting the original file into pieces of the compressio
 
 The FNV-1a checksum covers all chunk bytes as written on disk — framing headers included — so integrity is verified before any decompression takes place.
 
-> **Note:** Compressed data blocks cannot be accessed via memory mapping. Use the stream-based `LoadAsset` API which handles decompression automatically.
+> **Note:** Compressed data blocks can't be viewed zero-copy with `GetAssetMapped`, because only the compressed data is in the file. `LoadAsset`, `LoadAssetMapped` and the range functions decompress them automatically, see [[static-forge-archive]].
 
 ## Name Table Header
 
@@ -112,7 +120,7 @@ This alignment ensures that file offsets are always multiples of 4096, which all
 
 ## Validation
 
-`StaticForgeReader::Load` checks the archive against the real file size before allocating any memory:
+`StaticForgeReader::Load` only checks that the path is an existing regular file, the extension doesn't matter. Then it reads the header and rejects the file if the magic is not `SFPK` or the version is not its own. After that the archive is checked against the real file size before any memory is allocated:
 
 - `indexSize` must match `fileCount × 40`, and the index must be inside the file.
 - `dataOffset` and the name table must be inside the file.

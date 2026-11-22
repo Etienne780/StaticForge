@@ -1,0 +1,1235 @@
+{
+  "kind": "project",
+  "storageVersion": 4,
+  "data": {
+    "id": "project_mwrxgxnexurxho9zo1br",
+    "name": "DocForge Test Project",
+    "createdAt": 1795357449050,
+    "themes": [
+      {
+        "id": "docTheme_mwrxgxnezcm4y91613agt",
+        "name": "Dev Test Theme",
+        "builtIn": false,
+        "createdAt": 1795357449050,
+        "lastOpenedAt": 1795384561584,
+        "settings": {
+          "entries": [
+            {
+              "name": "background",
+              "value": "#101418",
+              "active": true
+            },
+            {
+              "name": "background-surface",
+              "value": "#161c22",
+              "active": true
+            },
+            {
+              "name": "background-elevated",
+              "value": "#1e262e",
+              "active": true
+            },
+            {
+              "name": "text-primary",
+              "value": "#e6edf3",
+              "active": true
+            },
+            {
+              "name": "text-secondary",
+              "value": "#9898b0",
+              "active": true
+            },
+            {
+              "name": "text-muted",
+              "value": "#3c3c51",
+              "active": true
+            },
+            {
+              "name": "accent",
+              "value": "#ff7b72",
+              "active": true
+            },
+            {
+              "name": "accent-hover",
+              "value": "#ffa198",
+              "active": true
+            },
+            {
+              "name": "link",
+              "value": "#d2a8ff",
+              "active": true
+            },
+            {
+              "name": "link-underline",
+              "value": "#6286c8",
+              "active": true
+            },
+            {
+              "name": "border",
+              "value": "#252538",
+              "active": true
+            },
+            {
+              "name": "code-background",
+              "value": "#07070f",
+              "active": true
+            },
+            {
+              "name": "code-border",
+              "value": "#1c1c2a",
+              "active": true
+            },
+            {
+              "name": "code-text",
+              "value": "#7a7a95",
+              "active": true
+            },
+            {
+              "name": "code-tag-text",
+              "value": "#79c0ff",
+              "active": true
+            },
+            {
+              "name": "code-diff-add",
+              "value": "#2da44e",
+              "active": true
+            },
+            {
+              "name": "code-diff-removed",
+              "value": "#cf222e",
+              "active": true
+            },
+            {
+              "name": "code-indent-guide",
+              "value": "#7a7a95",
+              "active": false
+            },
+            {
+              "name": "heading",
+              "value": "#ffa657",
+              "active": true
+            },
+            {
+              "name": "table-highlight",
+              "value": "#ffa657",
+              "active": true
+            },
+            {
+              "name": "table-hover",
+              "value": "#79c0ff",
+              "active": true
+            },
+            {
+              "name": "table-stripe",
+              "value": "#8b949e",
+              "active": true
+            },
+            {
+              "name": "checkbox",
+              "value": "#22d4a8",
+              "active": false
+            },
+            {
+              "name": "bullet",
+              "value": "#22d4a8",
+              "active": false
+            },
+            {
+              "name": "footnote",
+              "value": "#22d4a8",
+              "active": false
+            },
+            {
+              "name": "section-background",
+              "value": "#13131c",
+              "active": false
+            },
+            {
+              "name": "section-title",
+              "value": "#f0ebe0",
+              "active": false
+            },
+            {
+              "name": "section-border",
+              "value": "#252538",
+              "active": false
+            },
+            {
+              "name": "section-icon",
+              "value": "#22d4a8",
+              "active": false
+            },
+            {
+              "name": "header-background",
+              "value": "#13131c",
+              "active": false
+            },
+            {
+              "name": "header-text",
+              "value": "#9898b0",
+              "active": false
+            },
+            {
+              "name": "sidebar-background",
+              "value": "#13131c",
+              "active": false
+            },
+            {
+              "name": "sidebar-text",
+              "value": "#9898b0",
+              "active": false
+            },
+            {
+              "name": "toc-background",
+              "value": "#0c0c12",
+              "active": false
+            },
+            {
+              "name": "toc-text",
+              "value": "#7a7a95",
+              "active": false
+            },
+            {
+              "name": "gap-paragraph",
+              "value": 16,
+              "active": true
+            },
+            {
+              "name": "gap-heading",
+              "value": 24,
+              "active": true
+            },
+            {
+              "name": "code-block-gap",
+              "value": 32,
+              "active": true
+            },
+            {
+              "name": "list-item-gap",
+              "value": 4,
+              "active": true
+            },
+            {
+              "name": "table-cell-padding",
+              "value": 7,
+              "active": true
+            },
+            {
+              "name": "blockquote-border-width",
+              "value": 3,
+              "active": true
+            },
+            {
+              "name": "blockquote-radius",
+              "value": 5,
+              "active": true
+            },
+            {
+              "name": "padding-content",
+              "value": 24,
+              "active": true
+            },
+            {
+              "name": "scrollbar-size",
+              "value": 6,
+              "active": true
+            },
+            {
+              "name": "code-radius",
+              "value": 4,
+              "active": true
+            },
+            {
+              "name": "font-size",
+              "value": 15,
+              "active": true
+            },
+            {
+              "name": "font-size-code",
+              "value": 14,
+              "active": true
+            },
+            {
+              "name": "heading-h1",
+              "value": 32,
+              "active": true
+            },
+            {
+              "name": "heading-h2",
+              "value": 24,
+              "active": true
+            },
+            {
+              "name": "heading-h3",
+              "value": 18,
+              "active": true
+            },
+            {
+              "name": "heading-h4",
+              "value": 14,
+              "active": true
+            },
+            {
+              "name": "line-height",
+              "value": 1.75,
+              "active": true
+            },
+            {
+              "name": "code-line-height",
+              "value": 1.65,
+              "active": true
+            },
+            {
+              "name": "header-show",
+              "value": "sidebar",
+              "active": true
+            },
+            {
+              "name": "header-style",
+              "value": "solid",
+              "active": true
+            },
+            {
+              "name": "header-height",
+              "value": 60,
+              "active": true
+            },
+            {
+              "name": "toc-show",
+              "value": "always",
+              "active": true
+            },
+            {
+              "name": "toc-position",
+              "value": "left",
+              "active": true
+            },
+            {
+              "name": "content-max-width",
+              "value": 720,
+              "active": true
+            },
+            {
+              "name": "content-show-nav",
+              "value": "always",
+              "active": true
+            },
+            {
+              "name": "sidebar-width-type",
+              "value": "pixels",
+              "active": true
+            },
+            {
+              "name": "sidebar-width-px",
+              "value": 200,
+              "active": true
+            },
+            {
+              "name": "sidebar-width-per",
+              "value": 20,
+              "active": true
+            },
+            {
+              "name": "sidebar-min-width",
+              "value": 0,
+              "active": true
+            },
+            {
+              "name": "toc-width-type",
+              "value": "pixels",
+              "active": true
+            },
+            {
+              "name": "toc-width-px",
+              "value": 200,
+              "active": true
+            },
+            {
+              "name": "toc-width-per",
+              "value": 20,
+              "active": true
+            },
+            {
+              "name": "toc-min-width",
+              "value": 0,
+              "active": true
+            },
+            {
+              "name": "search-enabled",
+              "value": true,
+              "active": true
+            },
+            {
+              "name": "search-position",
+              "value": "header",
+              "active": true
+            },
+            {
+              "name": "search-show-in-tab",
+              "value": false,
+              "active": true
+            },
+            {
+              "name": "typography-heading",
+              "value": "serif",
+              "active": true
+            },
+            {
+              "name": "typography-body",
+              "value": "system",
+              "active": true
+            }
+          ],
+          "langStyleIds": {}
+        }
+      },
+      {
+        "id": "docTheme_mwrxgxnepxno9q1pl4nz5",
+        "name": "Dev Test Theme Alt",
+        "builtIn": false,
+        "createdAt": 1795357449050,
+        "lastOpenedAt": 1795365857468,
+        "settings": {
+          "entries": [
+            {
+              "name": "background",
+              "value": "#fafaf7",
+              "active": true
+            },
+            {
+              "name": "background-surface",
+              "value": "#f0f0eb",
+              "active": true
+            },
+            {
+              "name": "background-elevated",
+              "value": "#1a1a26",
+              "active": true
+            },
+            {
+              "name": "text-primary",
+              "value": "#1f2328",
+              "active": true
+            },
+            {
+              "name": "text-secondary",
+              "value": "#9898b0",
+              "active": true
+            },
+            {
+              "name": "text-muted",
+              "value": "#7a7a95",
+              "active": true
+            },
+            {
+              "name": "accent",
+              "value": "#22d4a8",
+              "active": true
+            },
+            {
+              "name": "accent-hover",
+              "value": "#1fb89a",
+              "active": true
+            },
+            {
+              "name": "link",
+              "value": "#78a8ff",
+              "active": true
+            },
+            {
+              "name": "link-underline",
+              "value": "#6286c8",
+              "active": true
+            },
+            {
+              "name": "border",
+              "value": "#252538",
+              "active": true
+            },
+            {
+              "name": "code-background",
+              "value": "#eaeef2",
+              "active": true
+            },
+            {
+              "name": "code-border",
+              "value": "#1c1c2a",
+              "active": true
+            },
+            {
+              "name": "code-text",
+              "value": "#1f2328",
+              "active": true
+            },
+            {
+              "name": "code-tag-text",
+              "value": "#80d89a",
+              "active": true
+            },
+            {
+              "name": "code-diff-add",
+              "value": "#2da44e",
+              "active": true
+            },
+            {
+              "name": "code-diff-removed",
+              "value": "#cf222e",
+              "active": true
+            },
+            {
+              "name": "code-indent-guide",
+              "value": "#7a7a95",
+              "active": false
+            },
+            {
+              "name": "heading",
+              "value": "#0b0b0b",
+              "active": true
+            },
+            {
+              "name": "table-highlight",
+              "value": "#e0dbd0",
+              "active": false
+            },
+            {
+              "name": "table-hover",
+              "value": "#e0dbd0",
+              "active": false
+            },
+            {
+              "name": "table-stripe",
+              "value": "#e0dbd0",
+              "active": false
+            },
+            {
+              "name": "checkbox",
+              "value": "#22d4a8",
+              "active": false
+            },
+            {
+              "name": "bullet",
+              "value": "#22d4a8",
+              "active": false
+            },
+            {
+              "name": "footnote",
+              "value": "#22d4a8",
+              "active": false
+            },
+            {
+              "name": "section-background",
+              "value": "#13131c",
+              "active": false
+            },
+            {
+              "name": "section-title",
+              "value": "#f0ebe0",
+              "active": false
+            },
+            {
+              "name": "section-border",
+              "value": "#252538",
+              "active": false
+            },
+            {
+              "name": "section-icon",
+              "value": "#22d4a8",
+              "active": false
+            },
+            {
+              "name": "header-background",
+              "value": "#13131c",
+              "active": false
+            },
+            {
+              "name": "header-text",
+              "value": "#9898b0",
+              "active": false
+            },
+            {
+              "name": "sidebar-background",
+              "value": "#13131c",
+              "active": false
+            },
+            {
+              "name": "sidebar-text",
+              "value": "#9898b0",
+              "active": false
+            },
+            {
+              "name": "toc-background",
+              "value": "#0c0c12",
+              "active": false
+            },
+            {
+              "name": "toc-text",
+              "value": "#7a7a95",
+              "active": false
+            },
+            {
+              "name": "gap-paragraph",
+              "value": 16,
+              "active": true
+            },
+            {
+              "name": "gap-heading",
+              "value": 24,
+              "active": true
+            },
+            {
+              "name": "code-block-gap",
+              "value": 32,
+              "active": true
+            },
+            {
+              "name": "list-item-gap",
+              "value": 4,
+              "active": true
+            },
+            {
+              "name": "table-cell-padding",
+              "value": 7,
+              "active": true
+            },
+            {
+              "name": "blockquote-border-width",
+              "value": 3,
+              "active": true
+            },
+            {
+              "name": "blockquote-radius",
+              "value": 5,
+              "active": true
+            },
+            {
+              "name": "padding-content",
+              "value": 24,
+              "active": true
+            },
+            {
+              "name": "scrollbar-size",
+              "value": 6,
+              "active": true
+            },
+            {
+              "name": "code-radius",
+              "value": 4,
+              "active": true
+            },
+            {
+              "name": "font-size",
+              "value": 15,
+              "active": true
+            },
+            {
+              "name": "font-size-code",
+              "value": 14,
+              "active": true
+            },
+            {
+              "name": "heading-h1",
+              "value": 32,
+              "active": true
+            },
+            {
+              "name": "heading-h2",
+              "value": 24,
+              "active": true
+            },
+            {
+              "name": "heading-h3",
+              "value": 18,
+              "active": true
+            },
+            {
+              "name": "heading-h4",
+              "value": 14,
+              "active": true
+            },
+            {
+              "name": "line-height",
+              "value": 1.75,
+              "active": true
+            },
+            {
+              "name": "code-line-height",
+              "value": 1.65,
+              "active": true
+            },
+            {
+              "name": "header-show",
+              "value": "top",
+              "active": true
+            },
+            {
+              "name": "header-style",
+              "value": "blur",
+              "active": true
+            },
+            {
+              "name": "header-height",
+              "value": 60,
+              "active": true
+            },
+            {
+              "name": "toc-show",
+              "value": "never",
+              "active": true
+            },
+            {
+              "name": "toc-position",
+              "value": "right",
+              "active": true
+            },
+            {
+              "name": "content-max-width",
+              "value": 720,
+              "active": true
+            },
+            {
+              "name": "content-show-nav",
+              "value": "never",
+              "active": true
+            },
+            {
+              "name": "sidebar-width-type",
+              "value": "percent",
+              "active": true
+            },
+            {
+              "name": "sidebar-width-px",
+              "value": 200,
+              "active": true
+            },
+            {
+              "name": "sidebar-width-per",
+              "value": 25,
+              "active": true
+            },
+            {
+              "name": "sidebar-min-width",
+              "value": 0,
+              "active": true
+            },
+            {
+              "name": "toc-width-type",
+              "value": "pixels",
+              "active": true
+            },
+            {
+              "name": "toc-width-px",
+              "value": 200,
+              "active": true
+            },
+            {
+              "name": "toc-width-per",
+              "value": 20,
+              "active": true
+            },
+            {
+              "name": "toc-min-width",
+              "value": 0,
+              "active": true
+            },
+            {
+              "name": "search-enabled",
+              "value": true,
+              "active": true
+            },
+            {
+              "name": "search-position",
+              "value": "tab-nav",
+              "active": true
+            },
+            {
+              "name": "search-show-in-tab",
+              "value": true,
+              "active": true
+            },
+            {
+              "name": "typography-heading",
+              "value": "system",
+              "active": true
+            },
+            {
+              "name": "typography-body",
+              "value": "mono",
+              "active": true
+            }
+          ],
+          "langStyleIds": {
+            "JavaScriptLang": {
+              "id": "highlightStyle_JavaScriptLang_GitHub_Light",
+              "isBuiltIn": true
+            }
+          }
+        }
+      }
+    ],
+    "languages": [],
+    "languagesStyles": [],
+    "links": [
+      {
+        "id": "link_mwrxgxne1ypcveb1ejp48s",
+        "slug": "link-targets",
+        "name": "Link Targets",
+        "target": {
+          "nodeId": "node_mwrxgxne1n7s5c6f8wx1q",
+          "anchor": null
+        },
+        "refs": [
+          "node_mwrxgxne172oda61h0xkpe"
+        ]
+      },
+      {
+        "id": "link_mwrxgxnedt05nnjwxe4c",
+        "slug": "first-anchor",
+        "name": "First Anchor",
+        "target": {
+          "nodeId": "node_mwrxgxne1n7s5c6f8wx1q",
+          "anchor": "first-anchor"
+        },
+        "refs": [
+          "node_mwrxgxne172oda61h0xkpe"
+        ]
+      },
+      {
+        "id": "link_mwrxgxne1bvi9gyslp8t7",
+        "slug": "second-anchor",
+        "name": "Second Anchor",
+        "target": {
+          "nodeId": "node_mwrxgxne1n7s5c6f8wx1q",
+          "anchor": "second-anchor"
+        },
+        "refs": [
+          "node_mwrxgxne172oda61h0xkpe"
+        ]
+      },
+      {
+        "id": "link_mwrxgxnezmkl856t0cjn",
+        "slug": "inline-anchor",
+        "name": "Inline Anchor",
+        "target": {
+          "nodeId": "node_mwrxgxne1n7s5c6f8wx1q",
+          "anchor": "inline-anchor"
+        },
+        "refs": [
+          "node_mwrxgxne172oda61h0xkpe"
+        ]
+      },
+      {
+        "id": "link_mwrxgxne7x782613hneu2",
+        "slug": "merged-section",
+        "name": "Section A.1",
+        "target": {
+          "nodeId": "node_mwrxgxne1w607s81vm3711",
+          "anchor": null
+        },
+        "refs": [
+          "node_mwrxgxne172oda61h0xkpe"
+        ]
+      },
+      {
+        "id": "link_mwrxgxne1mw3dq21smv7d2",
+        "slug": "folder-child",
+        "name": "Folder Child A",
+        "target": {
+          "nodeId": "node_mwrxgxnec54awb1c99195",
+          "anchor": null
+        },
+        "refs": [
+          "node_mwrxgxne172oda61h0xkpe"
+        ]
+      },
+      {
+        "id": "link_mwrxgxne19uq9vr6hngo5",
+        "slug": "markdown-tables",
+        "name": "Tables",
+        "target": {
+          "nodeId": "node_mwrxgxne1dc17zf1mh9922",
+          "anchor": null
+        },
+        "refs": [
+          "node_mwrxgxne172oda61h0xkpe"
+        ]
+      },
+      {
+        "id": "link_mwrxgxne1saqtza1564y06",
+        "slug": "folder-node",
+        "name": "Folder Group",
+        "target": {
+          "nodeId": "node_mwrxgxnentocn333qv49",
+          "anchor": null
+        },
+        "refs": [
+          "node_mwrxgxne172oda61h0xkpe"
+        ]
+      },
+      {
+        "id": "link_mwrxgxne1siv7gi1wz4j2c",
+        "slug": "missing-anchor",
+        "name": "Missing Anchor",
+        "target": {
+          "nodeId": "node_mwrxgxne1n7s5c6f8wx1q",
+          "anchor": "does-not-exist"
+        },
+        "refs": [
+          "node_mwrxgxne172oda61h0xkpe"
+        ]
+      },
+      {
+        "id": "link_mwrxgxnefbwbosskhura",
+        "slug": "missing-entry",
+        "name": "Missing Entry",
+        "target": {
+          "nodeId": null,
+          "anchor": null
+        },
+        "refs": [
+          "node_mwrxgxne172oda61h0xkpe"
+        ]
+      },
+      {
+        "id": "link_mwrxgxneslb4hr5a3utd",
+        "slug": "unused-link",
+        "name": "Unused Link",
+        "target": {
+          "nodeId": "node_mwrxgxne1n7s5c6f8wx1q",
+          "anchor": null
+        },
+        "refs": []
+      }
+    ],
+    "settings": {
+      "isThemePreset": true,
+      "currentThemeId": "theme_Dark",
+      "formatGuide": {
+        "enabled": true,
+        "preferences": "Test preferences: write short entries, one topic per entry."
+      },
+      "tabSize": 4
+    },
+    "sourcePath": "D:\\dev\\vs2022\\cpp\\projects\\staticForge\\doc\\staticForge\\DocForge Test Project.dfproj",
+    "sourceKind": "file",
+    "tabs": [
+      {
+        "id": "tab_mwrxgxne1jx0npu1vls05n",
+        "name": "Markdown",
+        "nodes": [
+          {
+            "id": "node_mwrxgxne1qd28461yt2s40",
+            "name": "Text & Headings",
+            "content": "# Heading 1\n\nParagraph directly below h1. **Bold**, *italic*, _italic underscore_, ***bold italic*** and `inline code`.\n\n## Heading 2\n\nA second paragraph with an [external link](https://example.com) and a long line that should wrap: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n\n### Heading 3\n\n#### Heading 4\n\n##### Heading 5 (not supported, stays text)  [x]\n\n> A single blockquote line.\n\n> First quote line.  [x]\n> Second quote line with **bold** and `  [x] code`.  [x]\n\n\ndasdas [x] das\n- dasd [x] dasd\n- [x] dasd\n---\n\ndada\n\n| Column  [x]1 | Column 2 | Column 3 |\n|----------|----------|----------|\n|  [x] | Value    | Value    |\n\n\n\n## Comments\n\nText before a comment line.\n<!-- this comment line must not render -->\nText after a comment line.\n\n<!--\nA multi-line comment\nthat must not render.\n-->\n\nParagraph after a multi-line comment. Inline <!-- hidden --> comment inside a sentence.\n\nComment inside inline code stays text: `<!-- visible -->`.\n\nUnclosed comment stays text: <!-- never closed\n\n## Unsupported syntax (must stay text)\n\n~~strikethrough~~\n\n![image](https://example.com/image.png)\n\n<b>raw html</b> and <div>block html</div>\n\n- [ ] task list item\n\nFootnote[^1]\n\nSetext heading\n==============\n",
+            "type": "page",
+            "children": []
+          },
+          {
+            "id": "node_mwrxgxne1yrf3ldzw4b0g",
+            "name": "Lists",
+            "content": "# Lists\n\n## Unordered\n\n- Item with dash\n- Item with **bold**\n  - Nested with 2 spaces\n    - Nested with 4 spaces\n      - Third level\n- Back to root\n\n* Item with star\n* Second star item\n\n## Ordered\n\n1. First\n2. Second\n3. Third\n   1. Nested ordered\n   2. Nested ordered\n\n## Mixed\n\n1. Ordered root\n  - Unordered child\n  - Unordered child\n2. Ordered root again\n\n## Spacing\n\n- Item before a paragraph\n\nParagraph between two lists.\n\n- Item after a paragraph\n",
+            "type": "page",
+            "children": []
+          },
+          {
+            "id": "node_mwrxgxne1dc17zf1mh9922",
+            "name": "Tables",
+            "content": "# Tables\n\n## Basic\n\n| Name | Value | Notes |\n|------|-------|-------|\n| a    | 1     | first |\n| b    | 2     | **bold** and `code` |\n\n## Separator alignment\n\n| Left | Center | Right |\n|:-----|:------:|------:|\n| l    | c      | r     |\n| left | center | right |\n\n## All properties\n\n{\n  hover=cell,row,col; striped\n}\n| Row | Col 1 (hl, 120px) | Col 2 | Col 3 (20%) |\n|-----|-------------------|-------|-------------|\n| 1   | a                 | b     | c           |\n| 2   | hl row            | hl row| hl row      |\n| 3   | d                 | hl cell, right | e  |\n| 4   | f                 | g     | h           |\n\n## Hover variants\n\n{hover}\n| hover = cell | b |\n|---|---|\n| 1 | 2 |\n\n{hover=row}\n| hover = row | b |\n|---|---|\n| 1 | 2 |\n\n{hover=cell,row,col}\n| hover = col | b |\n|---|---|\n| 1 | 2 |\n\n## Properties inside a comment\n\n{hover=cell,row,col}\n| Striped | via comment |\n|---------|-------------|\n| 1       | a           |\n| 2       | b           |\n| 3       | c           |\n\n## Invalid values (ignored)\n\n{line=12; col 0: width=abc align=diagonal; row 99: hl}\n| line=12 clamped/ignored | b |\n|---|---|\n| 1 | 2 |\n\n## Not property syntax (stays text)\n\n{ \"json\": 1 }\n| a | b |\n|---|---|\n| 1 | 2 |\n\n## Property block without element (removed)\n\n{striped}\n\nParagraph after the dangling property block.\n\n## Long table (sticky header)\n\n{striped; hover=row}\n| # | Name | Description |\n|---|------|-------------|\n| 1 | Row 1 | Scroll down, the header should stay visible |\n| 2 | Row 2 | Scroll down, the header should stay visible |\n| 3 | Row 3 | Scroll down, the header should stay visible |\n| 4 | Row 4 | Scroll down, the header should stay visible |\n| 5 | Row 5 | Scroll down, the header should stay visible |\n| 6 | Row 6 | Scroll down, the header should stay visible |\n| 7 | Row 7 | Scroll down, the header should stay visible |\n| 8 | Row 8 | Scroll down, the header should stay visible |\n| 9 | Row 9 | Scroll down, the header should stay visible |\n| 10 | Row 10 | Scroll down, the header should stay visible |\n| 11 | Row 11 | Scroll down, the header should stay visible |\n| 12 | Row 12 | Scroll down, the header should stay visible |\n| 13 | Row 13 | Scroll down, the header should stay visible |\n| 14 | Row 14 | Scroll down, the header should stay visible |\n| 15 | Row 15 | Scroll down, the header should stay visible |\n| 16 | Row 16 | Scroll down, the header should stay visible |\n| 17 | Row 17 | Scroll down, the header should stay visible |\n| 18 | Row 18 | Scroll down, the header should stay visible |\n| 19 | Row 19 | Scroll down, the header should stay visible |\n| 20 | Row 20 | Scroll down, the header should stay visible |\n| 21 | Row 21 | Scroll down, the header should stay visible |\n| 22 | Row 22 | Scroll down, the header should stay visible |\n| 23 | Row 23 | Scroll down, the header should stay visible |\n| 24 | Row 24 | Scroll down, the header should stay visible |\n| 25 | Row 25 | Scroll down, the header should stay visible |\n| 26 | Row 26 | Scroll down, the header should stay visible |\n| 27 | Row 27 | Scroll down, the header should stay visible |\n| 28 | Row 28 | Scroll down, the header should stay visible |\n| 29 | Row 29 | Scroll down, the header should stay visible |\n| 30 | Row 30 | Scroll down, the header should stay visible |\n| 31 | Row 31 | Scroll down, the header should stay visible |\n| 32 | Row 32 | Scroll down, the header should stay visible |\n| 33 | Row 33 | Scroll down, the header should stay visible |\n| 34 | Row 34 | Scroll down, the header should stay visible |\n| 35 | Row 35 | Scroll down, the header should stay visible |\n| 36 | Row 36 | Scroll down, the header should stay visible |\n| 37 | Row 37 | Scroll down, the header should stay visible |\n| 38 | Row 38 | Scroll down, the header should stay visible |\n| 39 | Row 39 | Scroll down, the header should stay visible |\n| 40 | Row 40 | Scroll down, the header should stay visible |\n",
+            "type": "page",
+            "children": []
+          },
+          {
+            "id": "node_mwrxgxnelo9zvv1nfy03p",
+            "name": "Code",
+            "content": "# Code\n\n## Languages\n\n```js\n// JavaScript\nconst answer = 42;\nfunction greet(name) {\n  return `Hello ${name}`;\n}\n```\n\n```cpp\n#include <mutex>\nstd::mutex m;\nint main() { std::lock_guard<std::mutex> lock(m); return 0; }\n```\n\n```python\ndef greet(name: str) -> str:\n    return f\"Hello {name}\"\n```\n\n```json\n{ \"name\": \"DocForge\", \"version\": 1, \"enabled\": true }\n```\n\n```test\n// TestLang (dev-only built-in language)\nlet value = 1;\n```\n\n## Diff\n\n```diff\nunchanged line\n-removed line\n+added line\nunchanged line\n```\n\n```diff:js\nconst a = 1;\n-const b = 2;\n+const b = 3;\n+const c = 4;\n```\n\n## Unknown and missing tags\n\n```notalanguage\nUnknown tag, no highlighting.\n```\n\n```\nNo tag at all.\n```\n\n## Nested fence (4 backticks)\n\n````md\n```js\nconst nested = true;\n```\n````\n\n## Long line (horizontal scroll)\n\n```js\nconst longLine = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua';\n```\n\n## Code properties\n\n{copy}\n```js\n// copy button\nconst copy = true;\n```\n\n{numbers}\n```js\n// line numbers\nconst a = 1;\nconst b = 2;\nconst c = 3;\n```\n\n{label=\"Custom Label\"}\n```js\nconst label = 'custom';\n```\n\n{label=none}\n```js\nconst label = 'none';\n```\n\n{indent=2}\n```cpp\n// indent guides, 2 spaces per level\n{\n  {\n    int i;\n\n    int j;\n  }\n}\n```\n\n{indent=tab; numbers}\n```js\n// indent guides, tabs\nfunction run() {\n\tif (true) {\n\t\treturn 1;\n\t}\n}\n```\n\n{\n  copy\n  numbers\n  label=\"All Properties\"\n}\n```diff:js\nconst a = 1;\n-const b = 2;\n+const b = 3;\nconst c = 4;\n```\n\n<!-- {copy; numbers} -->\n```python\n# properties inside a comment\nprint(\"hello\")\n```\n\n## Inline code\n\nPlain `inline code`, highlighted {lang=cpp}`std::vector<int> v;`, {lang=js}`const x = 1;`, unknown {lang=nope}`still code`.\n\nInvalid property in front stays text: { nope }`code`.\n\nComment-like text in code: `<!-- not a comment -->`.\n",
+            "type": "page",
+            "children": []
+          },
+          {
+            "id": "node_mwrxgxne171hsou1y0nifu",
+            "name": "Sections",
+            "content": "# Sections\n\n[toc]\n\n::: Collapsed section with **bold** title\nText inside a section.\n\n- list item\n- list item\n\n| a | b |\n|---|---|\n| 1 | 2 |\n:::\n\n{open}\n::: Open section\n```js\n// ::: inside code is no section\nconst x = 1;\n```\n\n::: Nested section\n## Heading inside a nested section\nLinked from the [toc] above (a click opens the sections around it).\n:::\n:::\n\n:: not a section (two colons) and a stray close below stays text\n\n:::\n\n::: Unclosed section ends with the entry\nLast text.\n",
+            "type": "page",
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "tab_mwrxgxne1580gua37yq0o",
+        "name": "Structure",
+        "nodes": [
+          {
+            "id": "node_mwrxgxne1l7zsfkzj1re6",
+            "name": "Page Parent",
+            "content": "# Page Parent\n\nType `page`: own page, children are own pages.\n",
+            "type": "page",
+            "children": [
+              {
+                "id": "node_mwrxgxne1jl7wpu18254gp",
+                "name": "Page Child A",
+                "content": "# Page Child A\n\nOwn page.\n",
+                "type": "page",
+                "children": [
+                  {
+                    "id": "node_mwrxgxne1dpqrlt146qou8",
+                    "name": "Page Grandchild",
+                    "content": "# Page Grandchild\n\nOwn page, level 3.\n",
+                    "type": "page",
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "node_mwrxgxnes35ijha80tl5",
+                "name": "Page Child B",
+                "content": "# Page Child B\n\nOwn page.\n",
+                "type": "page",
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "node_mwrxgxnentocn333qv49",
+            "name": "Folder Group",
+            "content": "# Folder Group\n\nTHIS CONTENT MUST NOT BE EXPORTED (type folder).\n",
+            "type": "folder",
+            "children": [
+              {
+                "id": "node_mwrxgxnec54awb1c99195",
+                "name": "Folder Child A",
+                "content": "# Folder Child A\n\nOwn page inside a folder.\n",
+                "type": "page",
+                "children": []
+              },
+              {
+                "id": "node_mwrxgxneu0u78g10umq2e",
+                "name": "Nested Folder",
+                "content": "# Nested Folder\n\nHidden content.\n",
+                "type": "folder",
+                "children": [
+                  {
+                    "id": "node_mwrxgxne1ny3wd8d7eja",
+                    "name": "Nested Folder Child",
+                    "content": "# Nested Folder Child\n\nOwn page inside a nested folder.\n",
+                    "type": "page",
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "node_mwrxgxne1xgg1671fmldnq",
+            "name": "Merged Embed",
+            "content": "# Merged Embed\n\nType `merged` with `embed`: every descendant is a section on this page.\n",
+            "type": "merged",
+            "mergeDescendants": "embed",
+            "children": [
+              {
+                "id": "node_mwrxgxnegw1rya19wp24u",
+                "name": "Section A",
+                "content": "# Section A\n\nHeading shifted by one level.\n\n## Sub heading of Section A\n",
+                "type": "page",
+                "children": [
+                  {
+                    "id": "node_mwrxgxne1w607s81vm3711",
+                    "name": "Section A.1",
+                    "content": "# Section A.1\n\nHeading shifted by two levels.\n\n## Sub heading (capped at h4)\n\n### Deeper sub heading (capped at h4)\n",
+                    "type": "page",
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "node_mwrxgxne1xlnpcr9hc92m",
+                "name": "Folder Section",
+                "content": "THIS CONTENT MUST BE HIDDEN (folder inside merged page).\n",
+                "type": "folder",
+                "children": [
+                  {
+                    "id": "node_mwrxgxnep6dzqpgcmzl9",
+                    "name": "Section in Folder",
+                    "content": "# Section in Folder\n\nShown as a section.\n",
+                    "type": "page",
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "node_mwrxgxne1qby5hdkpmj38",
+                "name": "Page Typed Section",
+                "content": "# Page Typed Section\n\nType page is ignored inside a merged page.\n",
+                "type": "page",
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "node_mwrxgxnerg5zb63ise4q",
+            "name": "Merged Separate",
+            "content": "# Merged Separate\n\nType `merged` with `separate`: only direct children are sections, their children stay own pages.\n",
+            "type": "merged",
+            "mergeDescendants": "separate",
+            "children": [
+              {
+                "id": "node_mwrxgxnedrxqgbz9frkv",
+                "name": "Separate Section A",
+                "content": "# Separate Section A\n\nSection on the merged page.\n",
+                "type": "page",
+                "children": [
+                  {
+                    "id": "node_mwrxgxne56m3tx1302brp",
+                    "name": "Lifted Page A.1",
+                    "content": "# Lifted Page A.1\n\nOwn page, moved one level up in the nav.\n",
+                    "type": "page",
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "node_mwrxgxneh03xe39969ki",
+                "name": "Separate Section B",
+                "content": "# Separate Section B\n\nSection on the merged page.\n",
+                "type": "page",
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "node_mwrxgxnecl3deo119vlar",
+            "name": "Level 1",
+            "content": "# Level 1\n\nNesting level 1.\n",
+            "type": "page",
+            "children": [
+              {
+                "id": "node_mwrxgxne1jvpkrhyrwx1z",
+                "name": "Level 2",
+                "content": "# Level 2\n\nNesting level 2.\n",
+                "type": "page",
+                "children": [
+                  {
+                    "id": "node_mwrxgxne1q5krxh9pes4h",
+                    "name": "Level 3",
+                    "content": "# Level 3\n\nNesting level 3.\n",
+                    "type": "page",
+                    "children": [
+                      {
+                        "id": "node_mwrxgxnem1vlgffhqcpv",
+                        "name": "Level 4",
+                        "content": "# Level 4\n\nNesting level 4.\n",
+                        "type": "page",
+                        "children": [
+                          {
+                            "id": "node_mwrxgxne6j5wmm1w4cc1g",
+                            "name": "Level 5",
+                            "content": "# Level 5\n\nNesting level 5.\n",
+                            "type": "page",
+                            "children": [
+                              {
+                                "id": "node_mwrxgxnedbcp9f8okolg",
+                                "name": "Level 6",
+                                "content": "# Level 6\n\nDeepest node.\n",
+                                "type": "page",
+                                "children": []
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "node_mwrxgxne1leskdg14f2soy",
+            "name": "Empty Content",
+            "content": "",
+            "type": "page",
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "tab_mwrxgxnehg25tj125jpiu",
+        "name": "Links",
+        "nodes": [
+          {
+            "id": "node_mwrxgxne1n7s5c6f8wx1q",
+            "name": "Link Targets",
+            "content": "# Link Targets\n\nWhole entry is a link target.\n\n## First anchor {#first-anchor}\n\nText at the first anchor.\n\nFiller paragraph to make scrolling visible.\n\nFiller paragraph to make scrolling visible.\n\nFiller paragraph to make scrolling visible.\n\nFiller paragraph to make scrolling visible.\n\nFiller paragraph to make scrolling visible.\n\nFiller paragraph to make scrolling visible.\n\nFiller paragraph to make scrolling visible.\n\nFiller paragraph to make scrolling visible.\n\nFiller paragraph to make scrolling visible.\n\nFiller paragraph to make scrolling visible.\n\nFiller paragraph to make scrolling visible.\n\nFiller paragraph to make scrolling visible.\n\nFiller paragraph to make scrolling visible.\n\nFiller paragraph to make scrolling visible.\n\nFiller paragraph to make scrolling visible.\n\n\n## Second anchor {#second-anchor}\n\nText at the second anchor. Inline anchor in a sentence: {#inline-anchor} here.\n\nDuplicate anchor: {#first-anchor}\n\nInvalid anchor stays text: {#Upper_Case}\n",
+            "type": "page",
+            "children": []
+          },
+          {
+            "id": "node_mwrxgxne172oda61h0xkpe",
+            "name": "Link Usages",
+            "content": "# Link Usages\n\n- Default text: [[link-targets]]\n- Custom text: [[link-targets|custom text]]\n- Anchor: [[first-anchor]]\n- Anchor with custom text: [[second-anchor|go to second anchor]]\n- Inline anchor: [[inline-anchor]]\n- Section in merged page: [[merged-section]]\n- Page in folder: [[folder-child]]\n- Other tab: [[markdown-tables]]\n- Folder node (no page): [[folder-node]]\n- Missing anchor (broken): [[missing-anchor]]\n- Missing entry (broken): [[missing-entry]]\n- Unknown slug: [[does-not-exist]]\n\nIn a table:\n\n| Case | Usage |\n|------|-------|\n| Default text | [[link-targets]] |\n| Anchor | [[first-anchor]] |\n\nIn a paragraph: see [[link-targets]] and [[first-anchor|the first anchor]].\n\nInside code (ignored): `[[link-targets]]`\n\n```md\n[[link-targets]] {#not-an-anchor}\n```\n",
+            "type": "page",
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "tab_mwrxgxnepd3kwhvugcy",
+        "name": "Empty Tab",
+        "nodes": []
+      },
+      {
+        "id": "tab_mwrxgxne1pzh00k1fn3e0a",
+        "name": "Special / Chars: *?\"<>|",
+        "nodes": [
+          {
+            "id": "node_mwrxgxnetq4jsudvlwjk",
+            "name": "Same Name",
+            "content": "# Same Name\n\nFirst node with this name.\n",
+            "type": "page",
+            "children": []
+          },
+          {
+            "id": "node_mwrxgxnehy9bfnfixs2c",
+            "name": "Same Name",
+            "content": "# Same Name\n\nSecond node with this name (unique file name needed).\n",
+            "type": "page",
+            "children": []
+          },
+          {
+            "id": "node_mwrxgxne1j1jz6m14yst66",
+            "name": "same name",
+            "content": "# same name\n\nOnly differs in case.\n",
+            "type": "page",
+            "children": []
+          },
+          {
+            "id": "node_mwrxgxnec1ml3e19x9p10",
+            "name": "Slash / Colon: Star* Question?",
+            "content": "# Special characters\n\nNode name with characters that are invalid in file names.\n",
+            "type": "page",
+            "children": []
+          },
+          {
+            "id": "node_mwrxgxne1jyukkz138g599",
+            "name": "Umlaute äöü ß",
+            "content": "# Umlaute äöü ß\n\nNon-ASCII characters.\n",
+            "type": "page",
+            "children": []
+          },
+          {
+            "id": "node_mwrxgxne1fct75un3o0wd",
+            "name": "   Spaces   ",
+            "content": "# Spaces\n\nLeading and trailing spaces in the name.\n",
+            "type": "page",
+            "children": []
+          },
+          {
+            "id": "node_mwrxgxneuwedcfd109hu",
+            "name": "CON",
+            "content": "# CON\n\nReserved file name on Windows.\n",
+            "type": "page",
+            "children": []
+          }
+        ]
+      }
+    ]
+  }
+}

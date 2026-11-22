@@ -14,6 +14,7 @@ When the builder packs a file, the relative path string (e.g. `textures/backgrou
 At runtime, `StaticForgeArchive::LoadAsset` hashes the key string you pass in and looks it up in the index map. Unless the archive was built with `store-names`, the original string is not stored in the archive.
 
 **Implications:**
+
 - Lookups are O(1) via `std::unordered_map`.
 - Without a name table the archive cannot list filenames - only validate whether a known key exists. `--info --verbose` and `--extract` then show the hash instead (16 hex digits).
 - Hash collisions between two different paths of one build are detected at build time and cause an error. With 64 bit they are practically impossible (even with 100 000 files the probability is below one in a billion).
@@ -22,7 +23,7 @@ At runtime, `StaticForgeArchive::LoadAsset` hashes the key string you pass in an
 
 During packing, each file's bytes as written to disk are fed through **32-bit FNV-1a** with the initial value `2166136261` to produce a `uint32_t` checksum. This is written into the index entry.
 
-When loading, `StaticForgeArchive::LoadEntry` recomputes the checksum over the read bytes and compares it to the stored value. A mismatch causes `LoadAsset` to return `false` with an error message. Partial loads (`LoadAssetRange`) don't validate the checksum, because it covers the whole stored data.
+When loading, `LoadEntry` (a free function in `Internal/ArchiveCore`, used by all archive types, see [[static-forge-archive]]) recomputes the checksum over the read bytes and compares it to the stored value. A mismatch causes `LoadAsset` to return `false` with an error message. Partial loads (`LoadAssetRange`) don't validate the checksum, because it covers the whole stored data.
 
 The checksum detects accidental damage. It is not a cryptographic signature and does not protect against intentional changes.
 
@@ -30,6 +31,7 @@ The checksum detects accidental damage. It is not a cryptographic signature and 
 
 Use a path **relative to the source root** used during packing. The path is UTF-8 and case sensitive, backslashes are converted to forward slashes before hashing.
 
+{copy}
 ```cpp
 // Correct
 archive.LoadAsset("textures/background.png", &data);

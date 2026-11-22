@@ -5,12 +5,16 @@ name: StaticForgeArchive
 
 # StaticForgeArchive
 
-`StaticForgeArchive` is the runtime handle for a loaded `.sfpak` file. It is populated by `StaticForgeReader::Load` and then used to retrieve asset data.
+`StaticForgeArchive` is the runtime handle for a loaded archive file. It is populated by `StaticForgeReader::Load` and then used to retrieve asset data. The usage is described in [[loading-assets]].
+
+{style=outline}
+[toc]
 
 ## Ownership, move and Clone
 
 `StaticForgeArchive` can be moved but not copied, so a copy doesn't open another file handle by accident. Use `Clone()` for a second archive object:
 
+{copy}
 ```cpp
 StaticForge::StaticForgeArchive a;
 StaticForge::StaticForgeArchive b = std::move(a); // OK
@@ -22,6 +26,7 @@ An archive object can be loaded again with `StaticForgeReader::Load`. The reader
 
 ## Internal state
 
+{hover=row}
 | Member   | Description                                                                                |
 |----------|--------------------------------------------------------------------------------------------|
 | `m_data` | `std::shared_ptr<const Internal::ArchiveData>`, the loaded data, shared with clones       |
@@ -30,9 +35,10 @@ An archive object can be loaded again with `StaticForgeReader::Load`. The reader
 
 `Internal::ArchiveData` (in `Internal/ArchiveCore.h`) holds everything the reader loads:
 
+{hover=row}
 | Field             | Description                                                     |
 |-------------------|-----------------------------------------------------------------|
-| `path`            | Path to the `.sfpak` file on disk                               |
+| `path`            | Path to the archive file on disk (any extension)                |
 | `header`          | Parsed `StaticForgeHeader` struct                               |
 | `indexEntries`    | `std::vector<StaticForgeIndexEntry>` — one per file             |
 | `hashNameToEntry` | `std::unordered_map<uint64_t, size_t>` for O(1) lookup          |
@@ -49,9 +55,9 @@ The loading logic (`LoadEntry`, `LoadEntryRange`, `DecompressBlocks`, `VerifyEnt
 1. Normalize the slashes of the key and hash it with `HashFilename` (64-bit FNV-1a).
 2. Look up the hash in `hashNameToEntry` to find the index position.
 3. Call `LoadEntry`, which is shared by all full loads (vector or buffer, stream or mapped):
-- Clear the stream state, so a previous failed read does not break this one.
-- If `compressedFileSize == 0` (uncompressed): read `fileSize` bytes at `dataOffset + fileOffset` directly into the target and validate the FNV-1a checksum.
-- If `compressedFileSize != 0` (compressed): read `compressedFileSize` bytes, validate the checksum, then decompress block by block (`DecompressBlocks`). Each block is prefixed with `[uint32_t compressedSize][uint32_t originalSize]` and decompressed independently, directly into the target. A block with `compressedSize == originalSize` is stored raw and only copied.
+    - Clear the stream state, so a previous failed read does not break this one.
+    - If `compressedFileSize == 0` (uncompressed): read `fileSize` bytes at `dataOffset + fileOffset` directly into the target and validate the FNV-1a checksum (see [[hashing]]).
+    - If `compressedFileSize != 0` (compressed): read `compressedFileSize` bytes, validate the checksum, then decompress block by block (`DecompressBlocks`). Each block is prefixed with `[uint32_t compressedSize][uint32_t originalSize]` and decompressed independently, directly into the target. A block with `compressedSize == originalSize` is stored raw and only copied.
 4. With a vector, the block sizes are checked before the vector is resized to `fileSize`, so a damaged size in the index can't cause a huge allocation. The vector is only changed on success.
 
 `LoadAssetAt(index, ...)` skips steps 1 and 2 and loads the entry at the given index directly.
@@ -83,23 +89,25 @@ Reading a range near the end of a large compressed asset reads one frame per blo
 
 ## Access method comparison
 
+{hover=row,col; striped}
 | Method                           | Compressed | Allocates | Copies data | Checksum |
 |----------------------------------|:----------:|:---------:|:-----------:|:--------:|
-| `LoadAsset` / `LoadAssetAt` (vector) | ✅      | ✅         | ✅           | ✅        |
-| `LoadAsset` / `LoadAssetAt` (buffer) | ✅      | ❌ ¹       | ✅           | ✅        |
-| `LoadAssetRange` / `LoadAssetRangeAt` | ✅     | ❌ ¹       | ✅           | ❌        |
-| `LoadAssetMapped` (vector)       | ✅          | ✅         | ✅           | ✅        |
-| `LoadAssetMapped` (buffer)       | ✅          | ❌         | ✅           | ✅        |
-| `LoadAssetRangeMapped`           | ✅          | ❌ ²       | ✅           | ❌        |
-| `GetAssetMapped`                 | ❌          | ❌         | ❌           | ❌        |
+| `LoadAsset` / `LoadAssetAt` (vector) | [x]      | [x]         | [x]           | [x]        |
+| `LoadAsset` / `LoadAssetAt` (buffer) | [x]      | [ ] [^temp-buffer] | [x]    | [x]        |
+| `LoadAssetRange` / `LoadAssetRangeAt` | [x]     | [ ] [^temp-buffer] | [x]    | [ ]        |
+| `LoadAssetMapped` (vector)       | [x]          | [x]         | [x]           | [x]        |
+| `LoadAssetMapped` (buffer)       | [x]          | [ ]         | [x]           | [x]        |
+| `LoadAssetRangeMapped`           | [x]          | [ ] [^range-block] | [x]    | [ ]        |
+| `GetAssetMapped`                 | [ ]          | [ ]         | [ ]           | [ ]        |
 
-¹ No allocation for uncompressed assets. For compressed assets a temporary buffer for the stored data (full load) or for one block (range) is used.  
-² For compressed assets a temporary buffer for a block that is only partly inside of the range.
+[^temp-buffer]: No allocation for uncompressed assets. For compressed assets a temporary buffer for the stored data (full load) or for one block (range) is used.
+[^range-block]: For compressed assets a temporary buffer for a block that is only partly inside of the range.
 
 ## Accessor methods
 
 All getters read directly from the header or the index entries and are cheap:
 
+{copy}
 ```cpp
 archive.GetVersion();       // uint64_t
 archive.GetFileCount();     // size_t
@@ -127,6 +135,7 @@ archive.GetAssetSize(key, &size);   // bool — false if the asset doesn't exist
 
 After `StaticForgeReader::Load` succeeds the archive's file stream is open. `LoadAsset` reopens it automatically if it was closed. You can control this manually:
 
+{copy}
 ```cpp
 archive.CloseFileStream(); // release the file handle
 archive.OpenFileStream();  // reopen when needed
@@ -137,6 +146,7 @@ bool open = archive.IsFileStreamOpen();
 
 Memory mapping is independent of the file stream and must be opened explicitly:
 
+{copy}
 ```cpp
 archive.OpenMapped();  // map the file into memory
 archive.IsMapped();    // bool
@@ -145,8 +155,9 @@ archive.CloseMapped(); // unmap — invalidates all AssetViews
 
 ## Error handling
 
-`StaticForgeArchive` collects errors (see *ErrorSupport*). Always check the return value and read the error when it returns `false`:
+`StaticForgeArchive` collects errors (see [[error-support]]). Always check the return value and read the error when it returns `false`:
 
+{copy indent=4}
 ```cpp
 if (!archive.LoadAsset("audio/music.ogg", &data)) {
     // possible reasons: key not found, seek/read failure,
@@ -169,6 +180,7 @@ if (archive.GetAssetMapped("textures/ui.png").data == nullptr) {
 
 `StaticForgeConcurrentArchive` uses the same `ArchiveData` and the same loading functions of `Internal/ArchiveCore`, only the stream handling and the errors are different. It doesn't derive from `ErrorSupport`.
 
+{hover=row}
 | Member    | Description                                                                 |
 |-----------|-----------------------------------------------------------------------------|
 | `m_data`  | `std::shared_ptr<const Internal::ArchiveData>`, shared with clones          |
